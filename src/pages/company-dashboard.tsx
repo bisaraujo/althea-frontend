@@ -1,0 +1,187 @@
+import { Building2, ClipboardList, FolderKanban, Presentation, Reply } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+import { ApiError } from '../api/client';
+import { getForms, getMyCompany, getPresentations, getProjects, getResponses } from '../api/services';
+import type { Company, FormSummary, Presentation as PresentationType, Project, ResponseRecord } from '../api/types';
+import { AppShell } from '../components/app-shell';
+import { EmptyState } from '../components/empty-state';
+import { SectionPanel } from '../components/section-panel';
+import { StatCard } from '../components/stat-card';
+import { StatusPill } from '../components/status-pill';
+import { useAuth } from '../auth/auth-context';
+
+export function CompanyDashboard() {
+  const { token, user, signOut } = useAuth();
+  const [company, setCompany] = useState<Company | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [forms, setForms] = useState<FormSummary[]>([]);
+  const [presentations, setPresentations] = useState<PresentationType[]>([]);
+  const [responses, setResponses] = useState<ResponseRecord[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+    const authToken: string = token;
+
+    async function load() {
+      try {
+        const [companyData, projectData, formData, presentationData, responseData] = await Promise.all([
+          getMyCompany(authToken),
+          getProjects(authToken),
+          getForms(authToken),
+          getPresentations(authToken),
+          getResponses(authToken),
+        ]);
+
+        setCompany(companyData);
+        setProjects(projectData.projects);
+        setForms(formData.forms);
+        setPresentations(presentationData.presentations);
+        setResponses(responseData.responses);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : 'Nao foi possivel carregar a area da empresa.');
+      }
+    }
+
+    void load();
+  }, [token]);
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <AppShell
+      user={user}
+      title="Area da empresa"
+      subtitle="Uma visao consolidada da operacao da propria empresa, com projetos, conteudos e respostas."
+      onSignOut={signOut}
+    >
+      {error ? <div className="form-error">{error}</div> : null}
+
+      <div className="stats-grid">
+        <StatCard label="Projetos" value={projects.length} icon={<FolderKanban size={18} />} />
+        <StatCard label="Formularios" value={forms.length} icon={<ClipboardList size={18} />} />
+        <StatCard label="Apresentacoes" value={presentations.length} icon={<Presentation size={18} />} />
+        <StatCard label="Respostas" value={responses.length} icon={<Reply size={18} />} />
+      </div>
+
+      <SectionPanel title="Conta institucional" eyebrow="Empresa">
+        {company ? (
+          <div className="company-card">
+            <div>
+              <span className="company-card__icon">
+                <Building2 size={18} />
+              </span>
+              <div>
+                <strong>{company.name}</strong>
+                <p>{company.email}</p>
+              </div>
+            </div>
+            <StatusPill tone="success">Conta company vinculada</StatusPill>
+          </div>
+        ) : (
+          <EmptyState
+            title="Empresa ainda nao carregada"
+            description="A relacao company-empresa foi formalizada no backend. Quando a API responder, os dados aparecem aqui."
+          />
+        )}
+      </SectionPanel>
+
+      <div className="content-grid">
+        <SectionPanel title="Projetos" eyebrow="Escopo" action={<StatusPill>{projects.length} ativos</StatusPill>}>
+          {projects.length ? (
+            <div className="list">
+              {projects.map((project) => (
+                <article key={project.id} className="list-item">
+                  <div>
+                    <strong>{project.name}</strong>
+                    <p>{project.description || 'Sem descricao cadastrada.'}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="Nenhum projeto encontrado"
+              description="Quando o admin criar projetos para esta empresa, eles aparecem aqui."
+            />
+          )}
+        </SectionPanel>
+
+        <SectionPanel title="Formularios e pesquisas" eyebrow="Conteudo" action={<StatusPill>{forms.length} itens</StatusPill>}>
+          {forms.length ? (
+            <div className="list">
+              {forms.map((form) => (
+                <article key={form.id} className="list-item">
+                  <div>
+                    <strong>{form.title}</strong>
+                    <p>{form.description || 'Sem descricao.'}</p>
+                  </div>
+                  <StatusPill>{form.audience}</StatusPill>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="Sem formularios ainda"
+              description="A empresa vai acompanhar por aqui os formularios ligados aos projetos dela."
+            />
+          )}
+        </SectionPanel>
+      </div>
+
+      <div className="content-grid">
+        <SectionPanel
+          title="Apresentacoes"
+          eyebrow="Biblioteca"
+          action={<StatusPill>{presentations.length} itens</StatusPill>}
+        >
+          {presentations.length ? (
+            <div className="list">
+              {presentations.map((presentation) => (
+                <article key={presentation.id} className="list-item">
+                  <div>
+                    <strong>{presentation.title}</strong>
+                    <p>{presentation.description || 'Sem descricao.'}</p>
+                  </div>
+                  <a href={presentation.file_url} target="_blank" rel="noreferrer" className="secondary-link">
+                    abrir
+                  </a>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="Sem apresentacoes ainda"
+              description="As apresentacoes vinculadas aos projetos da empresa vao aparecer aqui."
+            />
+          )}
+        </SectionPanel>
+
+        <SectionPanel title="Respostas recentes" eyebrow="Acompanhamento" action={<StatusPill>{responses.length} registros</StatusPill>}>
+          {responses.length ? (
+            <div className="list">
+              {responses.slice(0, 6).map((response) => (
+                <article key={response.id} className="list-item">
+                  <div>
+                    <strong>Resposta {response.id.slice(0, 8)}</strong>
+                    <p>Formulario {response.form_id.slice(0, 8)} • Usuario {response.user_id.slice(0, 8)}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="Sem respostas registradas"
+              description="Quando os colaboradores responderem pesquisas, os registros vao aparecer aqui."
+            />
+          )}
+        </SectionPanel>
+      </div>
+    </AppShell>
+  );
+}

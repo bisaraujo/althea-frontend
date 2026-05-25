@@ -36,7 +36,7 @@ export function LoginPage() {
       signIn(data.access_token, data.user);
       navigate(roleDestination(data.user.role), { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Nao foi possivel entrar agora.');
+      setError(err instanceof ApiError ? err.message : 'Não foi possível entrar agora.');
     } finally {
       setIsSubmitting(false);
     }
@@ -44,40 +44,24 @@ export function LoginPage() {
 
   return (
     <div className="login-page">
-      <div className="login-page__hero">
-        <span className="login-page__eyebrow">Risk management platform</span>
-        <h1>Uma jornada guiada para acolher, orientar e acompanhar cada etapa.</h1>
-        <p>
-          A nova base da Althea organiza conteudo, pesquisas e entregas por perfil, sem perder
-          continuidade entre onboarding, sensibilizacao e acompanhamento.
-        </p>
-
-        <div className="login-page__highlights">
-          <article>
-            <strong>Funcionario</strong>
-            <p>Recebe trilhas claras com conteudo, apresentacoes e pesquisas na ordem certa.</p>
-          </article>
-          <article>
-            <strong>Gestor</strong>
-            <p>Tem uma area propria para entregas documentais, alinhamento metodologico e time.</p>
-          </article>
-          <article>
-            <strong>Empresa</strong>
-            <p>Acompanha a operacao da propria conta, projetos e respostas com contexto.</p>
-          </article>
-        </div>
-      </div>
-
       <div className="login-card">
+        <div className="login-card__brand">
+          <span className="login-card__brand-mark">A</span>
+          <div>
+            <strong>Althea</strong>
+            <p>Plataforma de gestão de jornada</p>
+          </div>
+        </div>
+
         <div className="login-card__header">
           <span className="login-card__tag">Entrar</span>
-          <h2>Acesse sua area</h2>
-          <p>Use o email e a senha cadastrados no backend local.</p>
+          <h2>Acesse sua área</h2>
+          <p>Entre com seu e-mail e sua senha para continuar.</p>
         </div>
 
         <form className="login-card__form" onSubmit={handleSubmit}>
           <label>
-            <span>Email</span>
+            <span>E-mail</span>
             <input
               type="email"
               placeholder="voce@empresa.com"
@@ -104,13 +88,6 @@ export function LoginPage() {
             {isSubmitting ? 'Entrando...' : 'Entrar na plataforma'}
           </button>
         </form>
-
-        <div className="login-card__footer">
-          <p>
-            Dica de desenvolvimento: admin padrao <strong>admin@empresa.com</strong> com senha
-            <strong> 123456</strong>.
-          </p>
-        </div>
       </div>
     </div>
   );

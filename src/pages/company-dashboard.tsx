@@ -42,7 +42,7 @@ export function CompanyDashboard() {
         setPresentations(presentationData.presentations);
         setResponses(responseData.responses);
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Nao foi possivel carregar a area da empresa.');
+        setError(err instanceof ApiError ? err.message : 'Não foi possível carregar a área da empresa.');
       }
     }
 
@@ -56,16 +56,16 @@ export function CompanyDashboard() {
   return (
     <AppShell
       user={user}
-      title="Area da empresa"
-      subtitle="Uma visao consolidada da operacao da propria empresa, com projetos, conteudos e respostas."
+      title="Área da empresa"
+      subtitle="Uma visão consolidada da operação da própria empresa, com projetos, conteúdos e respostas."
       onSignOut={signOut}
     >
       {error ? <div className="form-error">{error}</div> : null}
 
       <div className="stats-grid">
         <StatCard label="Projetos" value={projects.length} icon={<FolderKanban size={18} />} />
-        <StatCard label="Formularios" value={forms.length} icon={<ClipboardList size={18} />} />
-        <StatCard label="Apresentacoes" value={presentations.length} icon={<Presentation size={18} />} />
+        <StatCard label="Formulários" value={forms.length} icon={<ClipboardList size={18} />} />
+        <StatCard label="Apresentações" value={presentations.length} icon={<Presentation size={18} />} />
         <StatCard label="Respostas" value={responses.length} icon={<Reply size={18} />} />
       </div>
 
@@ -85,8 +85,8 @@ export function CompanyDashboard() {
           </div>
         ) : (
           <EmptyState
-            title="Empresa ainda nao carregada"
-            description="A relacao company-empresa foi formalizada no backend. Quando a API responder, os dados aparecem aqui."
+            title="Empresa ainda não carregada"
+            description="A relação company-empresa foi formalizada no backend. Quando a API responder, os dados aparecem aqui."
           />
         )}
       </SectionPanel>
@@ -99,7 +99,7 @@ export function CompanyDashboard() {
                 <article key={project.id} className="list-item">
                   <div>
                     <strong>{project.name}</strong>
-                    <p>{project.description || 'Sem descricao cadastrada.'}</p>
+                    <p>{project.description || 'Sem descrição cadastrada.'}</p>
                   </div>
                 </article>
               ))}
@@ -112,14 +112,14 @@ export function CompanyDashboard() {
           )}
         </SectionPanel>
 
-        <SectionPanel title="Formularios e pesquisas" eyebrow="Conteudo" action={<StatusPill>{forms.length} itens</StatusPill>}>
+        <SectionPanel title="Formulários e pesquisas" eyebrow="Conteúdo" action={<StatusPill>{forms.length} itens</StatusPill>}>
           {forms.length ? (
             <div className="list">
               {forms.map((form) => (
                 <article key={form.id} className="list-item">
                   <div>
                     <strong>{form.title}</strong>
-                    <p>{form.description || 'Sem descricao.'}</p>
+                    <p>{form.description || 'Sem descrição.'}</p>
                   </div>
                   <StatusPill>{form.audience}</StatusPill>
                 </article>
@@ -127,26 +127,22 @@ export function CompanyDashboard() {
             </div>
           ) : (
             <EmptyState
-              title="Sem formularios ainda"
-              description="A empresa vai acompanhar por aqui os formularios ligados aos projetos dela."
+              title="Sem formulários ainda"
+              description="A empresa vai acompanhar por aqui os formulários ligados aos projetos dela."
             />
           )}
         </SectionPanel>
       </div>
 
       <div className="content-grid">
-        <SectionPanel
-          title="Apresentacoes"
-          eyebrow="Biblioteca"
-          action={<StatusPill>{presentations.length} itens</StatusPill>}
-        >
+        <SectionPanel title="Apresentações" eyebrow="Biblioteca" action={<StatusPill>{presentations.length} itens</StatusPill>}>
           {presentations.length ? (
             <div className="list">
               {presentations.map((presentation) => (
                 <article key={presentation.id} className="list-item">
                   <div>
                     <strong>{presentation.title}</strong>
-                    <p>{presentation.description || 'Sem descricao.'}</p>
+                    <p>{presentation.description || 'Sem descrição.'}</p>
                   </div>
                   <a href={presentation.file_url} target="_blank" rel="noreferrer" className="secondary-link">
                     abrir
@@ -156,8 +152,8 @@ export function CompanyDashboard() {
             </div>
           ) : (
             <EmptyState
-              title="Sem apresentacoes ainda"
-              description="As apresentacoes vinculadas aos projetos da empresa vao aparecer aqui."
+              title="Sem apresentações ainda"
+              description="As apresentações vinculadas aos projetos da empresa vão aparecer aqui."
             />
           )}
         </SectionPanel>
@@ -169,7 +165,7 @@ export function CompanyDashboard() {
                 <article key={response.id} className="list-item">
                   <div>
                     <strong>Resposta {response.id.slice(0, 8)}</strong>
-                    <p>Formulario {response.form_id.slice(0, 8)} • Usuario {response.user_id.slice(0, 8)}</p>
+                    <p>Formulário {response.form_id.slice(0, 8)} • Usuário {response.user_id.slice(0, 8)}</p>
                   </div>
                 </article>
               ))}
@@ -177,7 +173,7 @@ export function CompanyDashboard() {
           ) : (
             <EmptyState
               title="Sem respostas registradas"
-              description="Quando os colaboradores responderem pesquisas, os registros vao aparecer aqui."
+              description="Quando os colaboradores responderem pesquisas, os registros vão aparecer aqui."
             />
           )}
         </SectionPanel>

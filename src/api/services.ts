@@ -9,6 +9,8 @@ import type {
   Presentation,
   Project,
   ResponseRecord,
+  FormDetail,
+  FormResponseOut
 } from './types';
 
 export async function login(username: string, password: string) {
@@ -87,6 +89,25 @@ export async function uploadManagerDocument(
     token,
     method: 'POST',
     body: JSON.stringify(payload),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+export async function getEmployeeFormDetail(token: string, formId: string) {
+  return request<FormDetail>(`/employee/forms/${formId}/detail`, { token });
+}
+
+export async function submitEmployeeForm(
+  token: string,
+  formId: string,
+  answers: Record<string, string | string[]>,
+) {
+  return request<FormResponseOut>(`/employee/forms/${formId}/submit`, {
+    token,
+    method: 'POST',
+    body: JSON.stringify({ answers }),
     headers: {
       'Content-Type': 'application/json',
     },

@@ -78,7 +78,7 @@ export function ManagerDashboard() {
         setPresentations(presentationData.presentations);
         setResponses(responseData.responses);
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Nao foi possivel carregar a jornada do gestor.');
+        setError(err instanceof ApiError ? err.message : 'Não foi possível carregar a jornada do gestor.');
       }
     }
 
@@ -112,7 +112,7 @@ export function ManagerDashboard() {
       const freshJourney = await getManagerJourney(authToken);
       setJourney(freshJourney);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Nao foi possivel enviar o documento agora.');
+      setError(err instanceof ApiError ? err.message : 'Não foi possível enviar o documento agora.');
     } finally {
       setSubmittingItem(null);
     }
@@ -126,23 +126,19 @@ export function ManagerDashboard() {
     <AppShell
       user={user}
       title="Jornada do gestor"
-      subtitle="Uma trilha propria para alinhamento metodologico, entregas documentais e acompanhamento do time."
+      subtitle="Uma trilha própria para alinhamento metodológico, entregas documentais e acompanhamento do time."
       onSignOut={signOut}
     >
       {error ? <div className="form-error">{error}</div> : null}
 
       <div className="stats-grid">
         <StatCard label="Etapas da jornada" value={journey?.sections.length ?? 0} icon={<FolderInput size={18} />} />
-        <StatCard label="Funcionarios" value={employees.length} icon={<Users size={18} />} />
-        <StatCard label="Formularios visiveis" value={forms.length} icon={<ClipboardList size={18} />} />
-        <StatCard label="Apresentacoes" value={presentations.length} icon={<Presentation size={18} />} />
+        <StatCard label="Funcionários" value={employees.length} icon={<Users size={18} />} />
+        <StatCard label="Formulários visíveis" value={forms.length} icon={<ClipboardList size={18} />} />
+        <StatCard label="Apresentações" value={presentations.length} icon={<Presentation size={18} />} />
       </div>
 
-      <SectionPanel
-        title={journey?.title ?? 'Jornada do gestor'}
-        eyebrow="Trilha principal"
-        action={<StatusPill tone="success">{journey?.status ?? 'active'}</StatusPill>}
-      >
+      <SectionPanel title={journey?.title ?? 'Jornada do gestor'} eyebrow="Trilha principal" action={<StatusPill tone="success">{journey?.status ?? 'active'}</StatusPill>}>
         {journey ? (
           <div className="journey">
             {journey.sections.map((section) => (
@@ -152,7 +148,7 @@ export function ManagerDashboard() {
                     <span className="journey-section__order">{section.order}</span>
                     <div>
                       <h3>{section.title}</h3>
-                      <p>{section.description || 'Sem descricao para esta etapa.'}</p>
+                      <p>{section.description || 'Sem descrição para esta etapa.'}</p>
                     </div>
                   </div>
                 </header>
@@ -163,7 +159,7 @@ export function ManagerDashboard() {
                       <div className="journey-item__meta">
                         <div>
                           <strong>{item.title}</strong>
-                          <p>{item.description || 'Sem descricao do item.'}</p>
+                          <p>{item.description || 'Sem descrição do item.'}</p>
                         </div>
                         <div className="journey-item__badges">
                           <StatusPill>{item.item_type}</StatusPill>
@@ -174,7 +170,7 @@ export function ManagerDashboard() {
                       {item.content_text ? <p className="journey-item__content">{item.content_text}</p> : null}
                       {item.video_url ? (
                         <a className="secondary-link" href={item.video_url} target="_blank" rel="noreferrer">
-                          abrir video
+                          abrir vídeo
                         </a>
                       ) : null}
 
@@ -185,9 +181,7 @@ export function ManagerDashboard() {
                               <span>Nome do arquivo</span>
                               <input
                                 value={documentPayloads[item.id]?.file_name ?? ''}
-                                onChange={(event) =>
-                                  setDocumentField(item.id, 'file_name', event.target.value)
-                                }
+                                onChange={(event) => setDocumentField(item.id, 'file_name', event.target.value)}
                                 placeholder={item.document_title ?? 'Documento'}
                                 required
                               />
@@ -196,9 +190,7 @@ export function ManagerDashboard() {
                               <span>URL do arquivo</span>
                               <input
                                 value={documentPayloads[item.id]?.file_url ?? ''}
-                                onChange={(event) =>
-                                  setDocumentField(item.id, 'file_url', event.target.value)
-                                }
+                                onChange={(event) => setDocumentField(item.id, 'file_url', event.target.value)}
                                 placeholder="https://..."
                                 required
                               />
@@ -210,26 +202,24 @@ export function ManagerDashboard() {
                               <span>MIME type</span>
                               <input
                                 value={documentPayloads[item.id]?.mime_type ?? ''}
-                                onChange={(event) =>
-                                  setDocumentField(item.id, 'mime_type', event.target.value)
-                                }
+                                onChange={(event) => setDocumentField(item.id, 'mime_type', event.target.value)}
                                 placeholder="application/pdf"
                                 required
                               />
                             </label>
                             <label>
                               <span>Formatos aceitos</span>
-                              <input value={item.accepted_formats.join(', ') || 'Nao informado'} disabled />
+                              <input value={item.accepted_formats.join(', ') || 'Não informado'} disabled />
                             </label>
                           </div>
 
                           <label>
-                            <span>Observacoes</span>
+                            <span>Observações</span>
                             <textarea
                               rows={3}
                               value={documentPayloads[item.id]?.notes ?? ''}
                               onChange={(event) => setDocumentField(item.id, 'notes', event.target.value)}
-                              placeholder="Observacoes opcionais para contextualizar a entrega."
+                              placeholder="Observações opcionais para contextualizar a entrega."
                             />
                           </label>
 
@@ -247,13 +237,13 @@ export function ManagerDashboard() {
         ) : (
           <EmptyState
             title="Sem jornada ativa"
-            description="Quando uma jornada manager estiver ativa para o projeto deste usuario, ela vai aparecer aqui."
+            description="Quando uma jornada manager estiver ativa para o projeto deste usuário, ela vai aparecer aqui."
           />
         )}
       </SectionPanel>
 
       <div className="content-grid">
-        <SectionPanel title="Equipe do projeto" eyebrow="People" action={<StatusPill>{employees.length} pessoas</StatusPill>}>
+      <SectionPanel title="Equipe do projeto" eyebrow="Pessoas" action={<StatusPill>{employees.length} pessoas</StatusPill>}>
           {employees.length ? (
             <div className="list">
               {employees.map((employee) => (
@@ -267,8 +257,8 @@ export function ManagerDashboard() {
             </div>
           ) : (
             <EmptyState
-              title="Sem funcionarios vinculados"
-              description="Quando o projeto tiver colaboradores associados, eles vao aparecer aqui."
+              title="Sem funcionários vinculados"
+              description="Quando o projeto tiver colaboradores associados, eles vão aparecer aqui."
             />
           )}
         </SectionPanel>
@@ -280,7 +270,7 @@ export function ManagerDashboard() {
                 <article key={response.id} className="list-item">
                   <div>
                     <strong>Resposta {response.id.slice(0, 8)}</strong>
-                    <p>Formulario {response.form_id.slice(0, 8)} • Usuario {response.user_id.slice(0, 8)}</p>
+                    <p>Formulário {response.form_id.slice(0, 8)} • Usuário {response.user_id.slice(0, 8)}</p>
                   </div>
                 </article>
               ))}
@@ -288,7 +278,7 @@ export function ManagerDashboard() {
           ) : (
             <EmptyState
               title="Sem respostas ainda"
-              description="As respostas do projeto vao aparecer aqui para acompanhamento do gestor."
+              description="As respostas do projeto vão aparecer aqui para acompanhamento do gestor."
             />
           )}
         </SectionPanel>

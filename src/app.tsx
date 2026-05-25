@@ -5,6 +5,7 @@ import { ProtectedRoute } from './auth/protected-route';
 import { AdminDashboard } from './pages/admin-dashboard';
 import { CompanyDashboard } from './pages/company-dashboard';
 import { EmployeeDashboard } from './pages/employee-dashboard';
+import { EmployeeHandoutPage } from './pages/employee-handout-page';
 import { LoginPage } from './pages/login-page';
 import { ManagerDashboard } from './pages/manager-dashboard';
 
@@ -39,6 +40,8 @@ export function App() {
 
           <Route element={<ProtectedRoute roles={['employee']} />}>
             <Route path="/employee" element={<EmployeeDashboard />} />
+            <Route path="/employee/journey" element={<EmployeeHandoutPage />} />
+            <Route path="/employee/handout" element={<Navigate to="/employee/journey" replace />} />
           </Route>
 
           <Route path="*" element={<DefaultRedirect />} />

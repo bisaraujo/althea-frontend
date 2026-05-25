@@ -95,6 +95,8 @@ export type JourneyItem = {
   document_title: string | null;
   accepted_formats: string[];
   user_status?: string;
+  response_id?: string | null;
+  submitted_at?: string | null;
 };
 
 export type JourneySection = {
@@ -121,4 +123,36 @@ export type DocumentSubmissionPayload = {
   file_url: string;
   mime_type: string;
   notes: string;
+};
+
+export type FormOption = {
+  id: string;
+  question_id: string;
+  value: string;
+  label: string;
+  order: number;
+  extra_metadata: Record<string, unknown> | null;
+};
+
+export type FormQuestion = {
+  id: string;
+  form_id: string;
+  key: string;
+  title: string;
+  question_type: 'single_choice' | 'multi_select' | 'text' | 'number';
+  order: number;
+  required: boolean;
+  description: string | null;
+  extra_metadata: Record<string, unknown> | null;
+  options: FormOption[];
+};
+
+export type FormDetail = FormSummary & {
+  questions: FormQuestion[];
+};
+
+export type FormResponseOut = {
+  id: string;
+  form_id: string;
+  answers: Record<string, string | string[]>;
 };

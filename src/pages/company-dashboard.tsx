@@ -1,4 +1,4 @@
-import { Building2, ClipboardList, FolderKanban, Presentation, Reply } from 'lucide-react';
+import { Building2, ClipboardList, FolderKanban, House, Presentation, Reply } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { ApiError } from '../api/client';
@@ -11,8 +11,12 @@ import { StatCard } from '../components/stat-card';
 import { StatusPill } from '../components/status-pill';
 import { useAuth } from '../auth/auth-context';
 
+const companyNavigation = [
+  { to: '/company', label: 'Visao geral', icon: House },
+];
+
 export function CompanyDashboard() {
-  const { token, user, signOut } = useAuth();
+  const { token, user } = useAuth();
   const [company, setCompany] = useState<Company | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [forms, setForms] = useState<FormSummary[]>([]);
@@ -55,10 +59,10 @@ export function CompanyDashboard() {
 
   return (
     <AppShell
-      user={user}
+      eyebrow="Plataforma Althea"
       title="Área da empresa"
-      subtitle="Uma visão consolidada da operação da própria empresa, com projetos, conteúdos e respostas."
-      onSignOut={signOut}
+      description="Uma visão consolidada da operação da própria empresa, com projetos, conteúdos e respostas."
+      navigation={companyNavigation}
     >
       {error ? <div className="form-error">{error}</div> : null}
 
@@ -144,9 +148,13 @@ export function CompanyDashboard() {
                     <strong>{presentation.title}</strong>
                     <p>{presentation.description || 'Sem descrição.'}</p>
                   </div>
-                  <a href={presentation.file_url} target="_blank" rel="noreferrer" className="secondary-link">
-                    abrir
-                  </a>
+                  {presentation.file_url ? (
+                    <a href={presentation.file_url} target="_blank" rel="noreferrer" className="secondary-link">
+                      abrir
+                    </a>
+                  ) : (
+                    <span className="secondary-link">em breve</span>
+                  )}
                 </article>
               ))}
             </div>

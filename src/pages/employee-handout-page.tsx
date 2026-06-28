@@ -1,10 +1,13 @@
 import {
   ArrowLeft,
   ArrowRight,
+  ChevronRight,
   CheckCircle2,
   CirclePlay,
   ClipboardList,
   FileText,
+  Folder,
+  FolderOpen,
   Lock,
   PlayCircle,
   Presentation as PresentationIcon,
@@ -14,8 +17,22 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
-import { getEmployeeFormDetail, getEmployeeJourney, submitEmployeeForm } from '../api/services';
-import type { FormDetail, FormQuestion, Journey, JourneyItem } from '../api/types';
+import {
+  getEmployeeFormDetail,
+  getEmployeeJourney,
+  getManagerFormDetail,
+  getManagerJourney,
+  submitEmployeeForm,
+  submitManagerForm,
+} from '../api/services';
+import type {
+  FormDetail,
+  FormQuestion,
+  FormResponseOut,
+  Journey,
+  JourneyItem,
+  JourneySection,
+} from '../api/types';
 import { useAuth } from '../auth/auth-context';
 import { StatusPill } from '../components/status-pill';
 
@@ -43,6 +60,45 @@ function getItemTypeLabel(item: JourneyItem) {
 
 function isCompleted(item: JourneyItem) {
   return item.user_status === 'submitted' || item.user_status === 'completed';
+}
+
+function isIntroItem(item: JourneyItem) {
+  return item.item_type === 'text' && item.order === 0;
+}
+
+function isTrackableItem(item: JourneyItem) {
+  return item.item_type === 'survey' || item.item_type === 'document_request';
+}
+
+function getActionItems(section: JourneySection) {
+  return section.items.filter((item) => !isIntroItem(item));
+}
+
+function getSidebarItems(section: JourneySection) {
+  return section.items;
+}
+
+function getSidebarItemTitle(item: JourneyItem) {
+  if (isIntroItem(item)) return item.title || 'Apresentação';
+  return item.title;
+}
+
+function countCompleted(items: JourneyItem[]) {
+  return items.filter(isCompleted).length;
+}
+
+function RichText({ text }: { text?: string | null }) {
+  if (!text) return null;
+
+  return (
+    <div className="rich-text">
+      {text.split(/\n{2,}/).map((paragraph, index) => {
+        const clean = paragraph.trim();
+        if (!clean) return null;
+        return <p key={`${index}-${clean.slice(0, 16)}`}>{clean}</p>;
+      })}
+    </div>
+  );
 }
 
 function getStatusTone(status?: string) {
@@ -89,7 +145,7 @@ function parseApiError(error: unknown) {
   return error.message;
 }
 
-function isAnswered(q: FormQuestion, value: string | string[] | undefined) {
+function isAnswered(_question: FormQuestion, value: string | string[] | undefined) {
   if (Array.isArray(value)) return value.length > 0;
   if (typeof value === 'string') return value.trim().length > 0;
   return false;
@@ -329,28 +385,194 @@ function SurveyStepper({
 
 /* ===================== Video ===================== */
 
+function getYoutubeEmbedUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+
+    if (parsed.hostname.includes('youtube.com')) {
+      const id = parsed.searchParams.get('v');
+      if (id) return `https://www.youtube.com/embed/${id}`;
+    }
+
+    if (parsed.hostname.includes('youtu.be')) {
+      const id = parsed.pathname.replace('/', '');
+      if (id) return `https://www.youtube.com/embed/${id}`;
+    }
+
+    return url;
+  } catch {
+    return url;
+  }
+}
+
+function VideoEmbed({ url, title }: { url: string; title: string }) {
+  const embedUrl = getYoutubeEmbedUrl(url);
+
+  return (
+    <div className="video-wrapper">
+      <iframe
+        src={embedUrl}
+        title={title}
+        allowFullScreen
+        loading="lazy"
+      />
+    </div>
+  );
+}
+
 function VideoBlock({ item }: { item: JourneyItem }) {
   return (
     <div className="content-block">
-      <span className="content-chip"><PlayCircle size={13} /> Vídeo</span>
+      <span className="content-chip">
+        <PlayCircle size={13} /> Vídeo
+      </span>
+
       <h2>{item.title}</h2>
+
       <p>{item.description ?? 'Conteúdo em vídeo desta etapa.'}</p>
+
       {item.video_url ? (
-        <a href={item.video_url} target="_blank" rel="noreferrer" className="secondary-link">
-          abrir o vídeo
-        </a>
-      ) : null}
+        <VideoEmbed url={item.video_url} title={item.title} />
+      ) : (
+        <p>Vídeo em preparação.</p>
+      )}
+    </div>
+  );
+}
+
+function SectionActions({
+  items,
+  selectedId,
+  onSelect,
+}: {
+  items: JourneyItem[];
+  selectedId: string;
+  onSelect: (itemId: string) => void;
+}) {
+  if (!items.length) {
+    return (
+      <div className="journey-section-actions journey-section-actions--empty">
+        <CheckCircle2 size={18} />
+        <span>Esta sessão é apenas informativa.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="journey-section-actions">
+      <div className="journey-section-actions__head">
+        <span>Ações desta sessão</span>
+        <strong>{countCompleted(items)} de {items.length} concluídas</strong>
+      </div>
+
+      <div className="journey-section-actions__list">
+        {items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={`journey-section-action ${item.id === selectedId ? 'is-active' : ''}`}
+            onClick={() => onSelect(item.id)}
+          >
+            <span className="journey-section-action__icon">
+              {isCompleted(item) ? <CheckCircle2 size={16} /> : getItemIcon(item)}
+            </span>
+            <span className="journey-section-action__copy">
+              <strong>{item.title}</strong>
+              <em>{getItemTypeLabel(item)} - {getStatusLabel(item.user_status)}</em>
+            </span>
+            <ArrowRight size={16} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type JourneyPageMode = 'employee' | 'manager';
+
+type JourneyPageConfig = {
+  sidebarLabel: string;
+  overviewPath: string;
+  loadJourney: (token: string) => Promise<Journey>;
+  loadFormDetail: (token: string, formId: string) => Promise<FormDetail>;
+  submitForm: (
+    token: string,
+    formId: string,
+    answers: Record<string, string | string[]>,
+  ) => Promise<FormResponseOut>;
+};
+
+const journeyPageConfigs: Record<JourneyPageMode, JourneyPageConfig> = {
+  employee: {
+    sidebarLabel: 'Jornada do colaborador',
+    overviewPath: '/employee',
+    loadJourney: getEmployeeJourney,
+    loadFormDetail: getEmployeeFormDetail,
+    submitForm: submitEmployeeForm,
+  },
+  manager: {
+    sidebarLabel: 'Jornada do gestor',
+    overviewPath: '/manager',
+    loadJourney: getManagerJourney,
+    loadFormDetail: getManagerFormDetail,
+    submitForm: submitManagerForm,
+  },
+};
+
+function JourneyLoadingShell({ config }: { config: JourneyPageConfig }) {
+  return (
+    <div className="journey-workspace">
+      <aside className="journey-nav">
+        <div className="journey-nav__top">
+          <div className="journey-nav__brand">
+            <div className="journey-nav__brand-mark">A</div>
+            <div>
+              <strong>Althea</strong>
+              <p>{config.sidebarLabel}</p>
+            </div>
+          </div>
+
+          <Link to={config.overviewPath} className="journey-nav__back">
+            <ArrowLeft size={16} />
+            <span>Voltar para a visão geral</span>
+          </Link>
+
+          <div className="journey-nav__progress journey-skeleton">
+            <div className="journey-skeleton__line" />
+            <div className="journey-skeleton__bar" />
+          </div>
+        </div>
+
+        <div className="journey-nav__menu">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="journey-skeleton__folder" />
+          ))}
+        </div>
+      </aside>
+
+      <main className="journey-main">
+        <div className="journey-stage">
+          <section className="content-block journey-skeleton">
+            <div className="journey-skeleton__chip" />
+            <div className="journey-skeleton__title" />
+            <div className="journey-skeleton__paragraph" />
+            <div className="journey-skeleton__paragraph journey-skeleton__paragraph--short" />
+          </section>
+        </div>
+      </main>
     </div>
   );
 }
 
 /* ===================== Page ===================== */
 
-export function EmployeeHandoutPage() {
+export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageMode }) {
+  const config = journeyPageConfigs[mode];
   const { token, user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [journey, setJourney] = useState<Journey | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('item'));
+  const [expandedSectionIds, setExpandedSectionIds] = useState<string[]>([]);
   const [formDetail, setFormDetail] = useState<FormDetail | null>(null);
   const [answers, setAnswers] = useState<AnswersState>({});
   const [loadingJourney, setLoadingJourney] = useState(true);
@@ -365,6 +587,11 @@ export function EmployeeHandoutPage() {
     [journey],
   );
 
+  const trackableItems = useMemo(
+    () => allItems.filter(isTrackableItem),
+    [allItems],
+  );
+
   const selected = useMemo(() => {
     if (!allItems.length) return null;
     return allItems.find((i) => i.id === selectedId) ?? allItems[0];
@@ -375,8 +602,15 @@ export function EmployeeHandoutPage() {
     return journey.sections.find((s) => s.id === selected.section_id) ?? null;
   }, [journey, selected]);
 
-  const completedTotal = useMemo(() => allItems.filter(isCompleted).length, [allItems]);
-  const progressPct = allItems.length ? Math.round((completedTotal / allItems.length) * 100) : 0;
+  const selectedSectionActions = useMemo(
+    () => (selectedSection ? getActionItems(selectedSection) : []),
+    [selectedSection],
+  );
+
+  const selectedIsIntro = selected ? isIntroItem(selected) : false;
+
+  const completedTotal = useMemo(() => trackableItems.filter(isCompleted).length, [trackableItems]);
+  const progressPct = trackableItems.length ? Math.round((completedTotal / trackableItems.length) * 100) : 0;
 
   const currentIndex = useMemo(() => {
     if (!selected) return -1;
@@ -392,7 +626,7 @@ export function EmployeeHandoutPage() {
     setLoadingJourney(true);
     setError(null);
     try {
-      const data = await getEmployeeJourney(token);
+      const data = await config.loadJourney(token);
       setJourney(data);
       const items = data.sections.flatMap((s) => s.items);
       const itemFromParam = nextSelectedId ? items.find((i) => i.id === nextSelectedId) : null;
@@ -429,7 +663,7 @@ export function EmployeeHandoutPage() {
       setSubmitError(null);
       setSubmitSuccess(null);
       try {
-        const data = await getEmployeeFormDetail(token, selected.form_id);
+        const data = await config.loadFormDetail(token, selected.form_id);
         setFormDetail(data);
         const initial = Object.fromEntries(
           data.questions.map((q) => [q.key, q.question_type === 'multi_select' ? [] : '']),
@@ -450,6 +684,21 @@ export function EmployeeHandoutPage() {
     setSearchParams({ item: itemId });
   }
 
+  function toggleSection(sectionId: string) {
+    setExpandedSectionIds((current) =>
+      current.includes(sectionId)
+        ? current.filter((id) => id !== sectionId)
+        : [...current, sectionId],
+    );
+  }
+
+  useEffect(() => {
+    if (!selectedSection?.id) return;
+    setExpandedSectionIds((current) =>
+      current.includes(selectedSection.id) ? current : [...current, selectedSection.id],
+    );
+  }, [selectedSection?.id]);
+
   function handleAnswerChange(key: string, value: string | string[]) {
     setAnswers((cur) => ({ ...cur, [key]: value }));
   }
@@ -460,7 +709,7 @@ export function EmployeeHandoutPage() {
     setSubmitError(null);
     setSubmitSuccess(null);
     try {
-      await submitEmployeeForm(token, selected.form_id, answers);
+      await config.submitForm(token, selected.form_id, answers);
       setSubmitSuccess('Respostas enviadas com sucesso.');
       await loadJourney(selected.id);
     } catch (err) {
@@ -473,18 +722,7 @@ export function EmployeeHandoutPage() {
   if (!user) return null;
 
   if (loadingJourney) {
-    return (
-      <div className="journey-workspace">
-        <main className="journey-main">
-          <div className="journey-stage">
-            <section className="content-block">
-              <h2>Carregando jornada...</h2>
-              <p>Estamos buscando as etapas disponíveis para você.</p>
-            </section>
-          </div>
-        </main>
-      </div>
-    );
+    return <JourneyLoadingShell config={config} />;
   }
 
   if (error) {
@@ -521,11 +759,11 @@ export function EmployeeHandoutPage() {
             <div className="journey-nav__brand-mark">A</div>
             <div>
               <strong>Althea</strong>
-              <p>Jornada do colaborador</p>
+              <p>{config.sidebarLabel}</p>
             </div>
           </div>
 
-          <Link to="/employee" className="journey-nav__back">
+          <Link to={config.overviewPath} className="journey-nav__back">
             <ArrowLeft size={16} />
             <span>Voltar para a visão geral</span>
           </Link>
@@ -539,24 +777,38 @@ export function EmployeeHandoutPage() {
               <div className="journey-nav__progress-fill" style={{ width: `${progressPct}%` }} />
             </div>
             <span className="journey-nav__progress-meta">
-              {completedTotal} de {allItems.length} etapas concluídas
+              {completedTotal} de {trackableItems.length} acoes concluidas
             </span>
           </div>
         </div>
 
         <div className="journey-nav__menu">
-          {journey.sections.map((section, index) => {
-            const sectionDone = section.items.filter(isCompleted).length;
+          {journey.sections.map((section) => {
+            const actionItems = getActionItems(section);
+            const sidebarItems = getSidebarItems(section);
+            const sectionDone = actionItems.filter(isCompleted).length;
+            const sectionActive = selectedSection?.id === section.id;
+            const sectionOpen = expandedSectionIds.includes(section.id);
             return (
               <div key={section.id} className="journey-nav__group">
-                <div className="journey-nav__group-head">
-                  <span>{String(index + 1).padStart(2, '0')}</span>
+                <button
+                  type="button"
+                  className={`journey-nav__group-head ${sectionActive ? 'is-active' : ''} ${sectionOpen ? 'is-open' : ''}`}
+                  onClick={() => toggleSection(section.id)}
+                  aria-expanded={sectionOpen}
+                >
+                  <span className="journey-nav__group-order">{section.order}</span>
+                  <span className="journey-nav__folder-icon" aria-hidden>
+                    {sectionOpen ? <FolderOpen size={14} /> : <Folder size={14} />}
+                  </span>
                   <strong>{section.title}</strong>
-                  <em>{sectionDone}/{section.items.length}</em>
-                </div>
+                  <em>{actionItems.length ? `${sectionDone}/${actionItems.length}` : 'info'}</em>
+                  <ChevronRight size={14} className="journey-nav__chevron" aria-hidden />
+                </button>
 
-                <div className="journey-nav__group-items">
-                  {section.items.map((item) => {
+                {sectionOpen ? (
+                  <div className="journey-nav__group-items">
+                    {sidebarItems.map((item) => {
                     const isActive = item.id === selected.id;
                     const done = isCompleted(item);
                     const locked = item.user_status === 'locked';
@@ -576,13 +828,14 @@ export function EmployeeHandoutPage() {
                             : getItemIcon(item)}
                         </div>
                         <div className="journey-nav__item-copy">
-                          <strong>{item.title}</strong>
+                          <strong>{getSidebarItemTitle(item)}</strong>
                           <span>{getItemTypeLabel(item)} · {getStatusLabel(item.user_status)}</span>
                         </div>
                       </button>
                     );
-                  })}
-                </div>
+                    })}
+                  </div>
+                ) : null}
               </div>
             );
           })}
@@ -591,7 +844,7 @@ export function EmployeeHandoutPage() {
 
       {/* ============ Main ============ */}
       <main className="journey-main">
-        <div className="journey-stage">
+        <div className="journey-stage" key={selected.id}>
           <header className="journey-head">
             <div className="journey-head__crumbs">
               <span>{journey.title}</span>
@@ -602,11 +855,13 @@ export function EmployeeHandoutPage() {
             <div className="journey-head__title-row">
               <div>
                 <span className="journey-head__eyebrow">
-                  {getItemTypeLabel(selected)} · Etapa {currentIndex + 1} de {allItems.length}
+                  {selectedIsIntro ? 'Sessão' : getItemTypeLabel(selected)} - Etapa {currentIndex + 1} de {allItems.length}
                 </span>
-                <h1>{selected.title}</h1>
-                {selected.description ? (
-                  <p className="journey-head__desc">{selected.description}</p>
+                <h1>{selectedIsIntro ? selectedSection?.title : selected.title}</h1>
+                {(selectedIsIntro ? selectedSection?.description : selected.description) ? (
+                  <p className="journey-head__desc">
+                    {selectedIsIntro ? selectedSection?.description : selected.description}
+                  </p>
                 ) : null}
               </div>
 
@@ -627,8 +882,20 @@ export function EmployeeHandoutPage() {
           {selected.item_type === 'text' ? (
             <div className="content-block">
               <span className="content-chip"><FileText size={13} /> Leitura</span>
-              <h2>{selected.title}</h2>
-              <p>{selected.content_text ?? selected.description ?? 'Conteúdo em preparação.'}</p>
+              <h2>{selectedIsIntro ? selectedSection?.title : selected.title}</h2>
+              <RichText text={selected.content_text ?? selected.description ?? 'Conteudo em preparacao.'} />
+
+              {selected.video_url ? (
+                <VideoEmbed url={selected.video_url} title={selected.title} />
+              ) : null}
+
+              {selectedIsIntro && selectedSection?.title !== 'Bem-vindo!' ? (
+                <SectionActions
+                  items={selectedSectionActions}
+                  selectedId={selected.id}
+                  onSelect={handleSelect}
+                />
+              ) : null}
             </div>
           ) : null}
 
@@ -712,7 +979,7 @@ export function EmployeeHandoutPage() {
                 <ArrowRight size={16} />
               </button>
             ) : (
-              <Link to="/employee" className="journey-pager__btn journey-pager__btn--next">
+              <Link to={config.overviewPath} className="journey-pager__btn journey-pager__btn--next">
                 <span>
                   <em>Finalizar</em>
                   <strong>Voltar à visão geral</strong>

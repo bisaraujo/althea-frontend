@@ -42,35 +42,35 @@ const TEMPLATE_CATALOG: Array<TemplateInfo & { keywords: string[] }> = [
   {
     keywords: ['colaboradores', 'participantes'],
     title: 'Modelo de quadro de colaboradores',
-    description: 'Planilha padrao para nome, email, cargo, area e dados de participacao.',
+    description: 'Planilha padrão para nome, e-mail, cargo, área e dados de participação.',
     href: '/templates/quadro-colaboradores.csv',
     formats: ['csv'],
   },
   {
     keywords: ['kpi', 'indicadores'],
     title: 'Modelo de levantamento de KPIs',
-    description: 'Base simples para indicadores, fonte, periodo e responsavel pelo dado.',
+    description: 'Base simples para indicadores, fonte, período e responsável pelo dado.',
     href: '/templates/kpis.csv',
     formats: ['csv'],
   },
   {
-    keywords: ['beneficios', 'custos'],
-    title: 'Modelo de beneficios e custos',
-    description: 'Estrutura para registrar beneficios, abrangencia, custo e observacoes.',
+    keywords: ['benefícios', 'custos'],
+    title: 'Modelo de benefícios e custos',
+    description: 'Estrutura para registrar benefícios, abrangência, custo e observações.',
     href: '/templates/beneficios-custos.csv',
     formats: ['csv'],
   },
   {
     keywords: ['escalas', 'horas extras'],
     title: 'Modelo de escalas e horas extras',
-    description: 'Planilha para turnos, jornada contratual, horas extras e periodo analisado.',
+    description: 'Planilha para turnos, jornada contratual, horas extras e período analisado.',
     href: '/templates/escalas-horas-extras.csv',
     formats: ['csv'],
   },
   {
-    keywords: ['job descriptions', 'descricoes de cargo', 'cargos'],
-    title: 'Modelo de descricoes de cargo',
-    description: 'Base para cargo, area, responsabilidades, requisitos e objetivos.',
+    keywords: ['job descriptions', 'descrições de cargo', 'cargos'],
+    title: 'Modelo de descrições de cargo',
+    description: 'Base para cargo, área, responsabilidades, requisitos e objetivos.',
     href: '/templates/descricoes-cargo.csv',
     formats: ['csv'],
   },
@@ -109,7 +109,7 @@ function getItemIcon(item: JourneyItem) {
 
 function getItemTypeLabel(item: JourneyItem) {
   if (item.item_type === 'document_request') return 'Documento';
-  if (item.item_type === 'text') return 'Orientacao';
+  if (item.item_type === 'text') return 'Orientação';
   return 'Etapa';
 }
 
@@ -125,12 +125,12 @@ function getStatusTone(status?: string) {
 function getStatusLabel(status?: string) {
   if (status === 'submitted') return 'Enviado';
   if (status === 'submitted_late') return 'Enviado atrasado';
-  if (status === 'completed') return 'Concluido';
+  if (status === 'completed') return 'Concluído';
   if (status === 'overdue') return 'Atrasado';
   if (status === 'pending') return 'Pendente';
-  if (status === 'available') return 'Disponivel';
+  if (status === 'available') return 'Disponível';
   if (status === 'locked') return 'Bloqueado';
-  return 'Nao iniciado';
+  return 'Não iniciado';
 }
 
 function normalizeSearchText(value: string) {
@@ -143,7 +143,7 @@ function getTemplateInfo(item: JourneyItem): TemplateInfo | null {
   );
 
   const template = TEMPLATE_CATALOG.find((entry) =>
-    entry.keywords.some((keyword) => haystack.includes(keyword)),
+    entry.keywords.some((keyword) => haystack.includes(normalizeSearchText(keyword))),
   );
 
   if (template) {
@@ -160,7 +160,7 @@ function getTemplateInfo(item: JourneyItem): TemplateInfo | null {
   }
 
   return {
-    title: 'Modelo padrao da entrega',
+    title: 'Modelo padrão da entrega',
     description: 'Use o formato combinado com a consultoria para manter os dados estruturados.',
     href: null,
     formats: spreadsheetFormats,
@@ -223,7 +223,7 @@ function acceptedFormatAttribute(formats: string[]) {
 function parseApiError(error: unknown) {
   if (error instanceof ApiError) return error.message;
   if (error instanceof Error) return error.message;
-  return 'Nao foi possivel concluir a acao.';
+  return 'Não foi possível concluir a ação.';
 }
 
 function RichText({ text }: { text?: string | null }) {
@@ -294,9 +294,9 @@ function JourneyLoadingShell() {
       <aside className="journey-nav">
         <div className="journey-nav__top">
           <div className="journey-nav__brand">
-            <div className="journey-nav__brand-mark">A</div>
+            <div className="journey-nav__brand-mark">t</div>
             <div>
-              <strong>Althea</strong>
+              <strong>turi</strong>
               <p>Jornada da empresa</p>
             </div>
           </div>
@@ -534,8 +534,8 @@ export function ManagerHandoutPage() {
         <main className="journey-main">
           <div className="journey-stage">
             <section className="content-block">
-              <h2>Nenhuma etapa disponivel</h2>
-              <p>A jornada documental deste projeto ainda nao possui itens ativos.</p>
+              <h2>Nenhuma etapa disponível</h2>
+              <p>A jornada documental deste projeto ainda não possui itens ativos.</p>
             </section>
           </div>
         </main>
@@ -552,16 +552,16 @@ export function ManagerHandoutPage() {
       <aside className="journey-nav">
         <div className="journey-nav__top">
           <div className="journey-nav__brand">
-            <div className="journey-nav__brand-mark">A</div>
+            <div className="journey-nav__brand-mark">t</div>
             <div>
-              <strong>Althea</strong>
+              <strong>turi</strong>
               <p>Jornada da empresa</p>
             </div>
           </div>
 
           <Link to="/manager" className="journey-nav__back">
             <ArrowLeft size={16} />
-            <span>Voltar para a visao geral</span>
+            <span>Voltar para a visão geral</span>
           </Link>
 
           <div className="journey-nav__progress">
@@ -595,7 +595,6 @@ export function ManagerHandoutPage() {
                   onClick={() => toggleSection(section.id)}
                   aria-expanded={sectionOpen}
                 >
-                  <span className="journey-nav__group-order">{section.order}</span>
                   <span className="journey-nav__folder-icon" aria-hidden>
                     {sectionOpen ? <FolderOpen size={14} /> : <Folder size={14} />}
                   </span>
@@ -608,7 +607,7 @@ export function ManagerHandoutPage() {
                   <ChevronRight size={14} className="journey-nav__chevron" aria-hidden />
                 </button>
 
-                {sectionOpen ? (
+                <div className={`journey-nav__group-body ${sectionOpen ? 'is-open' : ''}`}>
                   <div className="journey-nav__group-items">
                     {sidebarItems.map((item) => {
                     const isActive = item.id === selected.id;
@@ -638,7 +637,7 @@ export function ManagerHandoutPage() {
                     );
                     })}
                   </div>
-                ) : null}
+                </div>
               </div>
             );
           })}
@@ -673,7 +672,7 @@ export function ManagerHandoutPage() {
                 </StatusPill>
                 {selected.is_required ? (
                   <StatusPill tone="muted">
-                    <ShieldCheck size={12} /> Obrigatorio
+                    <ShieldCheck size={12} /> Obrigatório
                   </StatusPill>
                 ) : null}
               </div>
@@ -682,9 +681,9 @@ export function ManagerHandoutPage() {
 
           {selected.item_type === 'text' ? (
             <div className="content-block">
-              <span className="content-chip"><FileText size={13} /> Orientacao</span>
+              <span className="content-chip"><FileText size={13} /> Orientação</span>
               <h2>{selectedIsIntro ? selectedSection?.title : selected.title}</h2>
-              <RichText text={selected.content_text ?? selected.description ?? 'Conteudo em preparacao.'} />
+              <RichText text={selected.content_text ?? selected.description ?? 'Conteúdo em preparação.'} />
               {selectedIsIntro ? (
                 <SectionActions
                   items={selectedSectionActions}
@@ -724,10 +723,10 @@ export function ManagerHandoutPage() {
                   {template?.href ? <Download size={18} /> : <FileText size={18} />}
                 </span>
                 <div className="manager-template__copy">
-                  <strong>{template?.title ?? 'Sem template obrigatorio'}</strong>
+                  <strong>{template?.title ?? 'Sem template obrigatório'}</strong>
                   <p>
                     {template?.description ??
-                      'Esta entrega pode ser enviada no formato que a consultoria combinou com voce.'}
+                      'Esta entrega pode ser enviada no formato que a consultoria combinou com você.'}
                   </p>
                   {template?.formats.length ? (
                     <div className="journey-formats">
@@ -784,7 +783,7 @@ export function ManagerHandoutPage() {
                   </label>
 
                   <label>
-                    <span>Observacoes</span>
+                    <span>Observações</span>
                     <textarea
                       rows={4}
                       value={draft.notes}
@@ -801,14 +800,14 @@ export function ManagerHandoutPage() {
                   {submittingItem === selected.id
                     ? 'Enviando...'
                     : selected.submitted_at
-                      ? 'Enviar nova versao'
+                      ? 'Enviar nova versão'
                       : 'Registrar entrega'}
                 </button>
               </form>
             </div>
           ) : null}
 
-          <nav className="journey-pager" aria-label="Navegacao entre etapas">
+          <nav className="journey-pager" aria-label="Navegação entre etapas">
             {prevItem ? (
               <button type="button" className="journey-pager__btn" onClick={() => handleSelect(prevItem.id)}>
                 <ArrowLeft size={16} />
@@ -826,7 +825,7 @@ export function ManagerHandoutPage() {
                 onClick={() => handleSelect(nextItem.id)}
               >
                 <span>
-                  <em>Proximo</em>
+                  <em>Próximo</em>
                   <strong>{nextItem.document_title ?? nextItem.title}</strong>
                 </span>
                 <ArrowRight size={16} />
@@ -835,7 +834,7 @@ export function ManagerHandoutPage() {
               <Link to="/manager" className="journey-pager__btn journey-pager__btn--next">
                 <span>
                   <em>Finalizar</em>
-                  <strong>Voltar para a visao geral</strong>
+                  <strong>Voltar para a visão geral</strong>
                 </span>
                 <ArrowRight size={16} />
               </Link>

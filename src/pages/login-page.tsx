@@ -1,9 +1,11 @@
 import { FormEvent, useState } from 'react';
+import { ArrowRight, BarChart3, Flame, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import { login } from '../api/services';
 import { useAuth } from '../auth/auth-context';
+import { BrandLockup } from '../components/brand';
 
 function roleDestination(role: string) {
   switch (role) {
@@ -44,19 +46,31 @@ export function LoginPage() {
 
   return (
     <div className="login-page">
-      <div className="login-card">
-        <div className="login-card__brand">
-          <span className="login-card__brand-mark">A</span>
-          <div>
-            <strong>Althea</strong>
-            <p>Plataforma de gestão de jornada</p>
-          </div>
+      <section className="login-story" aria-label="turi">
+        <BrandLockup tone="light" subtitle="Hub turi para jornadas psicossociais" />
+        <div className="login-story__copy">
+          <span className="login-card__tag">plataforma viva</span>
+          <h1>
+            Cuidado que vira dado.
+            <span> Dado que vira decisão.</span>
+          </h1>
+          <p>
+            Acompanhe jornadas, riscos, entregas e evidências em um ambiente inspirado na
+            nova identidade da turi.
+          </p>
         </div>
+        <div className="login-proof-grid">
+          <span><Flame size={16} /> Pulso em tempo real</span>
+          <span><ShieldCheck size={16} /> Compliance rastreável</span>
+          <span><BarChart3 size={16} /> Jornada mensurável</span>
+        </div>
+      </section>
 
+      <div className="login-card">
         <div className="login-card__header">
           <span className="login-card__tag">Entrar</span>
           <h2>Acesse sua área</h2>
-          <p>Entre com seu e-mail e sua senha para continuar.</p>
+          <p>Use seu e-mail corporativo para continuar a jornada.</p>
         </div>
 
         <form className="login-card__form" onSubmit={handleSubmit}>
@@ -85,7 +99,8 @@ export function LoginPage() {
           {error ? <div className="form-error">{error}</div> : null}
 
           <button type="submit" className="primary-button" disabled={isSubmitting}>
-            {isSubmitting ? 'Entrando...' : 'Entrar na plataforma'}
+            <span>{isSubmitting ? 'Entrando...' : 'Entrar na plataforma'}</span>
+            <ArrowRight size={17} />
           </button>
         </form>
       </div>

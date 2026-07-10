@@ -21,7 +21,7 @@ const adminNavigation = [
 ];
 
 const managerNavigation = [
-  { to: '/manager', label: 'Visao geral', icon: House },
+  { to: '/manager', label: 'Visão geral', icon: House },
   { to: '/manager/journey', label: 'Minha jornada', icon: RouteIcon },
   { to: '/manager/company-journey', label: 'Jornada da empresa', icon: FileUp },
   { to: '/manager/schedule', label: 'Cronograma', icon: CalendarClock },
@@ -111,7 +111,7 @@ export function ProjectSchedulePage({ mode }: { mode: ScheduleMode }) {
         setCompanies(companyData);
         setSelectedProjectId((current) => current || sortedProjects[0]?.id || '');
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Nao foi possivel carregar os projetos.');
+        setError(err instanceof ApiError ? err.message : 'Não foi possível carregar os projetos.');
       } finally {
         setIsLoading(false);
       }
@@ -136,7 +136,7 @@ export function ProjectSchedulePage({ mode }: { mode: ScheduleMode }) {
         setSchedule(await getProjectSchedule(token, selectedProjectId));
       } catch (err) {
         setSchedule(null);
-        setError(err instanceof ApiError ? err.message : 'Nao foi possivel carregar o cronograma.');
+        setError(err instanceof ApiError ? err.message : 'Não foi possível carregar o cronograma.');
       } finally {
         setIsScheduleLoading(false);
       }
@@ -180,14 +180,14 @@ export function ProjectSchedulePage({ mode }: { mode: ScheduleMode }) {
           {selectedProject ? (
             <div className="schedule-toolbar__meta">
               <strong>{projectLabel(selectedProject, companies)}</strong>
-              <span>{selectedProject.description || 'Sem descricao cadastrada.'}</span>
+              <span>{selectedProject.description || 'Sem descrição cadastrada.'}</span>
             </div>
           ) : null}
         </div>
       </SectionPanel>
 
       <SectionPanel
-        title="Calendario do projeto"
+        title="Calendário do projeto"
         eyebrow="Cronograma"
         action={<StatusPill>{calendarEvents.length} entregas</StatusPill>}
       >
@@ -201,7 +201,7 @@ export function ProjectSchedulePage({ mode }: { mode: ScheduleMode }) {
           <ProjectCalendar events={calendarEvents} projectName={selectedProject ? projectLabel(selectedProject, companies) : undefined} />
         ) : (
           <EmptyState
-            title="Nenhum projeto disponivel"
+            title="Nenhum projeto disponível"
             description="Quando houver um projeto vinculado, o cronograma aparece aqui."
           />
         )}

@@ -12,7 +12,7 @@ import { StatusPill } from '../components/status-pill';
 import { useAuth } from '../auth/auth-context';
 
 const companyNavigation = [
-  { to: '/company', label: 'Visao geral', icon: House },
+  { to: '/company', label: 'Visão geral', icon: House },
 ];
 
 export function CompanyDashboard() {
@@ -59,7 +59,7 @@ export function CompanyDashboard() {
 
   return (
     <AppShell
-      eyebrow="Plataforma Althea"
+      eyebrow="Plataforma turi"
       title="Área da empresa"
       description="Uma visão consolidada da operação da própria empresa, com projetos, conteúdos e respostas."
       navigation={companyNavigation}

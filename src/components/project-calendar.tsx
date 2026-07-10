@@ -142,7 +142,7 @@ function buildMonthDays(monthDate: Date): CalendarDay[] {
 
 function eventLabel(event: ProjectCalendarEvent) {
   if (event.itemType === 'document_request') return 'Documento';
-  if (event.itemType === 'survey') return 'Formulario';
+  if (event.itemType === 'survey') return 'Formulário';
   return event.group === 'manager' ? 'Empresa' : 'Colaborador';
 }
 
@@ -155,8 +155,8 @@ function eventStatusClass(status?: string | null) {
 }
 
 function statusLabel(status?: string | null) {
-  if (status === 'submitted') return 'Concluido';
-  if (status === 'submitted_late') return 'Concluido com atraso';
+  if (status === 'submitted') return 'Concluído';
+  if (status === 'submitted_late') return 'Concluído com atraso';
   if (status === 'overdue') return 'Atrasado';
   if (status === 'pending') return 'Pendente';
   return 'Planejado';
@@ -172,7 +172,7 @@ function formatRange(event: ProjectCalendarEvent) {
   const start = formatDate(event.startsAt);
   const end = formatDate(event.endsAt);
   if (start === end) return `Prazo ${end}`;
-  return `${start} ate ${end}`;
+  return `${start} até ${end}`;
 }
 
 function eventProgress(event: ProjectCalendarEvent) {
@@ -240,8 +240,8 @@ export function ProjectCalendar({
     return (
       <div className="project-calendar project-calendar--empty">
         <CalendarClock size={20} />
-        <strong>Cronograma em preparacao</strong>
-        <span>As datas aparecem aqui quando as entregas tiverem inicio e prazo definidos.</span>
+        <strong>Cronograma em preparação</strong>
+        <span>As datas aparecem aqui quando as entregas tiverem início e prazo definidos.</span>
       </div>
     );
   }
@@ -261,13 +261,13 @@ export function ProjectCalendar({
     <div className="project-calendar">
       <div className="project-calendar__top">
         <div>
-          <span className="project-calendar__eyebrow">Calendario</span>
+          <span className="project-calendar__eyebrow">Calendário</span>
           <strong>{formatMonth(visibleMonth)}</strong>
           {projectName ? <small>{projectName}</small> : null}
         </div>
 
         <div className="project-calendar__controls">
-          <button type="button" onClick={() => setVisibleMonth((current) => addMonths(current, -1))} aria-label="Mes anterior">
+          <button type="button" onClick={() => setVisibleMonth((current) => addMonths(current, -1))} aria-label="Mês anterior">
             <ChevronLeft size={16} />
           </button>
           <button
@@ -280,7 +280,7 @@ export function ProjectCalendar({
           >
             Hoje
           </button>
-          <button type="button" onClick={() => setVisibleMonth((current) => addMonths(current, 1))} aria-label="Proximo mes">
+          <button type="button" onClick={() => setVisibleMonth((current) => addMonths(current, 1))} aria-label="Próximo mês">
             <ChevronRight size={16} />
           </button>
         </div>
@@ -289,7 +289,7 @@ export function ProjectCalendar({
       <div className="project-calendar__legend" aria-label="Legenda do cronograma">
         <span className="project-calendar__legend-item project-calendar__legend-item--pending">Pendente</span>
         <span className="project-calendar__legend-item project-calendar__legend-item--overdue">Atrasado</span>
-        <span className="project-calendar__legend-item project-calendar__legend-item--submitted">Concluido</span>
+        <span className="project-calendar__legend-item project-calendar__legend-item--submitted">Concluído</span>
       </div>
 
       <div className="project-calendar__body">
@@ -346,7 +346,7 @@ export function ProjectCalendar({
                 ? `${selectedEvents.length} entrega${selectedEvents.length === 1 ? '' : 's'}`
                 : 'Nenhuma entrega'}
             </strong>
-            <em>{monthEvents.length} entrega{monthEvents.length === 1 ? '' : 's'} neste mes</em>
+            <em>{monthEvents.length} entrega{monthEvents.length === 1 ? '' : 's'} neste mês</em>
           </div>
 
           {selectedEvents.length ? (
@@ -446,7 +446,7 @@ export function ProjectCalendar({
 
             {documentPreview.submissionNotes ? (
               <div className="document-preview__notes">
-                <strong>Observacoes</strong>
+                <strong>Observações</strong>
                 <p>{documentPreview.submissionNotes}</p>
               </div>
             ) : null}

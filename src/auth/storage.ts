@@ -1,7 +1,7 @@
 import type { AuthenticatedUser } from '../api/types';
 
-const TOKEN_KEY = 'althea.token';
-const USER_KEY = 'althea.user';
+const TOKEN_KEY = 'turi.token';
+const USER_KEY = 'turi.user';
 
 export function saveSession(token: string, user: AuthenticatedUser) {
   localStorage.setItem(TOKEN_KEY, token);

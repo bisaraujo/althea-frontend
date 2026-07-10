@@ -25,7 +25,7 @@ import { StatCard } from '../components/stat-card';
 import { StatusPill } from '../components/status-pill';
 
 const managerNavigation = [
-  { to: '/manager', label: 'Visao geral', icon: House },
+  { to: '/manager', label: 'Visão geral', icon: House },
   { to: '/manager/journey', label: 'Minha jornada', icon: RouteIcon },
   { to: '/manager/company-journey', label: 'Jornada da empresa', icon: FileUp },
   { to: '/manager/schedule', label: 'Cronograma', icon: CalendarClock },
@@ -51,7 +51,7 @@ function itemTypeIcon(item: JourneyItem) {
 
 function itemTypeLabel(item: JourneyItem) {
   if (item.item_type === 'document_request') return 'Documento';
-  if (item.item_type === 'text') return 'Orientacao';
+  if (item.item_type === 'text') return 'Orientação';
   return 'Etapa';
 }
 
@@ -60,8 +60,8 @@ function statusLabel(status?: string) {
   if (status === 'submitted_late') return 'Enviado atrasado';
   if (status === 'overdue') return 'Atrasado';
   if (status === 'pending') return 'Pendente';
-  if (status === 'available') return 'Disponivel';
-  return 'Nao iniciado';
+  if (status === 'available') return 'Disponível';
+  return 'Não iniciado';
 }
 
 function statusTone(status?: string) {
@@ -106,7 +106,7 @@ export function ManagerDashboard() {
         setEmployees(employeeData.employees);
       } catch (err) {
         setError(
-          err instanceof ApiError ? err.message : 'Nao foi possivel carregar a area do gestor.',
+          err instanceof ApiError ? err.message : 'Não foi possível carregar a área do gestor.',
         );
       } finally {
         setIsLoading(false);
@@ -161,8 +161,8 @@ export function ManagerDashboard() {
   return (
     <AppShell
       eyebrow="Gestor"
-      title={`Ola, ${firstName}`}
-      description="Acompanhe o projeto, veja as proximas entregas e avance pela jornada documental."
+      title={`Olá, ${firstName}`}
+      description="Acompanhe o projeto, veja as próximas entregas e avance pela jornada documental."
       navigation={managerNavigation}
     >
       {error ? <div className="form-error">{error}</div> : null}
@@ -171,8 +171,8 @@ export function ManagerDashboard() {
         <section className="emp-hero">
           <div className="emp-hero__copy">
             <span className="emp-hero__eyebrow">Sua jornada</span>
-            <h2>Preparando sua visao geral...</h2>
-            <p>Estamos buscando as etapas, prazos e entregas disponiveis para o seu projeto.</p>
+            <h2>Preparando sua visão geral...</h2>
+            <p>Estamos buscando as etapas, prazos e entregas disponíveis para o seu projeto.</p>
             <div className="emp-progress" role="progressbar" aria-valuenow={0} aria-valuemin={0} aria-valuemax={100}>
               <div className="emp-progress__track">
                 <div className="emp-progress__fill" style={{ width: '12%' }} />
@@ -188,7 +188,7 @@ export function ManagerDashboard() {
               <span className="emp-hero__eyebrow">Entregas do projeto</span>
               <h2>
                 {deliveries.length === 0
-                  ? 'Sua jornada ainda esta sendo preparada'
+                  ? 'Sua jornada ainda está sendo preparada'
                   : deliveredCount === deliveries.length
                     ? 'Todas as entregas foram registradas'
                     : `${deliveredCount} de ${deliveries.length} entregas enviadas`}
@@ -220,7 +220,7 @@ export function ManagerDashboard() {
                 aria-label={`Continuar: ${nextItem.title}`}
               >
                 <span className="emp-hero__next-eyebrow">
-                  {deliveredCount === 0 ? 'Comecar pela' : 'Proxima acao'}
+                  {deliveredCount === 0 ? 'Começar pela' : 'Próxima ação'}
                 </span>
                 <div className="emp-hero__next-row">
                   <span className="emp-hero__next-icon">{itemTypeIcon(nextItem)}</span>
@@ -228,7 +228,7 @@ export function ManagerDashboard() {
                     <strong>{nextItem.document_title ?? nextItem.title}</strong>
                     <span>
                       {itemTypeLabel(nextItem)}
-                      {nextItem.is_required ? ' - Obrigatorio' : ''}
+                      {nextItem.is_required ? ' - Obrigatório' : ''}
                     </span>
                   </div>
                   <MoveRight size={18} className="emp-hero__next-arrow" />
@@ -242,7 +242,7 @@ export function ManagerDashboard() {
                     <CheckCircle2 size={18} />
                   </span>
                   <div className="emp-hero__next-copy">
-                    <strong>Jornada em preparacao</strong>
+                    <strong>Jornada em preparação</strong>
                     <span>Ver detalhes</span>
                   </div>
                   <MoveRight size={18} className="emp-hero__next-arrow" />
@@ -274,7 +274,7 @@ export function ManagerDashboard() {
               <StatCard
                 label="Atrasadas"
                 value={overdueCount}
-                meta="Precisam de atencao"
+                meta="Precisam de atenção"
                 icon={<Upload size={18} />}
               />
             </Link>
@@ -288,7 +288,7 @@ export function ManagerDashboard() {
           </div>
 
           <SectionPanel
-            title="Proximas etapas"
+            title="Próximas etapas"
             eyebrow="Continuar a jornada"
             action={
               <Link to="/manager/company-journey" className="secondary-link">
@@ -321,8 +321,8 @@ export function ManagerDashboard() {
               </ul>
             ) : (
               <EmptyState
-                title="Jornada em preparacao"
-                description="Quando as entregas do projeto forem liberadas, elas aparecerao aqui."
+                title="Jornada em preparação"
+                description="Quando as entregas do projeto forem liberadas, elas aparecerão aqui."
               />
             )}
           </SectionPanel>
@@ -330,7 +330,7 @@ export function ManagerDashboard() {
           <div className="content-grid">
             <SectionPanel
               title="Alinhamento"
-              eyebrow="Inicio do projeto"
+              eyebrow="Início do projeto"
               action={
                 <Link to={itemLink(firstGuidance)} className="secondary-link">
                   abrir na jornada
@@ -344,7 +344,7 @@ export function ManagerDashboard() {
                   </span>
                   <div className="list-item__copy">
                     <strong>{firstGuidance.title}</strong>
-                    <p>{firstGuidance.description || firstGuidance.content_text || 'Orientacao inicial do projeto.'}</p>
+                    <p>{firstGuidance.description || firstGuidance.content_text || 'Orientação inicial do projeto.'}</p>
                   </div>
                   <StatusPill tone={statusTone(firstGuidance.user_status)}>
                     {statusLabel(firstGuidance.user_status)}
@@ -352,8 +352,8 @@ export function ManagerDashboard() {
                 </article>
               ) : (
                 <EmptyState
-                  title="Sem orientacoes ainda"
-                  description="As orientacoes iniciais do gestor aparecerao aqui."
+                  title="Sem orientações ainda"
+                  description="As orientações iniciais do gestor aparecerão aqui."
                 />
               )}
             </SectionPanel>
@@ -376,8 +376,8 @@ export function ManagerDashboard() {
                 </div>
               ) : (
                 <EmptyState
-                  title="Sem funcionarios vinculados"
-                  description="Quando o projeto tiver colaboradores associados, eles aparecerao aqui."
+                  title="Sem funcionários vinculados"
+                  description="Quando o projeto tiver colaboradores associados, eles aparecerão aqui."
                 />
               )}
             </SectionPanel>

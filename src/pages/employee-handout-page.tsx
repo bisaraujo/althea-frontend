@@ -525,9 +525,9 @@ function JourneyLoadingShell({ config }: { config: JourneyPageConfig }) {
       <aside className="journey-nav">
         <div className="journey-nav__top">
           <div className="journey-nav__brand">
-            <div className="journey-nav__brand-mark">A</div>
+            <div className="journey-nav__brand-mark">t</div>
             <div>
-              <strong>Althea</strong>
+              <strong>turi</strong>
               <p>{config.sidebarLabel}</p>
             </div>
           </div>
@@ -756,9 +756,9 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
       <aside className="journey-nav">
         <div className="journey-nav__top">
           <div className="journey-nav__brand">
-            <div className="journey-nav__brand-mark">A</div>
+            <div className="journey-nav__brand-mark">t</div>
             <div>
-              <strong>Althea</strong>
+              <strong>turi</strong>
               <p>{config.sidebarLabel}</p>
             </div>
           </div>
@@ -777,7 +777,7 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
               <div className="journey-nav__progress-fill" style={{ width: `${progressPct}%` }} />
             </div>
             <span className="journey-nav__progress-meta">
-              {completedTotal} de {trackableItems.length} acoes concluidas
+              {completedTotal} de {trackableItems.length} ações concluídas
             </span>
           </div>
         </div>
@@ -797,7 +797,6 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
                   onClick={() => toggleSection(section.id)}
                   aria-expanded={sectionOpen}
                 >
-                  <span className="journey-nav__group-order">{section.order}</span>
                   <span className="journey-nav__folder-icon" aria-hidden>
                     {sectionOpen ? <FolderOpen size={14} /> : <Folder size={14} />}
                   </span>
@@ -806,7 +805,7 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
                   <ChevronRight size={14} className="journey-nav__chevron" aria-hidden />
                 </button>
 
-                {sectionOpen ? (
+                <div className={`journey-nav__group-body ${sectionOpen ? 'is-open' : ''}`}>
                   <div className="journey-nav__group-items">
                     {sidebarItems.map((item) => {
                     const isActive = item.id === selected.id;
@@ -835,7 +834,7 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
                     );
                     })}
                   </div>
-                ) : null}
+                </div>
               </div>
             );
           })}
@@ -883,7 +882,7 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
             <div className="content-block">
               <span className="content-chip"><FileText size={13} /> Leitura</span>
               <h2>{selectedIsIntro ? selectedSection?.title : selected.title}</h2>
-              <RichText text={selected.content_text ?? selected.description ?? 'Conteudo em preparacao.'} />
+              <RichText text={selected.content_text ?? selected.description ?? 'Conteúdo em preparação.'} />
 
               {selected.video_url ? (
                 <VideoEmbed url={selected.video_url} title={selected.title} />

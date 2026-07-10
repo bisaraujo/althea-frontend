@@ -145,7 +145,7 @@ export function EmployeeDashboard() {
 
   return (
     <AppShell
-      eyebrow="Plataforma Althea"
+      eyebrow="Plataforma turi"
       title={`Olá, ${firstName}`}
       description="Acompanhe sua jornada, retome de onde parou e responda às pesquisas no seu ritmo."
       navigation={employeeNavigation}

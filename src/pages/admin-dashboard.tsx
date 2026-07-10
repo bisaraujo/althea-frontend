@@ -57,7 +57,7 @@ const adminNavigation = [
 const screenMeta = {
   home: {
     title: 'Dashboard',
-    description: 'Visao geral dos clientes, projetos e acessos cadastrados.',
+    description: 'Visão geral dos clientes, projetos e acessos cadastrados.',
   },
   companies: {
     title: 'Cadastro de cliente',
@@ -68,12 +68,12 @@ const screenMeta = {
     description: 'Procure empresas e projetos cadastrados em uma galeria simples.',
   },
   'project-detail': {
-    title: 'Informacoes do cliente',
+    title: 'Informações do cliente',
     description: 'Veja o resumo da empresa, do projeto e da equipe vinculada.',
   },
   'project-users': {
-    title: 'Usuarios do cliente',
-    description: 'Adicione gestores ou funcionarios diretamente no projeto selecionado.',
+    title: 'Usuários do cliente',
+    description: 'Adicione gestores ou funcionários diretamente no projeto selecionado.',
   },
 } satisfies Record<AdminSection, { title: string; description: string }>;
 
@@ -102,7 +102,7 @@ function createInitialUserDraft(role: InitialUserDraft['role']): InitialUserDraf
 function roleLabel(role: UserRecord['role']) {
   if (role === 'company') return 'Empresa';
   if (role === 'manager') return 'Gestor';
-  if (role === 'employee') return 'Funcionario';
+  if (role === 'employee') return 'Funcionário';
   return 'Admin';
 }
 
@@ -185,7 +185,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       setProjects(sortByName(projectData.projects));
       setUsers(sortByName(userData));
     } catch (err) {
-      setError(formatApiError(err, 'Nao foi possivel carregar os dados administrativos.'));
+      setError(formatApiError(err, 'Não foi possível carregar os dados administrativos.'));
     } finally {
       setIsLoading(false);
     }
@@ -208,7 +208,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       try {
         setManagerDeliveries(await getProjectManagerDeliveries(token, projectId));
       } catch (err) {
-        setError(formatApiError(err, 'Nao foi possivel carregar as entregas do gestor.'));
+        setError(formatApiError(err, 'Não foi possível carregar as entregas do gestor.'));
       }
     }
 
@@ -337,7 +337,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
       if (initialUsers.length) {
         if (!createdProject) {
-          throw new Error('Projeto automatico nao localizado.');
+          throw new Error('Projeto automático não localizado.');
         }
 
         await Promise.all(
@@ -356,12 +356,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       setInitialEmployees([]);
       setSuccess(
         initialUsers.length
-          ? `Cliente, projeto e ${initialUsers.length} usuario${initialUsers.length > 1 ? 's' : ''} inicial${initialUsers.length > 1 ? 'is' : ''} criado${initialUsers.length > 1 ? 's' : ''}.`
+          ? `Cliente, projeto e ${initialUsers.length} usuário${initialUsers.length > 1 ? 's' : ''} inicial${initialUsers.length > 1 ? 'is' : ''} criado${initialUsers.length > 1 ? 's' : ''}.`
           : 'Cliente e projeto criados.',
       );
       await loadAdminData();
     } catch (err) {
-      setError(formatApiError(err, 'Nao foi possivel concluir o cadastro do cliente.'));
+      setError(formatApiError(err, 'Não foi possível concluir o cadastro do cliente.'));
     } finally {
       setSaving(null);
     }
@@ -386,7 +386,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       await loadAdminData();
       setManagerDeliveries(await getProjectManagerDeliveries(token, selectedProject.id));
     } catch (err) {
-      setError(formatApiError(err, 'Nao foi possivel criar o usuario.'));
+      setError(formatApiError(err, 'Não foi possível criar o usuário.'));
     } finally {
       setSaving(null);
     }
@@ -424,13 +424,13 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
             <StatCard
               label="Gestores"
               value={managers.length}
-              meta="Usuarios manager"
+              meta="Usuários manager"
               icon={<ShieldCheck size={18} />}
             />
             <StatCard
-              label="Funcionarios"
+              label="Funcionários"
               value={employees.length}
-              meta="Usuarios employee"
+              meta="Usuários employee"
               icon={<Users size={18} />}
             />
           </div>
@@ -458,8 +458,8 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                       <strong>{company.name}</strong>
                       <p>{company.email}</p>
                       <span className="entity-meta">
-                        {project ? project.name : 'Projeto automatico pendente'} | {rowManagers.length} gestores |{' '}
-                        {rowEmployees.length} funcionarios
+                        {project ? project.name : 'Projeto automático pendente'} | {rowManagers.length} gestores |{' '}
+                        {rowEmployees.length} funcionários
                       </span>
                     </div>
                     <StatusPill tone={project ? 'success' : 'warning'}>{project ? 'Projeto criado' : 'Pendente'}</StatusPill>
@@ -486,7 +486,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                   <input
                     value={companyForm.name}
                     onChange={(event) => setCompanyForm((current) => ({ ...current, name: event.target.value }))}
-                    placeholder="Althea Cliente"
+                    placeholder="Empresa cliente"
                     required
                   />
                 </label>
@@ -504,7 +504,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
               </div>
 
               <label>
-                <span>Descricao</span>
+                <span>Descrição</span>
                 <textarea
                   rows={4}
                   value={companyForm.description ?? ''}
@@ -521,7 +521,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                   type="password"
                   value={companyForm.senha}
                   onChange={(event) => setCompanyForm((current) => ({ ...current, senha: event.target.value }))}
-                  placeholder="Defina uma senha provisoria"
+                  placeholder="Defina uma senha provisória"
                   required
                 />
               </label>
@@ -584,7 +584,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                               onChange={(event) =>
                                 updateInitialUser('manager', draft.localId, 'senha', event.target.value)
                               }
-                              placeholder="Senha provisoria"
+                              placeholder="Senha provisória"
                               required
                             />
                           </label>
@@ -607,7 +607,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                       <Mail size={16} />
                     </span>
                     <div>
-                      <strong>Funcionarios iniciais</strong>
+                      <strong>Funcionários iniciais</strong>
                       <p>{initialEmployees.length} cadastrados neste registro</p>
                     </div>
                   </div>
@@ -617,12 +617,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                       {initialEmployees.map((draft, index) => (
                         <div key={draft.localId} className="admin-user-row">
                           <div className="admin-user-row__head">
-                            <strong>Funcionario {index + 1}</strong>
+                            <strong>Funcionário {index + 1}</strong>
                             <button
                               type="button"
                               className="icon-button"
                               onClick={() => removeInitialUser('employee', draft.localId)}
-                              aria-label="Remover funcionario"
+                              aria-label="Remover funcionário"
                             >
                               <Trash2 size={15} />
                             </button>
@@ -658,7 +658,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                               onChange={(event) =>
                                 updateInitialUser('employee', draft.localId, 'senha', event.target.value)
                               }
-                              placeholder="Senha provisoria"
+                              placeholder="Senha provisória"
                               required
                             />
                           </label>
@@ -666,12 +666,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                       ))}
                     </div>
                   ) : (
-                    <div className="admin-user-empty">Nenhum funcionario inicial.</div>
+                    <div className="admin-user-empty">Nenhum funcionário inicial.</div>
                   )}
 
                   <button type="button" className="secondary-button admin-add-button" onClick={() => addInitialUser('employee')}>
                     <Plus size={16} />
-                    <span>Adicionar funcionario</span>
+                    <span>Adicionar funcionário</span>
                   </button>
                 </div>
               </div>
@@ -693,7 +693,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
               <input
                 value={clientSearch}
                 onChange={(event) => setClientSearch(event.target.value)}
-                placeholder="Pesquisar por empresa, email, projeto ou descricao"
+                placeholder="Pesquisar por empresa, e-mail, projeto ou descrição"
               />
             </label>
           </div>
@@ -709,13 +709,13 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     <StatusPill tone="success">Ativo</StatusPill>
                   </div>
                   <div className="admin-client-card__copy">
-                    <strong>{company?.name ?? 'Empresa nao localizada'}</strong>
+                    <strong>{company?.name ?? 'Empresa não localizada'}</strong>
                     <p>{project.name}</p>
-                    <span>{project.description || company?.email || 'Sem descricao cadastrada.'}</span>
+                    <span>{project.description || company?.email || 'Sem descrição cadastrada.'}</span>
                   </div>
                   <div className="admin-client-card__footer">
                     <span>{projectManagers.length} gestores</span>
-                    <span>{projectEmployees.length} funcionarios</span>
+                    <span>{projectEmployees.length} funcionários</span>
                     <ArrowRight size={16} />
                   </div>
                 </Link>
@@ -744,7 +744,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
               action={
                 <Link to={`/admin/projects/${selectedProject.id}/users/new`} className="primary-button admin-action-link">
                   <UserPlus size={16} />
-                  <span>Adicionar usuarios</span>
+                  <span>Adicionar usuários</span>
                 </Link>
               }
             >
@@ -752,12 +752,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                 <div>
                   <span className="admin-detail__label">Projeto principal</span>
                   <strong>{selectedProject.name}</strong>
-                  <p>{selectedProject.description || 'Sem descricao cadastrada.'}</p>
+                  <p>{selectedProject.description || 'Sem descrição cadastrada.'}</p>
                 </div>
                 <div className="admin-detail__meta">
                   <span>{selectedCompany.email}</span>
                   <span>{selectedManagers.length} gestores</span>
-                  <span>{selectedEmployees.length} funcionarios</span>
+                  <span>{selectedEmployees.length} funcionários</span>
                 </div>
               </div>
             </SectionPanel>
@@ -785,7 +785,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                             <div className="admin-delivery-item__main">
                               <div>
                                 <strong>{item.document_title ?? item.title}</strong>
-                                <p>{item.description || 'Sem descricao cadastrada.'}</p>
+                                <p>{item.description || 'Sem descrição cadastrada.'}</p>
                               </div>
                               <div className="admin-delivery-item__badges">
                                 <StatusPill tone={deliveryStatusTone(item.delivery_status)}>
@@ -849,7 +849,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                 )}
               </SectionPanel>
 
-              <SectionPanel title="Funcionarios" eyebrow="Employee" action={<StatusPill>{selectedEmployees.length}</StatusPill>}>
+              <SectionPanel title="Funcionários" eyebrow="Employee" action={<StatusPill>{selectedEmployees.length}</StatusPill>}>
                 {selectedEmployees.length ? (
                   <div className="admin-list">
                     {selectedEmployees.map((item) => (
@@ -861,19 +861,19 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                           <strong>{item.name}</strong>
                           <p>{item.email}</p>
                         </div>
-                        <StatusPill>Funcionario</StatusPill>
+                        <StatusPill>Funcionário</StatusPill>
                       </article>
                     ))}
                   </div>
                 ) : (
-                  <EmptyState title="Sem funcionarios" description="Nenhum funcionario vinculado a este projeto." />
+                  <EmptyState title="Sem funcionários" description="Nenhum funcionário vinculado a este projeto." />
                 )}
               </SectionPanel>
             </div>
           </div>
         ) : (
           <EmptyState
-            title="Cliente nao encontrado"
+            title="Cliente não encontrado"
             description="Volte para a galeria e selecione uma empresa cadastrada."
           />
         )
@@ -884,10 +884,10 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           <div className="admin-detail">
             <Link to={`/admin/projects/${selectedProject.id}`} className="secondary-link admin-back-link">
               <ArrowLeft size={16} />
-              <span>Voltar para informacoes</span>
+              <span>Voltar para informações</span>
             </Link>
 
-            <SectionPanel title={`Adicionar usuarios em ${selectedCompany.name}`} eyebrow="Equipe do projeto">
+            <SectionPanel title={`Adicionar usuários em ${selectedCompany.name}`} eyebrow="Equipe do projeto">
               <form className="admin-form" onSubmit={handleCreateContextUser}>
                 <div className="field-grid">
                   <label>
@@ -902,7 +902,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                       }
                       required
                     >
-                      <option value="employee">Funcionario</option>
+                      <option value="employee">Funcionário</option>
                       <option value="manager">Gestor</option>
                     </select>
                   </label>
@@ -942,7 +942,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                       onChange={(event) =>
                         setContextUserForm((current) => ({ ...current, senha: event.target.value }))
                       }
-                      placeholder="Senha provisoria"
+                      placeholder="Senha provisória"
                       required
                     />
                   </label>
@@ -950,7 +950,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
                 <button type="submit" className="primary-button" disabled={saving === 'context-user'}>
                   <UserPlus size={16} />
-                  <span>{saving === 'context-user' ? 'Criando...' : 'Criar usuario'}</span>
+                  <span>{saving === 'context-user' ? 'Criando...' : 'Criar usuário'}</span>
                 </button>
               </form>
             </SectionPanel>
@@ -976,7 +976,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                 )}
               </SectionPanel>
 
-              <SectionPanel title="Funcionarios" eyebrow="Employee" action={<StatusPill>{selectedEmployees.length}</StatusPill>}>
+              <SectionPanel title="Funcionários" eyebrow="Employee" action={<StatusPill>{selectedEmployees.length}</StatusPill>}>
                 {selectedEmployees.length ? (
                   <div className="admin-list">
                     {selectedEmployees.map((item) => (
@@ -992,14 +992,14 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState title="Sem funcionarios" description="Nenhum funcionario vinculado a este projeto." />
+                  <EmptyState title="Sem funcionários" description="Nenhum funcionário vinculado a este projeto." />
                 )}
               </SectionPanel>
             </div>
           </div>
         ) : (
           <EmptyState
-            title="Cliente nao encontrado"
+            title="Cliente não encontrado"
             description="Volte para a galeria e selecione uma empresa cadastrada."
           />
         )

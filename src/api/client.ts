@@ -44,7 +44,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     const message =
       typeof data === 'object' && data !== null && 'detail' in data
         ? String(data.detail)
-        : 'Nao foi possivel completar a requisicao.';
+        : 'Não foi possível completar a requisição.';
     throw new ApiError(message, response.status);
   }
 

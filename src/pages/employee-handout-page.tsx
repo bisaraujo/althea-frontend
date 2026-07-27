@@ -42,6 +42,7 @@ import type {
   JourneySection,
 } from '../api/types';
 import { useAuth } from '../auth/auth-context';
+import { BrandLockup } from '../components/brand';
 import { StatusPill } from '../components/status-pill';
 
 /* ===================== Helpers ===================== */
@@ -581,11 +582,7 @@ function JourneyLoadingShell({ config }: { config: JourneyPageConfig }) {
       <aside className="journey-nav">
         <div className="journey-nav__top">
           <div className="journey-nav__brand">
-            <div className="journey-nav__brand-mark">t</div>
-            <div>
-              <strong>turi</strong>
-              <p>{config.sidebarLabel}</p>
-            </div>
+            <BrandLockup tone="light" subtitle={config.sidebarLabel} />
           </div>
 
           <Link to={config.overviewPath} className="journey-nav__back">
@@ -910,11 +907,7 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
       <aside className="journey-nav">
         <div className="journey-nav__top">
           <div className="journey-nav__brand">
-            <div className="journey-nav__brand-mark">t</div>
-            <div>
-              <strong>turi</strong>
-              <p>{config.sidebarLabel}</p>
-            </div>
+            <BrandLockup tone="light" subtitle={config.sidebarLabel} />
           </div>
 
           <Link to={config.overviewPath} className="journey-nav__back">

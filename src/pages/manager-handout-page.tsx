@@ -27,6 +27,7 @@ import {
 } from '../api/services';
 import type { Journey, JourneyItem, JourneySection } from '../api/types';
 import { useAuth } from '../auth/auth-context';
+import { BrandLockup } from '../components/brand';
 import { StatusPill } from '../components/status-pill';
 
 type JourneyItemWithSection = JourneyItem & {
@@ -359,11 +360,7 @@ function JourneyLoadingShell() {
       <aside className="journey-nav">
         <div className="journey-nav__top">
           <div className="journey-nav__brand">
-            <div className="journey-nav__brand-mark">t</div>
-            <div>
-              <strong>turi</strong>
-              <p>Jornada da empresa</p>
-            </div>
+            <BrandLockup tone="light" subtitle="Jornada da empresa" />
           </div>
 
           <Link to="/manager" className="journey-nav__back">
@@ -699,11 +696,7 @@ export function ManagerHandoutPage() {
       <aside className="journey-nav">
         <div className="journey-nav__top">
           <div className="journey-nav__brand">
-            <div className="journey-nav__brand-mark">t</div>
-            <div>
-              <strong>turi</strong>
-              <p>Jornada da empresa</p>
-            </div>
+            <BrandLockup tone="light" subtitle="Jornada da empresa" />
           </div>
 
           <Link to="/manager" className="journey-nav__back">

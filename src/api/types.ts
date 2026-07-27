@@ -106,7 +106,9 @@ export type JourneyItemType =
   | 'video'
   | 'presentation'
   | 'survey'
-  | 'document_request';
+  | 'document_request'
+  | 'meeting_approval'
+  | 'schedule_approval';
 
 export type JourneyItem = {
   id: string;
@@ -125,6 +127,7 @@ export type JourneyItem = {
   content_text: string | null;
   document_title: string | null;
   accepted_formats: string[];
+  extra_metadata: Record<string, unknown> | null;
   user_status?: string;
   response_id?: string | null;
   submitted_at?: string | null;
@@ -177,6 +180,66 @@ export type DocumentSubmission = {
   is_late?: boolean;
 };
 
+export type JourneyApprovalPayload = {
+  decision: 'approved' | 'changes_requested';
+  notes?: string | null;
+};
+
+export type JourneyApproval = {
+  id: string;
+  journey_item_id: string;
+  user_id: string;
+  company_id: string;
+  project_id: string | null;
+  decision: 'approved' | 'changes_requested';
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type EmployeeImportRow = {
+  name: string | null;
+  email: string | null;
+  status: 'created' | 'skipped' | 'invalid';
+  detail: string | null;
+  user_id: string | null;
+};
+
+export type EmployeeImportResult = {
+  created: number;
+  skipped: number;
+  invalid: number;
+  rows: EmployeeImportRow[];
+};
+
+export type Meeting = {
+  id: string;
+  company_id: string;
+  project_id: string;
+  title: string;
+  meeting_date: string;
+  description: string | null;
+  ata_file_name: string | null;
+  ata_file_url: string | null;
+  admin_approved: boolean;
+  admin_approved_by: string | null;
+  admin_approved_at: string | null;
+  manager_approved: boolean;
+  manager_approved_by: string | null;
+  manager_approved_at: string | null;
+  status: 'pending' | 'approved';
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MeetingCreatePayload = {
+  title: string;
+  meeting_date: string;
+  description?: string | null;
+  project_id?: string | null;
+};
+
 export type ManagerDeliveryItem = JourneyItem & {
   delivery_status: 'pending' | 'overdue' | 'submitted' | 'submitted_late';
   is_overdue: boolean;
@@ -213,11 +276,12 @@ export type ProjectScheduleItem = {
   available_from: string | null;
   due_at: string | null;
   is_required: boolean;
-  delivery_status: 'pending' | 'overdue' | 'submitted' | 'submitted_late' | null;
+  delivery_status: 'pending' | 'overdue' | 'submitted' | 'submitted_late' | 'approved' | 'changes_requested' | null;
   response_count: number | null;
   expected_count: number | null;
   last_response_at: string | null;
   latest_submission: DocumentSubmission | null;
+  latest_approval?: JourneyApproval | null;
 };
 
 export type ProjectSchedule = {
@@ -260,4 +324,28 @@ export type FormResponseOut = {
   id: string;
   form_id: string;
   answers: Record<string, string | string[]>;
+};
+
+export type FormDraft = {
+  id: string;
+  form_id: string;
+  user_id: string;
+  company_id: string;
+  project_id: string | null;
+  answers: Record<string, string | string[]>;
+  current_question_key: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type JourneyProgress = {
+  id: string;
+  journey_item_id: string;
+  user_id: string;
+  company_id: string;
+  project_id: string | null;
+  status: string;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
 };

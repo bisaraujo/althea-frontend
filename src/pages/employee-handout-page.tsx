@@ -19,9 +19,17 @@ import { Link, useSearchParams } from 'react-router-dom';
 
 import {
   getEmployeeFormDetail,
+  getEmployeeFormDraft,
   getEmployeeJourney,
+  completeEmployeeJourneyItem,
+  completeManagerJourneyItem,
+  getManagerFormDraft,
   getManagerFormDetail,
   getManagerJourney,
+  clearEmployeeFormDraft,
+  clearManagerFormDraft,
+  saveEmployeeFormDraft,
+  saveManagerFormDraft,
   submitEmployeeForm,
   submitManagerForm,
 } from '../api/services';
@@ -67,7 +75,20 @@ function isIntroItem(item: JourneyItem) {
 }
 
 function isTrackableItem(item: JourneyItem) {
-  return item.item_type === 'survey' || item.item_type === 'document_request';
+  return item.user_status !== 'locked';
+}
+
+function isCompletableContentItem(item: JourneyItem) {
+  return ['text', 'video', 'presentation'].includes(item.item_type);
+}
+
+function getResumeItem(items: JourneyItem[]) {
+  return (
+    items.find((item) => item.user_status !== 'locked' && !isCompleted(item)) ??
+    items.find((item) => item.user_status !== 'locked') ??
+    items[0] ??
+    null
+  );
 }
 
 function getActionItems(section: JourneySection) {
@@ -162,23 +183,38 @@ type SurveyStepperProps = {
   submitError: string | null;
   submitSuccess: string | null;
   answers: AnswersState;
+  initialQuestionKey: string | null;
   onAnswerChange: (key: string, value: string | string[]) => void;
+  onCurrentQuestionChange: (key: string | null) => void;
   onSubmit: () => void;
 };
 
 function SurveyStepper({
   form, item, submitting, submitError, submitSuccess,
-  answers, onAnswerChange, onSubmit,
+  answers, initialQuestionKey, onAnswerChange, onCurrentQuestionChange, onSubmit,
 }: SurveyStepperProps) {
   const isSubmitted = item.user_status === 'submitted';
   const total = form.questions.length;
   const [step, setStep] = useState(0);
 
-  // Reset step quando o form muda
-  useEffect(() => { setStep(0); }, [form.id]);
+  useEffect(() => {
+    const draftStep = initialQuestionKey
+      ? form.questions.findIndex((question) => question.key === initialQuestionKey)
+      : -1;
+    setStep(draftStep >= 0 ? draftStep : 0);
+  }, [form.id, form.questions, initialQuestionKey]);
+
+  useEffect(() => {
+    const currentQuestion = total ? form.questions[Math.min(step, total - 1)] : null;
+    onCurrentQuestionChange(currentQuestion?.key ?? null);
+  }, [form.questions, onCurrentQuestionChange, step, total]);
 
   const answeredCount = useMemo(
     () => form.questions.reduce((acc, q) => acc + (isAnswered(q, answers[q.key]) ? 1 : 0), 0),
+    [answers, form.questions],
+  );
+  const allRequiredAnswered = useMemo(
+    () => form.questions.every((q) => !q.required || isAnswered(q, answers[q.key])),
     [answers, form.questions],
   );
   const pct = total ? Math.round((answeredCount / total) * 100) : 0;
@@ -250,7 +286,7 @@ function SurveyStepper({
             <button
               type="button"
               className="primary-button"
-              disabled={submitting || answeredCount < total}
+              disabled={submitting || !allRequiredAnswered}
               onClick={onSubmit}
             >
               {submitting ? 'Enviando...' : 'Enviar respostas'}
@@ -495,6 +531,18 @@ type JourneyPageConfig = {
   overviewPath: string;
   loadJourney: (token: string) => Promise<Journey>;
   loadFormDetail: (token: string, formId: string) => Promise<FormDetail>;
+  loadFormDraft: (token: string, formId: string) => Promise<{
+    answers: Record<string, string | string[]>;
+    current_question_key: string | null;
+  } | null>;
+  saveFormDraft: (
+    token: string,
+    formId: string,
+    answers: Record<string, string | string[]>,
+    currentQuestionKey: string | null,
+  ) => Promise<unknown>;
+  clearFormDraft: (token: string, formId: string) => Promise<unknown>;
+  completeJourneyItem: (token: string, itemId: string) => Promise<unknown>;
   submitForm: (
     token: string,
     formId: string,
@@ -508,6 +556,10 @@ const journeyPageConfigs: Record<JourneyPageMode, JourneyPageConfig> = {
     overviewPath: '/employee',
     loadJourney: getEmployeeJourney,
     loadFormDetail: getEmployeeFormDetail,
+    loadFormDraft: getEmployeeFormDraft,
+    saveFormDraft: saveEmployeeFormDraft,
+    clearFormDraft: clearEmployeeFormDraft,
+    completeJourneyItem: completeEmployeeJourneyItem,
     submitForm: submitEmployeeForm,
   },
   manager: {
@@ -515,6 +567,10 @@ const journeyPageConfigs: Record<JourneyPageMode, JourneyPageConfig> = {
     overviewPath: '/manager',
     loadJourney: getManagerJourney,
     loadFormDetail: getManagerFormDetail,
+    loadFormDraft: getManagerFormDraft,
+    saveFormDraft: saveManagerFormDraft,
+    clearFormDraft: clearManagerFormDraft,
+    completeJourneyItem: completeManagerJourneyItem,
     submitForm: submitManagerForm,
   },
 };
@@ -575,6 +631,8 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
   const [expandedSectionIds, setExpandedSectionIds] = useState<string[]>([]);
   const [formDetail, setFormDetail] = useState<FormDetail | null>(null);
   const [answers, setAnswers] = useState<AnswersState>({});
+  const [currentQuestionKey, setCurrentQuestionKey] = useState<string | null>(null);
+  const [draftReady, setDraftReady] = useState(false);
   const [loadingJourney, setLoadingJourney] = useState(true);
   const [loadingForm, setLoadingForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -630,7 +688,7 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
       setJourney(data);
       const items = data.sections.flatMap((s) => s.items);
       const itemFromParam = nextSelectedId ? items.find((i) => i.id === nextSelectedId) : null;
-      const firstItem = itemFromParam ?? items[0] ?? null;
+      const firstItem = itemFromParam ?? getResumeItem(items);
       if (firstItem) {
         setSelectedId(firstItem.id);
         setSearchParams({ item: firstItem.id });
@@ -653,24 +711,44 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
   }, [searchParams, selectedId]);
 
   useEffect(() => {
+    if (!selected?.id) return;
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }, [selected?.id]);
+
+  useEffect(() => {
     async function loadSelectedForm() {
       if (!token || !selected || selected.item_type !== 'survey' || !selected.form_id) {
         setFormDetail(null);
         setAnswers({});
+        setCurrentQuestionKey(null);
+        setDraftReady(false);
         return;
       }
       setLoadingForm(true);
       setSubmitError(null);
       setSubmitSuccess(null);
+      setDraftReady(false);
       try {
-        const data = await config.loadFormDetail(token, selected.form_id);
+        const [data, draft] = await Promise.all([
+          config.loadFormDetail(token, selected.form_id),
+          config.loadFormDraft(token, selected.form_id),
+        ]);
         setFormDetail(data);
         const initial = Object.fromEntries(
           data.questions.map((q) => [q.key, q.question_type === 'multi_select' ? [] : '']),
         ) as AnswersState;
-        setAnswers(initial);
+        setAnswers({
+          ...initial,
+          ...(draft?.answers ?? {}),
+        });
+        setCurrentQuestionKey(draft?.current_question_key ?? data.questions[0]?.key ?? null);
+        setDraftReady(true);
       } catch (err) {
         setFormDetail(null);
+        setCurrentQuestionKey(null);
+        setDraftReady(false);
         setSubmitError(parseApiError(err));
       } finally {
         setLoadingForm(false);
@@ -679,7 +757,49 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
     void loadSelectedForm();
   }, [token, selected?.id, selected?.form_id, selected?.item_type]);
 
+  function markItemCompletedLocally(itemId: string, completedAt?: string | null) {
+    setJourney((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        sections: current.sections.map((section) => ({
+          ...section,
+          items: section.items.map((item) =>
+            item.id === itemId
+              ? {
+                  ...item,
+                  user_status: 'completed',
+                  submitted_at: completedAt ?? new Date().toISOString(),
+                }
+              : item,
+          ),
+        })),
+      };
+    });
+  }
+
+  async function completeContentItem(item: JourneyItem | null) {
+    if (!token || !item || !isCompletableContentItem(item) || isCompleted(item)) return;
+
+    markItemCompletedLocally(item.id);
+    try {
+      const progress = await config.completeJourneyItem(token, item.id);
+      if (
+        progress &&
+        typeof progress === 'object' &&
+        'completed_at' in progress
+      ) {
+        markItemCompletedLocally(item.id, progress.completed_at as string | null);
+      }
+    } catch {
+      // Progresso visual não deve bloquear a navegação entre conteúdos.
+    }
+  }
+
   function handleSelect(itemId: string) {
+    if (selected?.id && selected.id !== itemId) {
+      void completeContentItem(selected);
+    }
     setSelectedId(itemId);
     setSearchParams({ item: itemId });
   }
@@ -703,16 +823,50 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
     setAnswers((cur) => ({ ...cur, [key]: value }));
   }
 
+  useEffect(() => {
+    if (
+      !token ||
+      !selected?.form_id ||
+      selected.item_type !== 'survey' ||
+      selected.user_status === 'submitted' ||
+      !formDetail ||
+      !draftReady
+    ) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void config
+        .saveFormDraft(token, selected.form_id as string, answers, currentQuestionKey)
+        .catch(() => undefined);
+    }, 500);
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    answers,
+    config,
+    currentQuestionKey,
+    draftReady,
+    formDetail,
+    selected?.form_id,
+    selected?.item_type,
+    selected?.user_status,
+    token,
+  ]);
+
   async function handleSubmitSurvey() {
     if (!token || !selected?.form_id) return;
     setSubmitting(true);
     setSubmitError(null);
     setSubmitSuccess(null);
+    setDraftReady(false);
     try {
       await config.submitForm(token, selected.form_id, answers);
+      await config.clearFormDraft(token, selected.form_id);
       setSubmitSuccess('Respostas enviadas com sucesso.');
       await loadJourney(selected.id);
     } catch (err) {
+      setDraftReady(true);
       setSubmitError(parseApiError(err));
     } finally {
       setSubmitting(false);
@@ -944,6 +1098,8 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
                 submitError={submitError}
                 submitSuccess={submitSuccess}
                 onAnswerChange={handleAnswerChange}
+                initialQuestionKey={currentQuestionKey}
+                onCurrentQuestionChange={setCurrentQuestionKey}
                 onSubmit={handleSubmitSurvey}
               />
             ) : (
@@ -978,7 +1134,13 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
                 <ArrowRight size={16} />
               </button>
             ) : (
-              <Link to={config.overviewPath} className="journey-pager__btn journey-pager__btn--next">
+              <Link
+                to={config.overviewPath}
+                className="journey-pager__btn journey-pager__btn--next"
+                onClick={() => {
+                  void completeContentItem(selected);
+                }}
+              >
                 <span>
                   <em>Finalizar</em>
                   <strong>Voltar à visão geral</strong>

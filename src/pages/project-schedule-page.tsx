@@ -1,4 +1,12 @@
-import { Building2, CalendarClock, FileUp, FolderKanban, House, Route as RouteIcon } from 'lucide-react';
+import {
+  Building2,
+  CalendarClock,
+  ClipboardCheck,
+  FileUp,
+  FolderKanban,
+  House,
+  Route as RouteIcon,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { API_URL, ApiError } from '../api/client';
@@ -18,6 +26,7 @@ const adminNavigation = [
   { to: '/admin/companies', label: 'Cadastro', icon: Building2 },
   { to: '/admin/projects', label: 'Clientes', icon: FolderKanban },
   { to: '/admin/schedule', label: 'Cronograma', icon: CalendarClock },
+  { to: '/admin/meetings', label: 'Reuniões', icon: ClipboardCheck },
 ];
 
 const managerNavigation = [
@@ -25,6 +34,7 @@ const managerNavigation = [
   { to: '/manager/journey', label: 'Minha jornada', icon: RouteIcon },
   { to: '/manager/company-journey', label: 'Jornada da empresa', icon: FileUp },
   { to: '/manager/schedule', label: 'Cronograma', icon: CalendarClock },
+  { to: '/manager/meetings', label: 'Reuniões', icon: ClipboardCheck },
 ];
 
 function projectLabel(project: Project, companies: Company[]) {
@@ -42,7 +52,9 @@ function fileHref(fileUrl?: string | null) {
 
 function mapScheduleEvents(schedule: ProjectSchedule | null, mode: ScheduleMode): ProjectCalendarEvent[] {
   return schedule?.items
-    .filter((item) => item.item_type === 'document_request' || item.item_type === 'survey')
+    .filter((item) =>
+      ['document_request', 'survey', 'meeting_approval', 'schedule_approval'].includes(item.item_type),
+    )
     .map((item) => ({
       id: item.id,
       title: item.document_title ?? item.title,
@@ -54,10 +66,10 @@ function mapScheduleEvents(schedule: ProjectSchedule | null, mode: ScheduleMode)
       status: item.delivery_status,
       responseCount: item.response_count,
       expectedCount: item.expected_count,
-      submittedAt: item.latest_submission?.submitted_at ?? item.last_response_at,
+      submittedAt: item.latest_submission?.submitted_at ?? item.latest_approval?.updated_at ?? item.last_response_at,
       fileName: item.latest_submission?.file_name ?? null,
       fileUrl: fileHref(item.latest_submission?.file_url),
-      submissionNotes: item.latest_submission?.notes ?? null,
+      submissionNotes: item.latest_submission?.notes ?? item.latest_approval?.notes ?? null,
       submittedBy: item.latest_submission?.user_name ?? null,
       submittedByEmail: item.latest_submission?.user_email ?? null,
       href:
@@ -189,7 +201,7 @@ export function ProjectSchedulePage({ mode }: { mode: ScheduleMode }) {
       <SectionPanel
         title="Calendário do projeto"
         eyebrow="Cronograma"
-        action={<StatusPill>{calendarEvents.length} entregas</StatusPill>}
+        action={<StatusPill>{calendarEvents.length} ações</StatusPill>}
       >
         {isLoading || isScheduleLoading ? (
           <div className="project-calendar project-calendar--empty">

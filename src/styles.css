@@ -2744,7 +2744,8 @@ select:disabled {
 
 .manager-template,
 .manager-submission,
-.manager-upload-form {
+.manager-upload-form,
+.approval-form {
   margin-top: 1.25rem;
   border-radius: 16px;
   border: 1px solid var(--border);
@@ -2836,6 +2837,222 @@ select:disabled {
   gap: 1rem;
   padding: 1rem;
   background: #fff;
+}
+
+.journey-section-action.is-done {
+  background: rgba(43, 134, 105, 0.055);
+  border-color: rgba(43, 134, 105, 0.18);
+}
+
+.journey-section-action.is-done .journey-section-action__icon {
+  background: rgba(43, 134, 105, 0.11);
+  color: var(--success);
+}
+
+.journey-section-action.is-scheduled {
+  border-color: rgba(255, 122, 0, 0.18);
+}
+
+.journey-section-action.is-overdue {
+  background: rgba(217, 83, 79, 0.055);
+  border-color: rgba(217, 83, 79, 0.22);
+}
+
+.journey-section-action.is-overdue .journey-section-action__icon {
+  background: rgba(217, 83, 79, 0.11);
+  color: #c33f3b;
+}
+
+.approval-list,
+.schedule-approval-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.approval-item,
+.schedule-approval-item {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.approval-item__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.approval-item__head span {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  color: var(--brand-deep);
+  flex-shrink: 0;
+}
+
+.approval-item__head strong,
+.schedule-approval-item strong {
+  display: block;
+  font-weight: 850;
+}
+
+.approval-item__head em,
+.schedule-approval-item em {
+  display: block;
+  margin-top: 0.12rem;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.approval-item p,
+.approval-item ul {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.55;
+}
+
+.approval-item ul {
+  padding-left: 1.1rem;
+}
+
+.schedule-approval-list {
+  max-height: 520px;
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.schedule-approval-item {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.schedule-approval-item__kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 82px;
+  padding: 0.32rem 0.55rem;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.schedule-approval-item p {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.approval-form {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  background: #fff;
+}
+
+.approval-form label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.approval-form label span {
+  color: var(--text-soft);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.approval-actions .primary-button,
+.approval-actions .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.employee-import-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.employee-import-form label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.employee-import-form label span {
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.employee-import-form input[type='file'] {
+  width: 100%;
+  max-width: 100%;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+}
+
+.employee-import-form em {
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-style: normal;
+  overflow-wrap: anywhere;
+}
+
+.employee-import-form .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+.employee-import-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: -0.25rem 0 1rem;
+}
+
+.employee-import-summary span {
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 850;
 }
 
 .manager-upload-grid {
@@ -3068,24 +3285,16 @@ select:disabled {
   background: white;
 }
 
-.project-calendar__legend-item::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--text-faint);
+.project-calendar__legend-item--planned {
+  color: var(--brand-deep);
 }
 
-.project-calendar__legend-item--pending::before {
-  background: var(--brand-deep);
+.project-calendar__legend-item--overdue {
+  color: #c94848;
 }
 
-.project-calendar__legend-item--overdue::before {
-  background: #c94848;
-}
-
-.project-calendar__legend-item--submitted::before {
-  background: var(--success);
+.project-calendar__legend-item--submitted {
+  color: var(--success);
 }
 
 .project-calendar__body {
@@ -3270,6 +3479,10 @@ select:disabled {
   box-shadow: inset 3px 0 0 #c94848, var(--shadow-sm);
 }
 
+.project-calendar__detail-item.is-planned {
+  box-shadow: inset 3px 0 0 var(--brand), var(--shadow-sm);
+}
+
 .project-calendar__detail-item strong {
   font-size: 0.9rem;
   font-weight: 800;
@@ -3302,6 +3515,10 @@ select:disabled {
 
 .project-calendar__detail-item.is-overdue .project-calendar__detail-status {
   color: #c94848;
+}
+
+.project-calendar__detail-item.is-planned .project-calendar__detail-status {
+  color: var(--brand-deep);
 }
 
 .project-calendar__detail-meta {
@@ -3563,7 +3780,9 @@ select:disabled {
   .journey-pager { grid-template-columns: 1fr; }
   .journey-head__title-row { flex-direction: column; }
   .manager-template,
+  .employee-import-form,
   .manager-upload-grid,
+  .schedule-approval-item,
   .schedule-toolbar {
     grid-template-columns: 1fr;
   }
@@ -3571,9 +3790,15 @@ select:disabled {
   .project-calendar__grid { font-size: 0.86rem; }
   .project-calendar__day { min-height: 62px; padding: 0.5rem; }
   .manager-template__button,
-  .manager-upload-form .primary-button {
+  .employee-import-form .secondary-button,
+  .manager-upload-form .primary-button,
+  .approval-actions .primary-button,
+  .approval-actions .secondary-button {
     width: 100%;
   }
+  .approval-actions { flex-direction: column-reverse; }
+  .schedule-approval-list { max-height: none; overflow: visible; padding-right: 0; }
+  .schedule-approval-item p { text-align: left; }
   .survey__actions { flex-direction: column-reverse; align-items: stretch; }
   .survey__actions > :first-child { margin-right: 0; }
 }
@@ -4631,6 +4856,16 @@ select:focus {
   border-color: rgba(43,134,105,0.14);
 }
 
+.emp-step.is-scheduled .emp-step__link {
+  background: rgba(255,122,0,0.045);
+  border-color: rgba(255,122,0,0.18);
+}
+
+.emp-step.is-overdue .emp-step__link {
+  background: rgba(217,83,79,0.055);
+  border-color: rgba(217,83,79,0.22);
+}
+
 .emp-step__icon {
   display: inline-flex;
   align-items: center;
@@ -4646,6 +4881,16 @@ select:focus {
 .emp-step.is-done .emp-step__icon {
   background: rgba(43,134,105,0.1);
   color: var(--success);
+}
+
+.emp-step.is-scheduled .emp-step__icon {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.emp-step.is-overdue .emp-step__icon {
+  background: rgba(217,83,79,0.11);
+  color: #c33f3b;
 }
 
 .emp-step__copy {
@@ -5027,6 +5272,10 @@ select:focus {
   box-shadow: inset 3px 0 0 #d9534f;
 }
 
+.project-calendar__detail-item.is-planned {
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+
 .project-calendar__detail-item.is-pending {
   box-shadow: inset 3px 0 0 var(--brand);
 }
@@ -5041,6 +5290,10 @@ select:focus {
 
 .project-calendar__detail-item.is-overdue .project-calendar__detail-status {
   color: #d9534f;
+}
+
+.project-calendar__detail-item.is-planned .project-calendar__detail-status {
+  color: var(--brand-deep);
 }
 
 .project-calendar__detail-item.is-pending .project-calendar__detail-status {
@@ -5076,5 +5329,422 @@ select:focus {
 @media (max-width: 1120px) {
   .project-calendar__body {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1120px) {
+  .journey-workspace {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  .journey-nav {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    position: relative;
+    top: auto;
+    padding: 0.9rem;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: visible;
+  }
+
+  .journey-nav__top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.7rem;
+    align-items: stretch;
+  }
+
+  .journey-nav__progress {
+    grid-column: 1 / -1;
+  }
+
+  .journey-nav__menu {
+    display: flex;
+    gap: 0.65rem;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.15rem 0 0.35rem;
+    scroll-snap-type: x proximity;
+  }
+
+  .journey-nav__group {
+    flex: 0 0 min(294px, 84vw);
+    scroll-snap-align: start;
+  }
+
+  .journey-nav__group-body.is-open {
+    grid-template-rows: auto;
+  }
+
+  .journey-nav__group-items {
+    max-height: 42vh;
+    overflow-y: auto;
+  }
+
+  .journey-main {
+    width: 100%;
+    min-width: 0;
+    display: block;
+    padding: 1.1rem 1rem 2.5rem;
+  }
+
+  .journey-stage {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .journey-head,
+  .content-block,
+  .survey__card {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .journey-nav {
+    padding: 0.75rem;
+  }
+
+  .journey-nav__top {
+    grid-template-columns: 1fr;
+  }
+
+  .journey-nav__brand,
+  .journey-nav__top .journey-nav__brand,
+  .journey-nav__back,
+  .journey-nav__progress {
+    width: 100%;
+  }
+
+  .journey-nav__menu {
+    gap: 0.5rem;
+  }
+
+  .journey-nav__group {
+    flex-basis: min(274px, 86vw);
+  }
+
+  .journey-main {
+    padding: 0.85rem 0.75rem 2rem;
+  }
+
+  .journey-head {
+    padding: 1rem;
+    border-radius: 16px;
+  }
+
+  .journey-head__title-row,
+  .journey-head__meta,
+  .journey-form__actions,
+  .survey__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .journey-head h1 {
+    font-size: 1.45rem;
+  }
+
+  .content-block,
+  .survey__card {
+    padding: 1rem;
+    border-radius: 16px;
+  }
+
+  .journey-pager {
+    grid-template-columns: 1fr;
+  }
+
+  .journey-pager__btn,
+  .journey-pager__btn--next {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .manager-template,
+  .manager-upload-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-template__button,
+  .manager-upload-form .primary-button,
+  .journey-form__actions .primary-button,
+  .journey-form__actions .secondary-button,
+  .survey__actions .primary-button,
+  .survey__actions .secondary-button {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   ADMIN — Importar colaboradores por planilha
+   ============================================================ */
+.employee-import {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.employee-import__file {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+.employee-import__file input[type='file'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.employee-import__dropzone {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  padding: 1.4rem 1rem;
+  border-radius: 14px;
+  border: 1.5px dashed var(--border-strong);
+  background: var(--surface-soft);
+  color: var(--text-soft);
+  text-align: center;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.employee-import__file:hover .employee-import__dropzone {
+  border-color: rgba(255, 122, 0, 0.42);
+  background: var(--brand-soft);
+  color: var(--brand-deep);
+}
+
+.employee-import__dropzone strong {
+  color: var(--text);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.employee-import__dropzone small {
+  font-size: 0.78rem;
+}
+
+.employee-import__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.employee-import__stat {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.employee-import__stat--ok {
+  background: rgba(68, 192, 138, 0.14);
+  color: #177551;
+}
+
+/* ============================================================
+   REUNIÕES / ATAS
+   ============================================================ */
+.meeting-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.meeting-form__grid {
+  display: grid;
+  grid-template-columns: minmax(150px, 200px) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.meeting-form__grid label,
+.meeting-form > label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.meeting-form label span {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.meeting-form .primary-button {
+  justify-self: start;
+}
+
+.meeting-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.meeting-card {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.15rem;
+  border-radius: 16px;
+  background: #fffdf9;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.meeting-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.meeting-card__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--brand-deep);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.meeting-card__head strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.meeting-card__head em {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text-soft);
+  font-style: normal;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.meeting-card__desc {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.meeting-card__ata {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+}
+
+.meeting-card__file {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--brand-deep);
+  font-weight: 800;
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.meeting-card__file--empty {
+  color: var(--text-faint);
+  font-weight: 700;
+}
+
+.meeting-card__upload {
+  position: relative;
+  margin-left: auto;
+  cursor: pointer;
+}
+
+.meeting-card__upload input[type='file'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.meeting-card__upload .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.84rem;
+  pointer-events: none;
+}
+
+.meeting-card__approvals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.meeting-approval {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 30px;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.meeting-approval.is-done {
+  background: rgba(68, 192, 138, 0.14);
+  color: #177551;
+}
+
+.meeting-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--border);
+}
+
+.meeting-card__done {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--success);
+  font-weight: 800;
+  font-size: 0.88rem;
+}
+
+.meeting-card__actions .icon-button {
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .meeting-form__grid {
+    grid-template-columns: 1fr;
+  }
+  .meeting-card__head {
+    flex-direction: column;
   }
 }

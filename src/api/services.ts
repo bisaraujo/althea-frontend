@@ -4,18 +4,25 @@ import type {
   Company,
   CompanyCreatePayload,
   DocumentSubmissionPayload,
+  EmployeeImportResult,
   EmployeeRecord,
   FormSummary,
   Journey,
+  JourneyApproval,
+  JourneyApprovalPayload,
   LoginResponse,
   ManagerDeliveries,
+  Meeting,
+  MeetingCreatePayload,
   Presentation,
   Project,
   ProjectCreatePayload,
   ProjectSchedule,
   ResponseRecord,
   FormDetail,
+  FormDraft,
   FormResponseOut,
+  JourneyProgress,
   UserRecord
 } from './types';
 
@@ -110,8 +117,88 @@ export async function getEmployeeJourney(token: string) {
   return request<Journey>('/employee/journey', { token });
 }
 
+export async function completeEmployeeJourneyItem(token: string, itemId: string) {
+  return request<JourneyProgress>(`/employee/journey/items/${itemId}/complete`, {
+    token,
+    method: 'POST',
+  });
+}
+
+export async function completeManagerJourneyItem(token: string, itemId: string) {
+  return request<JourneyProgress>(`/manager/journey/items/${itemId}/complete`, {
+    token,
+    method: 'POST',
+  });
+}
+
+export async function completeManagerCompanyJourneyItem(token: string, itemId: string) {
+  return request<JourneyProgress>(`/manager/company-journey/items/${itemId}/complete`, {
+    token,
+    method: 'POST',
+  });
+}
+
+export async function approveManagerCompanyJourneyItem(
+  token: string,
+  itemId: string,
+  payload: JourneyApprovalPayload,
+) {
+  return request<JourneyApproval>(`/manager/company-journey/items/${itemId}/approval`, {
+    token,
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
 export async function getManagerEmployees(token: string) {
   return request<{ employees: EmployeeRecord[] }>('/manager/employees', { token });
+}
+
+export async function importProjectEmployees(token: string, projectId: string, payload: FormData) {
+  return request<EmployeeImportResult>(`/projects/${projectId}/employees/import`, {
+    token,
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export async function listMeetings(token: string, projectId?: string) {
+  const query = projectId ? `?project_id=${encodeURIComponent(projectId)}` : '';
+  return request<{ meetings: Meeting[] }>(`/meetings${query}`, { token });
+}
+
+export async function createMeeting(token: string, payload: MeetingCreatePayload) {
+  return request<Meeting>('/meetings', {
+    token,
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export async function uploadMeetingAta(token: string, meetingId: string, payload: FormData) {
+  return request<Meeting>(`/meetings/${meetingId}/ata`, {
+    token,
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export async function approveMeeting(token: string, meetingId: string) {
+  return request<Meeting>(`/meetings/${meetingId}/approve`, {
+    token,
+    method: 'POST',
+  });
+}
+
+export async function deleteMeeting(token: string, meetingId: string) {
+  return request<{ status: string; id: string }>(`/meetings/${meetingId}`, {
+    token,
+    method: 'DELETE',
+  });
 }
 
 export async function getManagerForms(token: string) {
@@ -192,6 +279,33 @@ export async function submitEmployeeForm(
   });
 }
 
+export async function getEmployeeFormDraft(token: string, formId: string) {
+  return request<FormDraft | null>(`/employee/forms/${formId}/draft`, { token });
+}
+
+export async function saveEmployeeFormDraft(
+  token: string,
+  formId: string,
+  answers: Record<string, string | string[]>,
+  currentQuestionKey: string | null,
+) {
+  return request<FormDraft>(`/employee/forms/${formId}/draft`, {
+    token,
+    method: 'PUT',
+    body: JSON.stringify({ answers, current_question_key: currentQuestionKey }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+export async function clearEmployeeFormDraft(token: string, formId: string) {
+  return request<void>(`/employee/forms/${formId}/draft`, {
+    token,
+    method: 'DELETE',
+  });
+}
+
 export async function submitManagerForm(
   token: string,
   formId: string,
@@ -204,5 +318,32 @@ export async function submitManagerForm(
     headers: {
       'Content-Type': 'application/json',
     },
+  });
+}
+
+export async function getManagerFormDraft(token: string, formId: string) {
+  return request<FormDraft | null>(`/manager/forms/${formId}/draft`, { token });
+}
+
+export async function saveManagerFormDraft(
+  token: string,
+  formId: string,
+  answers: Record<string, string | string[]>,
+  currentQuestionKey: string | null,
+) {
+  return request<FormDraft>(`/manager/forms/${formId}/draft`, {
+    token,
+    method: 'PUT',
+    body: JSON.stringify({ answers, current_question_key: currentQuestionKey }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+export async function clearManagerFormDraft(token: string, formId: string) {
+  return request<void>(`/manager/forms/${formId}/draft`, {
+    token,
+    method: 'DELETE',
   });
 }

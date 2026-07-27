@@ -1,8 +1,10 @@
 import {
+  AlertTriangle,
   ArrowUpRight,
   CalendarClock,
   CheckCircle2,
   CirclePlay,
+  ClipboardCheck,
   FileText,
   FileUp,
   House,
@@ -29,6 +31,7 @@ const managerNavigation = [
   { to: '/manager/journey', label: 'Minha jornada', icon: RouteIcon },
   { to: '/manager/company-journey', label: 'Jornada da empresa', icon: FileUp },
   { to: '/manager/schedule', label: 'Cronograma', icon: CalendarClock },
+  { to: '/manager/meetings', label: 'Reuniões', icon: ClipboardCheck },
 ];
 
 type JourneyItemWithSection = JourneyItem & {
@@ -40,7 +43,7 @@ function isDeliveryItem(item: JourneyItem) {
 }
 
 function isDelivered(item: JourneyItem) {
-  return ['submitted', 'submitted_late', 'completed'].includes(item.user_status ?? '');
+  return ['submitted', 'submitted_late', 'completed', 'approved'].includes(item.user_status ?? '');
 }
 
 function itemTypeIcon(item: JourneyItem) {
@@ -58,6 +61,8 @@ function itemTypeLabel(item: JourneyItem) {
 function statusLabel(status?: string) {
   if (status === 'submitted') return 'Enviado';
   if (status === 'submitted_late') return 'Enviado atrasado';
+  if (status === 'approved') return 'Aprovado';
+  if (status === 'changes_requested') return 'Ajustes solicitados';
   if (status === 'overdue') return 'Atrasado';
   if (status === 'pending') return 'Pendente';
   if (status === 'available') return 'Disponível';
@@ -65,11 +70,24 @@ function statusLabel(status?: string) {
 }
 
 function statusTone(status?: string) {
-  if (status === 'submitted' || status === 'completed') return 'success' as const;
-  if (status === 'submitted_late' || status === 'overdue' || status === 'pending') {
+  if (status === 'submitted' || status === 'completed' || status === 'approved') return 'success' as const;
+  if (status === 'submitted_late' || status === 'overdue' || status === 'pending' || status === 'changes_requested') {
     return 'warning' as const;
   }
   return 'muted' as const;
+}
+
+function taskVisualState(item: JourneyItem) {
+  if (item.user_status === 'overdue' || item.user_status === 'submitted_late') return 'overdue';
+  if (isDelivered(item)) return 'done';
+  return 'scheduled';
+}
+
+function taskStatusIcon(item: JourneyItem) {
+  const state = taskVisualState(item);
+  if (state === 'done') return <CheckCircle2 size={16} />;
+  if (state === 'overdue') return <AlertTriangle size={16} />;
+  return <CalendarClock size={16} />;
 }
 
 function itemLink(item: JourneyItem | null) {
@@ -185,18 +203,18 @@ export function ManagerDashboard() {
         <>
           <section className="emp-hero">
             <div className="emp-hero__copy">
-              <span className="emp-hero__eyebrow">Entregas do projeto</span>
+              <span className="emp-hero__eyebrow">Ações do projeto</span>
               <h2>
                 {deliveries.length === 0
                   ? 'Sua jornada ainda está sendo preparada'
                   : deliveredCount === deliveries.length
-                    ? 'Todas as entregas foram registradas'
-                    : `${deliveredCount} de ${deliveries.length} entregas enviadas`}
+                    ? 'Todas as ações foram concluídas'
+                    : `${deliveredCount} de ${deliveries.length} ações concluídas`}
               </h2>
               <p>
                 {deliveries.length === 0
-                  ? 'Quando o cronograma documental estiver ativo, as entregas aparecem aqui.'
-                  : 'Use a jornada para baixar modelos, enviar arquivos e manter o registro do projeto em dia.'}
+                  ? 'Quando o cronograma estiver ativo, as ações aparecem aqui.'
+                  : 'Use a jornada para aprovar registros, revisar datas, baixar modelos e enviar arquivos.'}
               </p>
 
               <div
@@ -254,9 +272,9 @@ export function ManagerDashboard() {
           <div className="stats-grid">
             <Link to="/manager/company-journey" className="stat-link">
               <StatCard
-                label="Entregas"
+                label="Ações"
                 value={deliveries.length}
-                meta={`${deliveredCount} enviadas`}
+                meta={`${deliveredCount} concluídas`}
                 icon={<FileUp size={18} />}
               />
             </Link>
@@ -299,13 +317,13 @@ export function ManagerDashboard() {
             {visibleSteps.length ? (
               <ul className="emp-steps">
                 {visibleSteps.map((item) => {
-                  const done = isDelivered(item);
+                  const visualState = taskVisualState(item);
 
                   return (
-                    <li key={item.id} className={`emp-step ${done ? 'is-done' : ''}`}>
+                    <li key={item.id} className={`emp-step is-${visualState}`}>
                       <Link to={itemLink(item)} className="emp-step__link">
                         <span className="emp-step__icon" aria-hidden>
-                          {done ? <CheckCircle2 size={16} /> : itemTypeIcon(item)}
+                          {taskStatusIcon(item)}
                         </span>
                         <div className="emp-step__copy">
                           <strong>{item.document_title ?? item.title}</strong>

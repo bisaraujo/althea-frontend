@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Building2,
   CalendarClock,
+  ClipboardCheck,
   FolderKanban,
   House,
   Mail,
@@ -11,6 +12,7 @@ import {
   Search,
   ShieldCheck,
   Trash2,
+  Upload,
   UserPlus,
   Users,
 } from 'lucide-react';
@@ -25,11 +27,13 @@ import {
   getProjectManagerDeliveries,
   getProjects,
   getUsers,
+  importProjectEmployees,
 } from '../api/services';
 import type {
   ClientUserCreatePayload,
   Company,
   CompanyCreatePayload,
+  EmployeeImportResult,
   ManagerDeliveries,
   Project,
   UserRecord,
@@ -52,6 +56,7 @@ const adminNavigation = [
   { to: '/admin/companies', label: 'Cadastro', icon: Building2 },
   { to: '/admin/projects', label: 'Clientes', icon: FolderKanban },
   { to: '/admin/schedule', label: 'Cronograma', icon: CalendarClock },
+  { to: '/admin/meetings', label: 'Reuniões', icon: ClipboardCheck },
 ];
 
 const screenMeta = {
@@ -162,6 +167,11 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   const [saving, setSaving] = useState<SavingTarget>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importResetKey, setImportResetKey] = useState(0);
+  const [importResult, setImportResult] = useState<EmployeeImportResult | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const meta = screenMeta[section];
 
@@ -195,6 +205,34 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     void loadAdminData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  async function handleEmployeeImport(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!token || !projectId || !importFile) {
+      setImportError('Selecione uma planilha CSV ou XLSX para importar.');
+      return;
+    }
+
+    const payload = new FormData();
+    payload.append('file', importFile);
+
+    setIsImporting(true);
+    setImportError(null);
+    setImportResult(null);
+
+    try {
+      const result = await importProjectEmployees(token, projectId, payload);
+      setImportResult(result);
+      setImportFile(null);
+      setImportResetKey((current) => current + 1);
+      await loadAdminData();
+    } catch (err) {
+      setImportError(formatApiError(err, 'Não foi possível importar os colaboradores.'));
+    } finally {
+      setIsImporting(false);
+    }
+  }
 
   useEffect(() => {
     if (!token || !projectId || !['project-detail', 'project-users'].includes(section)) {
@@ -953,6 +991,49 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                   <span>{saving === 'context-user' ? 'Criando...' : 'Criar usuário'}</span>
                 </button>
               </form>
+            </SectionPanel>
+
+            <SectionPanel
+              title="Importar colaboradores"
+              eyebrow="Planilha"
+              action={<StatusPill tone="muted">CSV ou XLSX</StatusPill>}
+            >
+              <p className="admin-form__hint">
+                Suba uma planilha com uma coluna de nomes e outra de e-mail para cadastrar todos os
+                colaboradores deste projeto de uma vez. A senha inicial de cada um é <strong>123456</strong>.
+              </p>
+
+              <form className="employee-import" onSubmit={handleEmployeeImport}>
+                <label className="employee-import__file">
+                  <input
+                    key={importResetKey}
+                    type="file"
+                    accept=".csv,.xlsx"
+                    onChange={(event) => setImportFile(event.target.files?.[0] ?? null)}
+                  />
+                  <span className="employee-import__dropzone">
+                    <Upload size={18} />
+                    <strong>{importFile?.name ?? 'Selecionar planilha'}</strong>
+                    <small>Colunas aceitas: nome / email</small>
+                  </span>
+                </label>
+
+                <button type="submit" className="primary-button" disabled={isImporting}>
+                  <Upload size={16} />
+                  <span>{isImporting ? 'Importando...' : 'Cadastrar todos'}</span>
+                </button>
+              </form>
+
+              {importError ? <div className="form-error">{importError}</div> : null}
+              {importResult ? (
+                <div className="employee-import__summary">
+                  <span className="employee-import__stat employee-import__stat--ok">
+                    {importResult.created} criados
+                  </span>
+                  <span className="employee-import__stat">{importResult.skipped} já existiam</span>
+                  <span className="employee-import__stat">{importResult.invalid} inválidos</span>
+                </div>
+              ) : null}
             </SectionPanel>
 
             <div className="admin-people-grid">

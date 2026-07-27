@@ -1,7 +1,9 @@
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   CalendarClock,
+  CalendarDays,
   ChevronRight,
   CheckCircle2,
   CirclePlay,
@@ -17,7 +19,12 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { API_URL, ApiError } from '../api/client';
-import { getManagerCompanyJourney, uploadManagerDocumentFile } from '../api/services';
+import {
+  approveManagerCompanyJourneyItem,
+  completeManagerCompanyJourneyItem,
+  getManagerCompanyJourney,
+  uploadManagerDocumentFile,
+} from '../api/services';
 import type { Journey, JourneyItem, JourneySection } from '../api/types';
 import { useAuth } from '../auth/auth-context';
 import { StatusPill } from '../components/status-pill';
@@ -29,6 +36,14 @@ type JourneyItemWithSection = JourneyItem & {
 type UploadDraft = {
   file: File | null;
   notes: string;
+};
+
+type ScheduleApprovalEvent = {
+  kind: 'stage' | 'delivery' | 'approval' | string;
+  title: string;
+  section?: string | null;
+  available_from?: string | null;
+  due_at?: string | null;
 };
 
 type TemplateInfo = {
@@ -81,19 +96,32 @@ function isDeliveryItem(item: JourneyItem) {
 }
 
 function isDelivered(item: JourneyItem) {
-  return ['submitted', 'submitted_late', 'completed'].includes(item.user_status ?? '');
+  return ['submitted', 'submitted_late', 'completed', 'approved'].includes(item.user_status ?? '');
 }
 
 function isIntroItem(item: JourneyItem) {
   return item.item_type === 'text' && item.order === 0;
 }
 
+function isCompletableContentItem(item: JourneyItem) {
+  return ['text', 'video', 'presentation'].includes(item.item_type);
+}
+
+function getResumeItem(items: JourneyItem[]) {
+  return (
+    items.find((item) => item.user_status !== 'locked' && !isDelivered(item)) ??
+    items.find((item) => item.user_status !== 'locked') ??
+    items[0] ??
+    null
+  );
+}
+
 function getActionItems(section: JourneySection) {
-  return section.items.filter((item) => !isIntroItem(item));
+  return section.items.filter((item) => !isIntroItem(item) && item.item_type !== 'meeting_approval');
 }
 
 function getSidebarItems(section: JourneySection) {
-  return section.items;
+  return section.items.filter((item) => item.item_type !== 'meeting_approval');
 }
 
 function getSidebarItemTitle(item: JourneyItem) {
@@ -103,19 +131,21 @@ function getSidebarItemTitle(item: JourneyItem) {
 
 function getItemIcon(item: JourneyItem) {
   if (item.item_type === 'document_request') return <Upload size={14} />;
+  if (item.item_type === 'schedule_approval') return <CalendarDays size={14} />;
   if (item.item_type === 'text') return <FileText size={14} />;
   return <CirclePlay size={14} />;
 }
 
 function getItemTypeLabel(item: JourneyItem) {
   if (item.item_type === 'document_request') return 'Documento';
+  if (item.item_type === 'schedule_approval') return 'Aprovação do cronograma';
   if (item.item_type === 'text') return 'Orientação';
   return 'Etapa';
 }
 
 function getStatusTone(status?: string) {
-  if (status === 'submitted' || status === 'completed') return 'success' as const;
-  if (status === 'submitted_late' || status === 'overdue' || status === 'pending') {
+  if (status === 'submitted' || status === 'completed' || status === 'approved') return 'success' as const;
+  if (status === 'submitted_late' || status === 'overdue' || status === 'pending' || status === 'changes_requested') {
     return 'warning' as const;
   }
   if (status === 'locked') return 'muted' as const;
@@ -126,11 +156,26 @@ function getStatusLabel(status?: string) {
   if (status === 'submitted') return 'Enviado';
   if (status === 'submitted_late') return 'Enviado atrasado';
   if (status === 'completed') return 'Concluído';
+  if (status === 'approved') return 'Aprovado';
+  if (status === 'changes_requested') return 'Ajustes solicitados';
   if (status === 'overdue') return 'Atrasado';
   if (status === 'pending') return 'Pendente';
   if (status === 'available') return 'Disponível';
   if (status === 'locked') return 'Bloqueado';
   return 'Não iniciado';
+}
+
+function getTaskVisualState(item: JourneyItem) {
+  if (item.user_status === 'overdue' || item.user_status === 'submitted_late') return 'overdue';
+  if (isDelivered(item)) return 'done';
+  return 'scheduled';
+}
+
+function getTaskVisualIcon(item: JourneyItem) {
+  const state = getTaskVisualState(item);
+  if (state === 'done') return <CheckCircle2 size={16} />;
+  if (state === 'overdue') return <AlertTriangle size={16} />;
+  return <CalendarClock size={16} />;
 }
 
 function normalizeSearchText(value: string) {
@@ -226,6 +271,24 @@ function parseApiError(error: unknown) {
   return 'Não foi possível concluir a ação.';
 }
 
+function getScheduleApprovalEvents(item: JourneyItem): ScheduleApprovalEvent[] {
+  const events = item.extra_metadata?.events;
+  if (!Array.isArray(events)) return [];
+
+  return events.filter((event): event is ScheduleApprovalEvent => {
+    if (!event || typeof event !== 'object') return false;
+    const candidate = event as Record<string, unknown>;
+    return typeof candidate.title === 'string' && typeof candidate.kind === 'string';
+  });
+}
+
+function scheduleEventKindLabel(kind: string) {
+  if (kind === 'stage') return 'Etapa';
+  if (kind === 'delivery') return 'Entrega';
+  if (kind === 'approval') return 'Aprovação';
+  return 'Evento';
+}
+
 function RichText({ text }: { text?: string | null }) {
   if (!text) return null;
 
@@ -270,11 +333,13 @@ function SectionActions({
           <button
             key={item.id}
             type="button"
-            className={`journey-section-action ${item.id === selectedId ? 'is-active' : ''}`}
+            className={`journey-section-action is-${getTaskVisualState(item)} ${
+              item.id === selectedId ? 'is-active' : ''
+            }`}
             onClick={() => onSelect(item.id)}
           >
             <span className="journey-section-action__icon">
-              {isDelivered(item) ? <CheckCircle2 size={16} /> : getItemIcon(item)}
+              {getTaskVisualIcon(item)}
             </span>
             <span className="journey-section-action__copy">
               <strong>{item.document_title ?? item.title}</strong>
@@ -340,6 +405,7 @@ export function ManagerHandoutPage() {
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('item'));
   const [expandedSectionIds, setExpandedSectionIds] = useState<string[]>([]);
   const [uploadDrafts, setUploadDrafts] = useState<Record<string, UploadDraft>>({});
+  const [approvalNotes, setApprovalNotes] = useState('');
   const [fileInputResetKey, setFileInputResetKey] = useState(0);
   const [loadingJourney, setLoadingJourney] = useState(true);
   const [submittingItem, setSubmittingItem] = useState<string | null>(null);
@@ -350,7 +416,9 @@ export function ManagerHandoutPage() {
   const allItems = useMemo<JourneyItemWithSection[]>(
     () =>
       journey?.sections.flatMap((section) =>
-        section.items.map((item) => ({ ...item, sectionTitle: section.title })),
+        section.items
+          .filter((item) => item.item_type !== 'meeting_approval')
+          .map((item) => ({ ...item, sectionTitle: section.title })),
       ) ?? [],
     [journey],
   );
@@ -400,9 +468,11 @@ export function ManagerHandoutPage() {
       const data = await getManagerCompanyJourney(token);
       setJourney(data);
 
-      const items = data.sections.flatMap((section) => section.items);
+      const items = data.sections.flatMap((section) =>
+        section.items.filter((item) => item.item_type !== 'meeting_approval'),
+      );
       const itemFromParam = nextSelectedId ? items.find((item) => item.id === nextSelectedId) : null;
-      const firstItem = itemFromParam ?? items[0] ?? null;
+      const firstItem = itemFromParam ?? getResumeItem(items);
 
       if (firstItem) {
         setSelectedId(firstItem.id);
@@ -428,11 +498,55 @@ export function ManagerHandoutPage() {
   }, [searchParams, selectedId]);
 
   useEffect(() => {
-    setUploadError(null);
-    setUploadSuccess(null);
+    if (!selected?.id) return;
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }, [selected?.id]);
 
+  useEffect(() => {
+    setUploadError(null);
+    setUploadSuccess(null);
+    setApprovalNotes(selected?.submission_notes ?? '');
+  }, [selected?.id]);
+
+  function markItemCompletedLocally(itemId: string, completedAt?: string | null) {
+    setJourney((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        sections: current.sections.map((section) => ({
+          ...section,
+          items: section.items.map((item) =>
+            item.id === itemId
+              ? {
+                  ...item,
+                  user_status: 'completed',
+                  submitted_at: completedAt ?? new Date().toISOString(),
+                }
+              : item,
+          ),
+        })),
+      };
+    });
+  }
+
+  async function completeContentItem(item: JourneyItem | null) {
+    if (!token || !item || !isCompletableContentItem(item) || isDelivered(item)) return;
+
+    markItemCompletedLocally(item.id);
+    try {
+      const progress = await completeManagerCompanyJourneyItem(token, item.id);
+      markItemCompletedLocally(item.id, progress.completed_at);
+    } catch {
+      // Progresso visual não deve bloquear a navegação entre conteúdos.
+    }
+  }
+
   function handleSelect(itemId: string) {
+    if (selected?.id && selected.id !== itemId) {
+      void completeContentItem(selected);
+    }
     setSelectedId(itemId);
     setSearchParams({ item: itemId });
   }
@@ -510,6 +624,36 @@ export function ManagerHandoutPage() {
     }
   }
 
+  async function handleScheduleApproval(
+    event: { preventDefault(): void },
+    item: JourneyItem,
+    decision: 'approved' | 'changes_requested',
+  ) {
+    event.preventDefault();
+    if (!token) return;
+
+    setSubmittingItem(item.id);
+    setUploadError(null);
+    setUploadSuccess(null);
+
+    try {
+      await approveManagerCompanyJourneyItem(token, item.id, {
+        decision,
+        notes: approvalNotes.trim() || null,
+      });
+      await loadJourney(item.id);
+      setUploadSuccess(
+        decision === 'approved'
+          ? 'Cronograma aprovado com sucesso.'
+          : 'Solicitação de ajustes registrada.',
+      );
+    } catch (err) {
+      setUploadError(parseApiError(err));
+    } finally {
+      setSubmittingItem(null);
+    }
+  }
+
   if (!user) return null;
 
   if (loadingJourney) {
@@ -543,9 +687,12 @@ export function ManagerHandoutPage() {
     );
   }
 
-  const template = isDeliveryItem(selected) ? getTemplateInfo(selected) : null;
+  const template = selected.item_type === 'document_request' ? getTemplateInfo(selected) : null;
   const draft = uploadDrafts[selected.id] ?? { file: null, notes: '' };
   const submissionHref = fileHref(selected.submission_file_url);
+  const scheduleApprovalEvents = selected.item_type === 'schedule_approval'
+    ? getScheduleApprovalEvents(selected)
+    : [];
 
   return (
     <div className="journey-workspace">
@@ -566,14 +713,14 @@ export function ManagerHandoutPage() {
 
           <div className="journey-nav__progress">
             <div className="journey-nav__progress-head">
-              <span>Entregas</span>
+              <span>Ações</span>
               <strong>{progressPct}%</strong>
             </div>
             <div className="journey-nav__progress-track">
               <div className="journey-nav__progress-fill" style={{ width: `${progressPct}%` }} />
             </div>
             <span className="journey-nav__progress-meta">
-              {completedDeliveries} de {deliveryItems.length} documentos enviados
+              {completedDeliveries} de {deliveryItems.length} ações concluídas
             </span>
           </div>
         </div>
@@ -807,6 +954,90 @@ export function ManagerHandoutPage() {
             </div>
           ) : null}
 
+          {selected.item_type === 'schedule_approval' ? (
+            <div className="content-block">
+              <span className="content-chip"><CalendarDays size={13} /> Cronograma para aprovação</span>
+              <h2>{selected.title}</h2>
+              <p>
+                {selected.description ??
+                  'Revise as etapas, entregas e datas previstas para o projeto antes de confirmar.'}
+              </p>
+
+              {scheduleApprovalEvents.length ? (
+                <div className="schedule-approval-list">
+                  {scheduleApprovalEvents.map((scheduleEvent, index) => (
+                    <article
+                      key={`${scheduleEvent.kind}-${scheduleEvent.title}-${index}`}
+                      className="schedule-approval-item"
+                    >
+                      <span className="schedule-approval-item__kind">
+                        {scheduleEventKindLabel(scheduleEvent.kind)}
+                      </span>
+                      <div>
+                        <strong>{scheduleEvent.title}</strong>
+                        {scheduleEvent.section && scheduleEvent.section !== scheduleEvent.title ? (
+                          <em>{scheduleEvent.section}</em>
+                        ) : null}
+                      </div>
+                      <p>
+                        {formatDate(scheduleEvent.available_from)}
+                        {' — '}
+                        {formatDate(scheduleEvent.due_at)}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="manager-template manager-template--empty">
+                  <span className="manager-template__icon"><CalendarClock size={18} /></span>
+                  <div className="manager-template__copy">
+                    <strong>Cronograma em preparação</strong>
+                    <p>As datas serão exibidas aqui assim que o planejamento estiver disponível.</p>
+                  </div>
+                </div>
+              )}
+
+              <form
+                className="approval-form"
+                onSubmit={(event) => handleScheduleApproval(event, selected, 'approved')}
+              >
+                <label>
+                  <span>Observações sobre o cronograma</span>
+                  <textarea
+                    rows={4}
+                    value={approvalNotes}
+                    onChange={(event) => setApprovalNotes(event.target.value)}
+                    placeholder="Opcional para aprovação; descreva o que deve mudar ao solicitar ajustes."
+                  />
+                </label>
+
+                {uploadError ? <div className="form-error">{uploadError}</div> : null}
+                {uploadSuccess ? <div className="form-success">{uploadSuccess}</div> : null}
+
+                <div className="approval-actions">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={submittingItem === selected.id}
+                    onClick={(event) => {
+                      void handleScheduleApproval(event, selected, 'changes_requested');
+                    }}
+                  >
+                    Solicitar ajustes
+                  </button>
+                  <button
+                    type="submit"
+                    className="primary-button"
+                    disabled={submittingItem === selected.id || !scheduleApprovalEvents.length}
+                  >
+                    <CheckCircle2 size={16} />
+                    {submittingItem === selected.id ? 'Salvando...' : 'Aprovar cronograma'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : null}
+
           <nav className="journey-pager" aria-label="Navegação entre etapas">
             {prevItem ? (
               <button type="button" className="journey-pager__btn" onClick={() => handleSelect(prevItem.id)}>
@@ -831,7 +1062,13 @@ export function ManagerHandoutPage() {
                 <ArrowRight size={16} />
               </button>
             ) : (
-              <Link to="/manager" className="journey-pager__btn journey-pager__btn--next">
+              <Link
+                to="/manager"
+                className="journey-pager__btn journey-pager__btn--next"
+                onClick={() => {
+                  void completeContentItem(selected);
+                }}
+              >
                 <span>
                   <em>Finalizar</em>
                   <strong>Voltar para a visão geral</strong>

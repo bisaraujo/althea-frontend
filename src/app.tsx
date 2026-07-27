@@ -8,6 +8,7 @@ import { EmployeeDashboard } from './pages/employee-dashboard';
 import { EmployeeHandoutPage } from './pages/employee-handout-page';
 import { LoginPage } from './pages/login-page';
 import { ManagerDashboard } from './pages/manager-dashboard';
+import { MeetingsPage } from './pages/meetings-page';
 import { ManagerHandoutPage } from './pages/manager-handout-page';
 import { ProjectSchedulePage } from './pages/project-schedule-page';
 
@@ -33,6 +34,7 @@ export function App() {
             <Route path="/admin/companies" element={<AdminDashboard section="companies" />} />
             <Route path="/admin/projects" element={<AdminDashboard section="projects" />} />
             <Route path="/admin/schedule" element={<ProjectSchedulePage mode="admin" />} />
+            <Route path="/admin/meetings" element={<MeetingsPage mode="admin" />} />
             <Route path="/admin/projects/:projectId/users/new" element={<AdminDashboard section="project-users" />} />
             <Route path="/admin/projects/:projectId" element={<AdminDashboard section="project-detail" />} />
             <Route path="/admin/users" element={<Navigate to="/admin/projects" replace />} />
@@ -47,6 +49,7 @@ export function App() {
             <Route path="/manager/journey" element={<EmployeeHandoutPage mode="manager" />} />
             <Route path="/manager/company-journey" element={<ManagerHandoutPage />} />
             <Route path="/manager/schedule" element={<ProjectSchedulePage mode="manager" />} />
+            <Route path="/manager/meetings" element={<MeetingsPage mode="manager" />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={['employee']} />}>

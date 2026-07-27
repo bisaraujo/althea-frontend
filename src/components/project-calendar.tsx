@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  Clock3,
   ExternalLink,
   FileText,
   X,
@@ -143,29 +142,31 @@ function buildMonthDays(monthDate: Date): CalendarDay[] {
 function eventLabel(event: ProjectCalendarEvent) {
   if (event.itemType === 'document_request') return 'Documento';
   if (event.itemType === 'survey') return 'Formulário';
+  if (event.itemType === 'meeting_approval') return 'Ata';
+  if (event.itemType === 'schedule_approval') return 'Cronograma';
   return event.group === 'manager' ? 'Empresa' : 'Colaborador';
 }
 
 function eventStatusClass(status?: string | null) {
-  if (status === 'submitted') return 'is-submitted';
+  if (status === 'submitted' || status === 'approved') return 'is-submitted';
   if (status === 'submitted_late') return 'is-submitted-late';
   if (status === 'overdue') return 'is-overdue';
-  if (status === 'pending') return 'is-pending';
+  if (status === 'changes_requested') return 'is-pending';
   return 'is-planned';
 }
 
 function statusLabel(status?: string | null) {
-  if (status === 'submitted') return 'Concluído';
-  if (status === 'submitted_late') return 'Concluído com atraso';
-  if (status === 'overdue') return 'Atrasado';
-  if (status === 'pending') return 'Pendente';
-  return 'Planejado';
+  if (status === 'submitted' || status === 'approved') return 'Feita';
+  if (status === 'submitted_late') return 'Feita com atraso';
+  if (status === 'changes_requested') return 'Ajustes solicitados';
+  if (status === 'overdue') return 'Atrasada';
+  return 'Agendada';
 }
 
 function StatusIcon({ status }: { status?: string | null }) {
-  if (status === 'submitted' || status === 'submitted_late') return <CheckCircle2 size={14} />;
+  if (status === 'submitted' || status === 'submitted_late' || status === 'approved') return <CheckCircle2 size={14} />;
   if (status === 'overdue') return <AlertTriangle size={14} />;
-  return <Clock3 size={14} />;
+  return <CalendarClock size={14} />;
 }
 
 function formatRange(event: ProjectCalendarEvent) {
@@ -183,10 +184,17 @@ function eventProgress(event: ProjectCalendarEvent) {
   }
 
   if (event.submittedAt) {
+    if (event.itemType === 'meeting_approval' || event.itemType === 'schedule_approval') {
+      return `Atualizado em ${formatDate(event.submittedAt)}`;
+    }
     return `Enviado em ${formatDate(event.submittedAt)}`;
   }
 
-  return event.group === 'manager' ? 'Entrega da empresa' : 'Entrega do colaborador';
+  if (event.itemType === 'meeting_approval' || event.itemType === 'schedule_approval') {
+    return 'Aguardando aprovação';
+  }
+
+  return event.group === 'manager' ? 'Ação da empresa' : 'Ação do colaborador';
 }
 
 function sortEventsByDate(events: ProjectCalendarEvent[]) {
@@ -241,7 +249,7 @@ export function ProjectCalendar({
       <div className="project-calendar project-calendar--empty">
         <CalendarClock size={20} />
         <strong>Cronograma em preparação</strong>
-        <span>As datas aparecem aqui quando as entregas tiverem início e prazo definidos.</span>
+        <span>As datas aparecem aqui quando as ações tiverem início e prazo definidos.</span>
       </div>
     );
   }
@@ -287,9 +295,15 @@ export function ProjectCalendar({
       </div>
 
       <div className="project-calendar__legend" aria-label="Legenda do cronograma">
-        <span className="project-calendar__legend-item project-calendar__legend-item--pending">Pendente</span>
-        <span className="project-calendar__legend-item project-calendar__legend-item--overdue">Atrasado</span>
-        <span className="project-calendar__legend-item project-calendar__legend-item--submitted">Concluído</span>
+        <span className="project-calendar__legend-item project-calendar__legend-item--planned">
+          <CalendarClock size={14} /> Agendada
+        </span>
+        <span className="project-calendar__legend-item project-calendar__legend-item--overdue">
+          <AlertTriangle size={14} /> Atrasada
+        </span>
+        <span className="project-calendar__legend-item project-calendar__legend-item--submitted">
+          <CheckCircle2 size={14} /> Feita
+        </span>
       </div>
 
       <div className="project-calendar__body">
@@ -323,7 +337,7 @@ export function ProjectCalendar({
                 aria-pressed={isSelected}
               >
                 <span className="project-calendar__day-number">{formatDayNumber(day.date)}</span>
-                <span className="project-calendar__dots" aria-label={`${dayEvents.length} entregas neste dia`}>
+                <span className="project-calendar__dots" aria-label={`${dayEvents.length} ações neste dia`}>
                   {shownDots.map((event) => (
                     <span
                       key={`${event.id}-${day.key}`}
@@ -343,10 +357,12 @@ export function ProjectCalendar({
             <span>{formatFullDate(selectedDate)}</span>
             <strong>
               {selectedEvents.length
-                ? `${selectedEvents.length} entrega${selectedEvents.length === 1 ? '' : 's'}`
-                : 'Nenhuma entrega'}
+                ? selectedEvents.length === 1
+                  ? '1 ação'
+                  : `${selectedEvents.length} ações`
+                : 'Nenhuma ação'}
             </strong>
-            <em>{monthEvents.length} entrega{monthEvents.length === 1 ? '' : 's'} neste mês</em>
+            <em>{monthEvents.length === 1 ? '1 ação' : `${monthEvents.length} ações`} neste mês</em>
           </div>
 
           {selectedEvents.length ? (
@@ -392,7 +408,7 @@ export function ProjectCalendar({
           ) : (
             <div className="project-calendar__day-empty">
               <CalendarClock size={18} />
-              <span>Selecione outro dia com marcador para ver as entregas do projeto.</span>
+              <span>Selecione outro dia com marcador para ver as ações do projeto.</span>
             </div>
           )}
         </aside>

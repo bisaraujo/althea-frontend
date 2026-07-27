@@ -12,6 +12,7 @@ import {
   Folder,
   FolderOpen,
   Lock,
+  Menu,
   ShieldCheck,
   Upload,
 } from 'lucide-react';
@@ -401,6 +402,7 @@ export function ManagerHandoutPage() {
   const [journey, setJourney] = useState<Journey | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('item'));
   const [expandedSectionIds, setExpandedSectionIds] = useState<string[]>([]);
+  const [isJourneyNavOpen, setIsJourneyNavOpen] = useState(false);
   const [uploadDrafts, setUploadDrafts] = useState<Record<string, UploadDraft>>({});
   const [approvalNotes, setApprovalNotes] = useState('');
   const [fileInputResetKey, setFileInputResetKey] = useState(0);
@@ -546,6 +548,7 @@ export function ManagerHandoutPage() {
     }
     setSelectedId(itemId);
     setSearchParams({ item: itemId });
+    setIsJourneyNavOpen(false);
   }
 
   function toggleSection(sectionId: string) {
@@ -718,7 +721,22 @@ export function ManagerHandoutPage() {
           </div>
         </div>
 
-        <div className="journey-nav__menu">
+        <button
+          type="button"
+          className="journey-nav__mobile-toggle"
+          aria-controls="manager-journey-navigation"
+          aria-expanded={isJourneyNavOpen}
+          onClick={() => setIsJourneyNavOpen((current) => !current)}
+        >
+          <Menu size={16} />
+          <span>{isJourneyNavOpen ? 'Ocultar etapas' : 'Ver etapas da jornada'}</span>
+          <ChevronRight size={15} aria-hidden />
+        </button>
+
+        <div
+          id="manager-journey-navigation"
+          className={`journey-nav__menu ${isJourneyNavOpen ? 'is-mobile-open' : ''}`}
+        >
           {journey.sections.map((section) => {
             const actionItems = getActionItems(section);
             const sidebarItems = getSidebarItems(section);

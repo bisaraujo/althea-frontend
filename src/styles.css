@@ -1443,6 +1443,10 @@ select:disabled {
   font-size: 0.78rem;
 }
 
+.journey-nav__mobile-toggle {
+  display: none;
+}
+
 .journey-nav__group {
   display: grid;
   gap: 0;
@@ -5367,11 +5371,49 @@ select:focus {
   .journey-nav__menu {
     display: flex;
     gap: 0.65rem;
-    max-height: none;
+    max-height: 0;
+    overflow: hidden;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+    scroll-snap-type: x proximity;
+    transition: max-height 0.24s ease, opacity 0.18s ease, padding 0.24s ease;
+  }
+
+  .journey-nav__menu.is-mobile-open {
+    max-height: 58vh;
     overflow-x: auto;
     overflow-y: hidden;
     padding: 0.15rem 0 0.35rem;
-    scroll-snap-type: x proximity;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .journey-nav__mobile-toggle {
+    width: 100%;
+    min-height: 40px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0 0.8rem;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.075);
+    color: var(--text-on-dark);
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .journey-nav__mobile-toggle svg:last-child {
+    color: var(--text-on-dark-soft);
+    transition: transform 0.2s ease;
+  }
+
+  .journey-nav__mobile-toggle[aria-expanded='true'] svg:last-child {
+    transform: rotate(90deg);
   }
 
   .journey-nav__group {

@@ -9,6 +9,7 @@ import {
   Folder,
   FolderOpen,
   Lock,
+  Menu,
   PlayCircle,
   Presentation as PresentationIcon,
   ShieldCheck,
@@ -626,6 +627,7 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
   const [journey, setJourney] = useState<Journey | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('item'));
   const [expandedSectionIds, setExpandedSectionIds] = useState<string[]>([]);
+  const [isJourneyNavOpen, setIsJourneyNavOpen] = useState(false);
   const [formDetail, setFormDetail] = useState<FormDetail | null>(null);
   const [answers, setAnswers] = useState<AnswersState>({});
   const [currentQuestionKey, setCurrentQuestionKey] = useState<string | null>(null);
@@ -799,6 +801,7 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
     }
     setSelectedId(itemId);
     setSearchParams({ item: itemId });
+    setIsJourneyNavOpen(false);
   }
 
   function toggleSection(sectionId: string) {
@@ -929,7 +932,22 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
           </div>
         </div>
 
-        <div className="journey-nav__menu">
+        <button
+          type="button"
+          className="journey-nav__mobile-toggle"
+          aria-controls="employee-journey-navigation"
+          aria-expanded={isJourneyNavOpen}
+          onClick={() => setIsJourneyNavOpen((current) => !current)}
+        >
+          <Menu size={16} />
+          <span>{isJourneyNavOpen ? 'Ocultar etapas' : 'Ver etapas da jornada'}</span>
+          <ChevronRight size={15} aria-hidden />
+        </button>
+
+        <div
+          id="employee-journey-navigation"
+          className={`journey-nav__menu ${isJourneyNavOpen ? 'is-mobile-open' : ''}`}
+        >
           {journey.sections.map((section) => {
             const actionItems = getActionItems(section);
             const sidebarItems = getSidebarItems(section);

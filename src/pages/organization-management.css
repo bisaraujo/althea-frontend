@@ -1,0 +1,222 @@
+/* Gestão organizacional: estrutura (árvore) e pessoas/vínculos. */
+
+.org-structure { display: grid; gap: 1rem; min-width: 0; }
+.org-structure .panel { min-width: 0; }
+
+.org-legend {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.1rem;
+  margin: 0 0 0.6rem; padding: 0; list-style: none;
+}
+.org-legend li {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  color: var(--text); font-weight: 800; font-size: 0.85rem;
+}
+.org-legend svg { color: var(--brand-deep); }
+.org-legend .org-legend__sep { color: var(--text-faint); margin: 0 0.15rem; }
+.org-summary { margin: 0 0 1rem; color: var(--text-soft); font-size: 0.85rem; }
+
+.org-units { display: grid; gap: 0.6rem; margin: 0; padding: 0; list-style: none; }
+.org-unit {
+  border: 1px solid var(--border); border-radius: 14px; background: #fffdf9; min-width: 0;
+}
+.org-unit .org-units { margin-top: 0.4rem; }
+.org-unit[data-depth='1'], .org-unit[data-depth='2'], .org-unit[data-depth='3'] { background: var(--surface-soft); }
+
+.org-unit__head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.9rem;
+  padding: 0.6rem 0.8rem;
+}
+.org-unit__toggle {
+  display: inline-flex; align-items: center; gap: 0.45rem; min-width: 0;
+  padding: 0.2rem 0.1rem; border: 0; background: transparent; color: var(--text); cursor: pointer; text-align: left;
+  font: inherit;
+}
+.org-unit__toggle svg { color: var(--purple); flex: none; }
+.org-unit__toggle strong { font-size: 0.98rem; overflow-wrap: anywhere; }
+.org-unit__actions { display: flex; gap: 0.35rem; margin-left: auto; }
+.org-unit__body {
+  display: grid; gap: 0.5rem; padding: 0 0.8rem 0.8rem 1.6rem;
+  border-top: 1px dashed var(--border); padding-top: 0.6rem; margin-left: 0;
+}
+
+.org-meta { color: var(--text-faint); font-size: 0.78rem; }
+.org-hint { margin: 0; color: var(--text-faint); font-size: 0.8rem; }
+.org-tag {
+  padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--purple-soft); color: var(--purple);
+  font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em;
+}
+.org-subtitle { margin: 0.9rem 0 0.4rem; color: var(--text-soft); font-size: 0.8rem; font-weight: 800; }
+
+.org-action {
+  display: inline-flex; align-items: center; gap: 0.25rem; min-height: 30px; padding: 0.2rem 0.6rem;
+  border: 1px dashed rgba(255, 122, 0, 0.5); border-radius: 999px; background: transparent;
+  color: var(--brand-deep); font-size: 0.78rem; font-weight: 800; cursor: pointer; white-space: nowrap;
+}
+.org-action:hover, .org-action:focus-visible { background: var(--brand-soft); border-style: solid; }
+
+.org-area {
+  display: grid; gap: 0.4rem; padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border); border-radius: 12px; background: white; min-width: 0;
+}
+.org-area__head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.6rem; }
+.org-area__head > svg { color: var(--brand-deep); flex: none; }
+.org-area__head strong { overflow-wrap: anywhere; }
+.org-area__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin-left: auto; }
+
+.org-positions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.org-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem; max-width: 100%;
+  padding: 0.18rem 0.6rem; border: 1px solid var(--border); border-radius: 999px;
+  background: var(--surface-soft); color: var(--text); font-size: 0.78rem; font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.org-chip svg { color: var(--purple); flex: none; }
+.org-chip em {
+  min-width: 1.2rem; padding: 0 0.3rem; border-radius: 999px; background: var(--purple-soft); color: var(--purple);
+  font-size: 0.68rem; font-style: normal; font-weight: 800; text-align: center;
+}
+.org-chip--button { cursor: pointer; font-family: inherit; }
+.org-chip--button:hover, .org-chip--button:focus-visible { border-color: var(--brand); background: var(--brand-soft); }
+
+.org-inline-add { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.org-inline-add input { flex: 1 1 180px; min-width: 0; min-height: 38px; padding: 0.4rem 0.7rem; }
+.org-inline-add .primary-button, .org-inline-add .secondary-button { min-height: 38px; padding: 0.4rem 0.9rem; }
+
+.org-move { min-height: 30px; max-width: 220px; padding: 0.15rem 0.5rem; font-size: 0.78rem; border-radius: 999px; }
+
+.org-legacy-note {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0 0 0.6rem;
+  padding: 0.55rem 0.75rem; border-radius: 12px; background: var(--brand-soft); color: var(--text-soft); font-size: 0.82rem;
+}
+.org-legacy-note > svg { color: var(--brand-deep); flex: none; }
+.org-structure .org-area + .org-area { margin-top: 0.4rem; }
+
+/* Pessoas e vínculos */
+.org-people, .org-documents, .org-governance, .org-import { display: grid; gap: 0.8rem; min-width: 0; }
+.org-people .admin-form label > span, .org-drawer-form label > span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.org-filter-select { min-height: 38px; max-width: 220px; padding: 0.3rem 0.6rem; border-radius: 12px; }
+
+.org-preview {
+  display: grid; gap: 0.25rem; padding: 0.6rem 0.75rem; border: 1px dashed var(--border-strong);
+  border-radius: 12px; background: var(--surface-soft);
+}
+
+.org-path { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.15rem 0.2rem; min-width: 0; }
+.org-path--empty { color: var(--text-faint); font-size: 0.8rem; }
+.org-path__sep { color: var(--text-faint); flex: none; }
+.org-path__part {
+  display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.1rem 0.5rem; border-radius: 999px;
+  font-size: 0.78rem; font-weight: 700; overflow-wrap: anywhere;
+}
+.org-path__part--unit { background: var(--purple-soft); color: var(--purple); }
+.org-path__part--area { background: var(--brand-soft); color: var(--brand-deep); }
+.org-path__part--position { background: var(--surface-soft); color: var(--text); border: 1px solid var(--border); }
+
+.org-person-cell, .org-doc-cell { display: inline-flex; align-items: center; gap: 0.6rem; min-width: 0; }
+.org-doc-cell > svg { color: var(--purple); flex: none; }
+.org-avatar {
+  flex: none;
+  display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  background: var(--purple-soft); color: var(--purple); font-size: 0.78rem; font-weight: 800;
+}
+.org-person__copy { display: grid; gap: 0.25rem; min-width: 0; }
+.org-person__copy strong { overflow-wrap: anywhere; }
+.org-person__email { color: var(--text-faint); font-size: 0.78rem; overflow-wrap: anywhere; }
+
+.org-link { padding: 0; border: 0; background: none; color: var(--brand-deep); font: inherit; font-weight: 800; text-decoration: underline; cursor: pointer; }
+
+/* Ações e estados compartilhados */
+.org-icon-btn {
+  display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0; flex: none;
+  border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-soft); cursor: pointer;
+}
+.org-icon-btn:hover:not(:disabled), .org-icon-btn:focus-visible { border-color: var(--border); background: var(--surface-soft); color: var(--text); }
+.org-icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.org-icon-btn--danger:hover:not(:disabled), .org-icon-btn--danger:focus-visible { color: var(--danger); }
+.org-row-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.15rem; }
+.org-danger-btn { color: var(--danger); }
+.org-footer-spacer { flex: 1; }
+.org-empty-action { display: grid; justify-items: center; gap: 0.6rem; padding-bottom: 1rem; }
+.org-code { padding: 0.05rem 0.4rem; border-radius: 6px; background: var(--surface-soft); font-size: 0.78rem; }
+.org-optional { color: var(--text-faint); font-style: normal; font-weight: 500; }
+.org-field-error { margin: 0; color: var(--danger); font-size: 0.82rem; }
+.org-check { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--text-soft); font-size: 0.8rem; cursor: pointer; }
+.org-check input { width: auto; min-height: 0; }
+.org-more { justify-self: center; }
+
+/* Estrutura: itens inativos e ações nos cargos */
+.org-unit.is-inactive, .org-area.is-inactive { opacity: 0.7; }
+.org-chip.is-inactive { opacity: 0.65; border-style: dashed; }
+.org-chip small { color: var(--text-faint); font-size: 0.68rem; font-weight: 700; }
+.org-chip__actions { display: inline-flex; margin-left: 0.15rem; opacity: 0.55; }
+.org-chip:hover .org-chip__actions, .org-chip:focus-within .org-chip__actions { opacity: 1; }
+.org-chip__actions .org-icon-btn { width: 24px; height: 24px; border-radius: 6px; }
+.org-summary-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 1rem; margin-bottom: 0.8rem; }
+.org-summary-row .org-summary { margin: 0; }
+
+/* Drawer de colaborador */
+.org-drawer-form { display: grid; gap: 0.2rem; min-width: 0; }
+.org-drawer-form fieldset { display: grid; gap: 0.7rem; min-width: 0; margin: 0 0 1.1rem; padding: 0 0 1.1rem; border: 0; border-bottom: 1px solid var(--border); }
+.org-drawer-form fieldset:last-child { border-bottom: 0; margin-bottom: 0; }
+.org-drawer-form legend { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; padding: 0; font-weight: 800; font-size: 0.95rem; }
+.org-drawer-form legend em { color: var(--text-faint); font-style: normal; font-weight: 500; font-size: 0.8rem; }
+.org-drawer-form label { display: grid; gap: 0.3rem; min-width: 0; }
+.org-drawer-form input, .org-drawer-form select { width: 100%; min-width: 0; }
+.org-step {
+  display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--purple-soft); color: var(--purple); font-size: 0.72rem; font-weight: 800;
+}
+.org-readonly { display: grid; gap: 0.4rem; align-content: start; font-size: 0.85rem; font-weight: 700; }
+
+/* Documentos */
+.org-origin { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.5rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-soft); color: var(--text-soft); font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+.org-origin--file { background: var(--purple-soft); border-color: transparent; color: var(--purple); }
+.org-source { display: grid; gap: 0.6rem; min-width: 0; }
+.org-file-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.8rem; }
+.org-file-pick .org-hint { overflow-wrap: anywhere; }
+.org-progress { position: relative; height: 26px; overflow: hidden; border-radius: 999px; background: var(--surface-soft); border: 1px solid var(--border); }
+.org-progress span { position: absolute; inset: 0 auto 0 0; background: var(--brand-soft); transition: width 0.2s ease; }
+.org-progress em { position: relative; display: block; padding: 0 0.8rem; line-height: 24px; font-size: 0.78rem; font-style: normal; font-weight: 700; color: var(--text); }
+.org-versions { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.org-versions li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 0.6rem; padding: 0.55rem 0.7rem; border: 1px solid var(--border); border-radius: 12px; background: white; }
+.org-versions__badge { padding: 0.1rem 0.5rem; border-radius: 999px; background: var(--purple-soft); color: var(--purple); font-size: 0.75rem; font-weight: 800; }
+.org-versions__copy { display: grid; min-width: 0; }
+.org-versions__copy strong { overflow-wrap: anywhere; font-size: 0.88rem; }
+.org-open-btn { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 32px; padding: 0.2rem 0.7rem; font-size: 0.8rem; text-decoration: none; }
+
+/* Linha do tempo da auditoria */
+.org-timeline { display: grid; gap: 1rem; margin-top: 0.8rem; }
+.org-timeline__day { margin: 0 0 0.4rem; color: var(--text-soft); font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; }
+.org-timeline ol { display: grid; margin: 0; padding: 0; list-style: none; }
+.org-timeline li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.7rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+.org-timeline li:last-child { border-bottom: 0; }
+.org-timeline__icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--surface-soft); color: var(--text-soft); }
+.org-timeline__icon--structure, .org-timeline__icon--people { background: var(--purple-soft); color: var(--purple); }
+.org-timeline__icon--access { background: var(--brand-soft); color: var(--brand-deep); }
+.org-timeline__copy { display: grid; gap: 0.1rem; min-width: 0; overflow-wrap: anywhere; font-size: 0.88rem; }
+
+/* Importação */
+.org-import-columns { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0 0 0.6rem; padding: 0; list-style: none; }
+.org-import-columns li { padding: 0.15rem 0.65rem; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-soft); font-size: 0.8rem; font-weight: 700; }
+.org-import-columns li.is-required { background: var(--brand-soft); border-color: transparent; color: var(--brand-deep); }
+.org-dropzone { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; padding: 0.9rem 1rem; border: 1px dashed var(--border-strong); border-radius: 14px; background: var(--surface-soft); }
+.org-dropzone > svg { color: var(--purple); flex: none; }
+.org-dropzone > div { display: grid; flex: 1 1 200px; min-width: 0; }
+.org-dropzone strong { overflow-wrap: anywhere; }
+.org-import-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+.org-import-alert { margin: 0 0 0.6rem; padding: 0.55rem 0.75rem; border-radius: 12px; background: var(--brand-soft); color: var(--text); font-size: 0.85rem; }
+.org-row-errors { color: var(--danger); font-size: 0.82rem; font-weight: 600; }
+.org-import-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; margin-top: 0.8rem; }
+.org-import-done { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; }
+.org-import-done > svg { color: var(--success, #1f8a4c); flex: none; }
+.org-import-done > div { display: grid; flex: 1 1 200px; }
+
+@media (max-width: 560px) {
+  .org-unit__body { padding-left: 0.7rem; padding-right: 0.6rem; }
+  .org-unit__actions, .org-area__actions { margin-left: 0; }
+  .org-move { max-width: 100%; }
+  .org-filter-select { max-width: 100%; width: 100%; }
+  .org-versions li { grid-template-columns: auto minmax(0, 1fr); }
+  .org-versions li > .org-origin, .org-versions li > .org-open-btn { grid-column: 2; justify-self: start; }
+  .org-import-actions > button { flex: 1 1 auto; }
+}

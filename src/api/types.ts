@@ -7,6 +7,8 @@ export type AuthenticatedUser = {
   role: UserRole;
   company_id: string | null;
   project_id: string | null;
+  platform_admin: boolean;
+  admin_product_ids: string[];
 };
 
 export type LoginResponse = {
@@ -50,6 +52,8 @@ export type Company = {
   name: string;
   email: string;
   user_id: string;
+  /** Preenchido só na listagem do admin. */
+  has_jornadas?: boolean | null;
 };
 
 export type ResponseRecord = {
@@ -77,13 +81,106 @@ export type UserRecord = {
   role: UserRole;
   company_id: string | null;
   project_id: string | null;
+  platform_admin: boolean;
+  admin_product_ids: string[];
 };
+
+export type CompanyPortfolio = Company & {
+  products: Product[];
+  project_count: number;
+  manager_count: number;
+  employee_count: number;
+  granted_module_count: number;
+  total_module_count: number;
+};
+
+export type AdminAccessPayload = {
+  platform_admin: boolean;
+  product_ids: string[];
+};
+
+export type AdminCreatePayload = AdminAccessPayload & {
+  name: string;
+  email: string;
+};
+
+export type OrganizationalUnit = { id: string; company_id: string; name: string; unit_type: string; parent_id: string | null; active: boolean; created_at: string; updated_at: string };
+export type OrganizationalArea = { id: string; company_id: string; name: string; unit_id: string | null; active: boolean; created_at: string; updated_at: string };
+export type OrganizationalPosition = { id: string; company_id: string; name: string; area_id: string | null; active: boolean; created_at: string; updated_at: string };
+export type OrganizationalStructure = { units: OrganizationalUnit[]; areas: OrganizationalArea[]; positions: OrganizationalPosition[] };
+export type Person = { id: string; company_id: string; name: string; email: string | null; phone: string | null; status: string; custom_values: Record<string, unknown>; created_at: string; updated_at: string };
+export type Employment = { id: string; company_id: string; person_id: string; person_name: string | null; person_email: string | null; unit_id: string | null; unit_name: string | null; area_id: string | null; area_name: string | null; position_id: string | null; position_name: string | null; user_id: string | null; status: string; started_at: string | null; ended_at: string | null; created_at: string; updated_at: string };
+export type OrganizationalDocument = { id: string; company_id: string; title: string; document_type: string; entity_type: string; entity_id: string | null; status: string; current_version: number; file_name: string; file_url: string; created_at: string; updated_at: string };
+export type OrganizationalAccessProfile = { id: string; company_id: string | null; name: string; description?: string | null; permissions: string[]; active: boolean; created_at: string; updated_at: string };
+export type PermissionCatalogEntry = { key: string; label: string; module: string };
+export type CompanyCustomCapabilityStatus = 'pending' | 'approved' | 'rejected';
+export type CompanyCustomCapability = { id: string; company_id: string; capability_key: string; label: string; reason: string | null; requested_by: string | null; requested_at: string; approved_by: string | null; approved_at: string | null; rejected_by: string | null; rejected_at: string | null; status: CompanyCustomCapabilityStatus; company_name?: string | null; kind?: string; kind_label?: string; requested_by_name?: string | null; requested_by_email?: string | null; decided_by?: string | null; decided_by_name?: string | null; decided_at?: string | null; decision_note?: string | null; responsible_label?: string };
+export type AccessAssignment = { id: string; employment_id: string; profile_id: string; unit_id: string | null; area_id: string | null; created_at: string; profile_name: string; person_name: string; person_email: string | null; unit_name: string | null; area_name: string | null; position_name?: string | null; employment_unit_name?: string | null; employment_area_name?: string | null };
+export type EffectiveAccess = { company_id: string; role: UserRole; permissions: string[] };
+export type OrganizationalImport = { id: string; company_id: string; file_name: string; status: string; rows: Array<Record<string, unknown>>; summary: Record<string, number>; created_at: string; committed_at: string | null };
+export type CustomFieldDefinition = { id: string; company_id: string; entity_type: string; field_key: string; label: string; field_type: string; required: boolean; active: boolean };
+export type OrganizationalAuditLog = { id: string; company_id: string; actor_id: string | null; action: string; entity_type: string; entity_id: string | null; details: Record<string, unknown>; created_at: string };
+export type ActionPlanItem = { id: string; action_plan_id: string; title: string; description: string | null; owner_name: string | null; due_at: string | null; frequency: string | null; status: string; created_at: string; updated_at: string };
+export type ActionPlan = { id: string; project_id: string; status: string; submitted_at: string | null; created_at: string; updated_at: string; items: ActionPlanItem[] };
+export type OperationalSurveyQuestion = { id: string; survey_id: string; question_key: string; title: string; question_type: string; order: number; required: boolean; options: string[] };
+export type OperationalSurvey = { id: string; company_id: string | null; title: string; description: string | null; status: string; version: number; created_at: string; updated_at: string; questions: OperationalSurveyQuestion[] };
+export type ResearchStage = { id: string; cycle_id: string; name: string; survey_id: string | null; stage_type: string; order: number; status: string; due_at: string | null };
+export type ResearchCycle = { id: string; plan_id: string; name: string; frequency: string; status: string; starts_at: string | null; ends_at: string | null; stages: ResearchStage[] };
+export type ResearchPlan = { id: string; company_id: string; project_id: string | null; name: string; status: string; starts_at: string | null; ends_at: string | null; created_at: string; updated_at: string; cycles: ResearchCycle[] };
+export type FagulhaQuestion = { key: string; title: string; question_type: string; required: boolean; options: string[] };
+export type FagulhaCampaign = { id: string; company_id: string; slug: string; title: string; description: string | null; status: string; starts_at: string | null; ends_at: string | null; questions: FagulhaQuestion[]; created_at: string; updated_at: string };
+export type FagulhaAccess = { company_id: string; company_name: string; contracted: boolean; active: boolean; updated_at: string | null };
+export type FagulhaAchievement = { id: string; company_id: string; name: string; description: string | null; badge: string | null; active: boolean; created_at: string };
+export type FagulhaActivation = { id: string; company_id: string; name: string; email: string; token: string; status: string; activated_at: string | null; expires_at: string | null; created_at: string };
 
 export type CompanyCreatePayload = {
   name: string;
   description?: string | null;
   email: string;
-  senha: string;
+  /** Produtos contratados na criação. Lista vazia = nenhum produto. */
+  product_ids?: string[];
+};
+
+export type Product = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
+export type ProductPayload = {
+  name: string;
+  description?: string | null;
+};
+
+export type CompanyProducts = {
+  company_id: string;
+  product_ids: string[];
+};
+
+export type ModuleOverrideMode = 'GRANT' | 'REVOKE';
+
+export type ModuleEntitlement = {
+  id: string;
+  code: string;
+  name: string;
+  tier: string;
+  product_id: string | null;
+  created_at: string;
+  granted: boolean;
+  override_mode: ModuleOverrideMode | null;
+  override_reason: string | null;
+};
+
+export type ModuleOverrideHistoryEntry = {
+  id: string;
+  company_id: string;
+  module_code: string;
+  module_name: string;
+  mode: ModuleOverrideMode;
+  granted_by: string | null;
+  granted_by_name: string | null;
+  reason: string | null;
+  created_at: string;
 };
 
 export type ProjectCreatePayload = {
@@ -95,7 +192,6 @@ export type ProjectCreatePayload = {
 export type ClientUserCreatePayload = {
   name: string;
   email: string;
-  senha: string;
   role: 'manager' | 'employee';
   company_id: string;
   project_id: string;
@@ -227,10 +323,21 @@ export type Meeting = {
   manager_approved: boolean;
   manager_approved_by: string | null;
   manager_approved_at: string | null;
-  status: 'pending' | 'approved';
+  manager_decision: 'approved' | 'changes_requested' | null;
+  status: 'pending' | 'approved' | 'changes_requested';
+  reviews: MeetingReview[];
   created_by: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type MeetingReview = {
+  id: string;
+  reviewer_id: string | null;
+  reviewer_name: string;
+  decision: 'approved' | 'changes_requested';
+  notes: string | null;
+  created_at: string;
 };
 
 export type MeetingCreatePayload = {
@@ -349,3 +456,4 @@ export type JourneyProgress = {
   created_at: string;
   updated_at: string;
 };
+

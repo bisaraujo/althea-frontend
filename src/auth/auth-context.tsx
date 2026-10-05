@@ -14,12 +14,17 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<AuthenticatedUser | null>(null);
+  const [token, setToken] = useState<string | null>(() => getStoredToken());
+  const [user, setUser] = useState<AuthenticatedUser | null>(() => getStoredUser());
 
   useEffect(() => {
-    setToken(getStoredToken());
-    setUser(getStoredUser());
+    function handleUnauthorized() {
+      clearSession();
+      setToken(null);
+      setUser(null);
+    }
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, []);
 
   const value: AuthContextValue = {

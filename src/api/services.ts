@@ -3,11 +3,15 @@ import type {
   ClientUserCreatePayload,
   Company,
   CompanyCreatePayload,
+  DocumentSubmission,
   DocumentSubmissionPayload,
   EmployeeImportResult,
   EmployeeRecord,
   FormSummary,
   Journey,
+  JourneyItem,
+  JourneyItemType,
+  JourneySection,
   JourneyApproval,
   JourneyApprovalPayload,
   LoginResponse,
@@ -18,6 +22,12 @@ import type {
   Project,
   ProjectCreatePayload,
   ProjectSchedule,
+  Product,
+  ProductPayload,
+  CompanyProducts,
+  ModuleEntitlement,
+  ModuleOverrideHistoryEntry,
+  ModuleOverrideMode,
   ResponseRecord,
   FormDetail,
   FormDraft,
@@ -25,6 +35,12 @@ import type {
   JourneyProgress,
   UserRecord
 } from './types';
+import type { AdminAccessPayload, AdminCreatePayload, CompanyPortfolio } from './types';
+import type { Employment, OrganizationalAccessProfile, OrganizationalArea, OrganizationalImport, OrganizationalPosition, OrganizationalStructure, OrganizationalUnit, Person } from './types';
+import type { ActionPlan, ActionPlanItem } from './types';
+import type { FagulhaAccess, FagulhaAchievement, FagulhaCampaign, FagulhaQuestion, OperationalSurvey, OperationalSurveyQuestion, ResearchCycle, ResearchPlan, ResearchStage } from './types';
+import type { CustomFieldDefinition, FagulhaActivation } from './types';
+import type { AccessAssignment, CompanyCustomCapability, CompanyCustomCapabilityStatus, EffectiveAccess, PermissionCatalogEntry } from './types';
 
 export async function login(username: string, password: string) {
   const body = new URLSearchParams({
@@ -38,6 +54,22 @@ export async function login(username: string, password: string) {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
+  });
+}
+
+export async function requestPasswordReset(email: string) {
+  return request<{ message: string }>('/auth/password-reset/request', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export async function confirmPasswordReset(email: string, code: string, newPassword: string) {
+  return request<{ message: string }>('/auth/password-reset/confirm', {
+    method: 'POST',
+    body: JSON.stringify({ email, code, new_password: newPassword }),
+    headers: { 'Content-Type': 'application/json' },
   });
 }
 
@@ -131,6 +163,22 @@ export async function completeManagerJourneyItem(token: string, itemId: string) 
   });
 }
 
+export async function uploadEmployeeDocumentFile(token: string, itemId: string, payload: FormData) {
+  return request<DocumentSubmission>(`/employee/journey/items/${itemId}/upload-file`, {
+    token,
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export async function uploadManagerJourneyDocumentFile(token: string, itemId: string, payload: FormData) {
+  return request<DocumentSubmission>(`/manager/journey/items/${itemId}/upload-file`, {
+    token,
+    method: 'POST',
+    body: payload,
+  });
+}
+
 export async function completeManagerCompanyJourneyItem(token: string, itemId: string) {
   return request<JourneyProgress>(`/manager/company-journey/items/${itemId}/complete`, {
     token,
@@ -191,6 +239,155 @@ export async function approveMeeting(token: string, meetingId: string) {
   return request<Meeting>(`/meetings/${meetingId}/approve`, {
     token,
     method: 'POST',
+  });
+}
+
+export async function getCompanyPortfolio(token: string) {
+  return request<CompanyPortfolio[]>('/platform-admin/companies', { token });
+}
+
+export async function getAdministrators(token: string) {
+  return request<UserRecord[]>('/platform-admin/administrators', { token });
+}
+
+export async function createAdministrator(token: string, payload: AdminCreatePayload) {
+  return request<UserRecord>('/platform-admin/administrators', {
+    token,
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export async function updateAdministratorAccess(
+  token: string,
+  userId: string,
+  payload: AdminAccessPayload,
+) {
+  return request<UserRecord>(`/platform-admin/administrators/${userId}/access`, {
+    token,
+    method: 'PUT',
+    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export async function getOrganizationalStructure(token: string, companyId: string) { return request<OrganizationalStructure>(`/companies/${companyId}/organization`, { token }); }
+export async function createOrganizationalUnit(token: string, companyId: string, payload: { name: string; unit_type: string; parent_id?: string | null }) { return request<OrganizationalUnit>(`/companies/${companyId}/organizational-units`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function createOrganizationalArea(token: string, companyId: string, payload: { name: string; unit_id?: string | null }) { return request<OrganizationalArea>(`/companies/${companyId}/areas`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function createOrganizationalPosition(token: string, companyId: string, payload: { name: string; area_id?: string | null }) { return request<OrganizationalPosition>(`/companies/${companyId}/positions`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function getPeople(token: string, companyId: string) { return request<Person[]>(`/companies/${companyId}/people`, { token }); }
+export async function createPerson(token: string, companyId: string, payload: { name: string; email?: string | null; phone?: string | null }) { return request<Person>(`/companies/${companyId}/people`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function getEmployments(token: string, companyId: string) { return request<Employment[]>(`/companies/${companyId}/employments`, { token }); }
+export async function createEmployment(token: string, personId: string, payload: { unit_id?: string | null; area_id?: string | null; position_id?: string | null; started_at?: string | null }) { return request<Employment>(`/people/${personId}/employments`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function getOrganizationalAccessProfiles(token: string, companyId: string) { return request<OrganizationalAccessProfile[]>(`/companies/${companyId}/access-profiles`, { token }); }
+export async function getPermissionCatalog(token: string) { return request<PermissionCatalogEntry[]>('/access-profiles/permission-catalog', { token }); }
+export async function getGlobalAccessProfiles(token: string) { return request<OrganizationalAccessProfile[]>('/access-profiles/global', { token }); }
+export async function requestCustomCapability(token: string, companyId: string, payload: { capability_key: string; label: string; reason?: string | null }) { return request<CompanyCustomCapability>(`/companies/${companyId}/custom-capabilities`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function getCompanyCustomCapabilities(token: string, companyId: string) { return request<CompanyCustomCapability[]>(`/companies/${companyId}/custom-capabilities`, { token }); }
+export async function getAllCustomCapabilities(token: string, status?: CompanyCustomCapabilityStatus) { return request<CompanyCustomCapability[]>(`/custom-capabilities${status ? `?status=${status}` : ''}`, { token }); }
+export async function getAccessProfileTemplates(token: string) { return request<OrganizationalAccessProfile[]>('/access-profiles/templates', { token }); }
+export async function createAccessProfileFromTemplate(token: string, companyId: string, templateId: string, name?: string) { return request<OrganizationalAccessProfile>(`/companies/${companyId}/access-profiles/from-template/${templateId}`, { token, method: 'POST', body: JSON.stringify(name ? { name } : {}), headers: { 'Content-Type': 'application/json' } }); }
+export async function getAccessAssignments(token: string, companyId: string) { return request<AccessAssignment[]>(`/companies/${companyId}/access-scopes`, { token }); }
+export async function revokeAccessAssignment(token: string, scopeId: string) { return request<unknown>(`/access-scopes/${scopeId}`, { token, method: 'DELETE' }); }
+export async function getMyEffectiveAccess(token: string, companyId: string) { return request<EffectiveAccess>(`/users/me/effective-access?company_id=${companyId}`, { token }); }
+export async function getCustomFields(token: string, companyId: string) { return request<CustomFieldDefinition[]>(`/companies/${companyId}/custom-fields`, { token }); }
+export async function createCustomField(token: string, companyId: string, payload: { entity_type: string; field_key: string; label: string; field_type: string; required: boolean }) { return request<CustomFieldDefinition>(`/companies/${companyId}/custom-fields`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function assignEmploymentAccessScope(token: string, employmentId: string, payload: { profile_id: string; unit_id?: string | null; area_id?: string | null }) { return request(`/employments/${employmentId}/access-scopes`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function createOrganizationalImport(token: string, companyId: string, payload: { file_name: string; rows: Array<{ name: string; email?: string; unit?: string; area?: string; position?: string; started_at?: string }> }) { return request<OrganizationalImport>(`/companies/${companyId}/organizational-imports`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function commitOrganizationalImport(token: string, batchId: string) { return request<OrganizationalImport>(`/organizational-imports/${batchId}/commit`, { token, method: 'POST' }); }
+export async function getActionPlan(token: string, projectId: string) { return request<ActionPlan>(`/projects/${projectId}/action-plan`, { token }); }
+export async function createActionPlanItem(token: string, projectId: string, payload: { title: string; description?: string | null; owner_name?: string | null; due_at?: string | null; frequency?: string | null }) { return request<ActionPlanItem>(`/projects/${projectId}/action-plan/items`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function updateActionPlanItem(token: string, itemId: string, payload: Partial<Pick<ActionPlanItem, 'title' | 'description' | 'owner_name' | 'due_at' | 'frequency' | 'status'>>) { return request<ActionPlanItem>(`/action-plan/items/${itemId}`, { token, method: 'PATCH', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function submitActionPlan(token: string, projectId: string) { return request<ActionPlan>(`/projects/${projectId}/action-plan/submit`, { token, method: 'POST' }); }
+export async function listJourneys(token: string) { return request<Journey[]>('/journeys', { token }); }
+export async function getJourney(token: string, journeyId: string) { return request<Journey>(`/journeys/${journeyId}`, { token }); }
+export async function createJourney(token: string, payload: { project_id: string; role_target: 'manager' | 'employee'; title: string; description?: string | null; status?: 'draft' | 'active' | 'archived' }) { return request<Journey>('/journeys', { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function updateJourney(token: string, journeyId: string, payload: { title?: string; description?: string | null; status?: 'draft' | 'active' | 'archived' }) { return request<Journey>(`/journeys/${journeyId}`, { token, method: 'PUT', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function createJourneySection(token: string, journeyId: string, payload: { title: string; description?: string | null; order: number }) { return request<JourneySection>(`/journeys/${journeyId}/sections`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function createJourneyItem(token: string, sectionId: string, payload: { title: string; description?: string | null; item_type: JourneyItemType; order: number; is_required: boolean; status: 'draft' | 'active' | 'archived'; content_text?: string | null; due_at?: string | null }) { return request<JourneyItem>(`/journeys/sections/${sectionId}/items`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function getOperationalSurveys(token: string) { return request<OperationalSurvey[]>('/operational-surveys', { token }); }
+export async function createOperationalSurvey(token: string, payload: { title: string; description?: string | null; company_id?: string | null }) { return request<OperationalSurvey>('/operational-surveys', { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function addOperationalSurveyQuestion(token: string, surveyId: string, payload: { question_key: string; title: string; question_type: string; order: number; required: boolean; options: string[] }) { return request<OperationalSurveyQuestion>(`/operational-surveys/${surveyId}/questions`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function transitionOperationalSurvey(token: string, surveyId: string, action: string) { return request<OperationalSurvey>(`/operational-surveys/${surveyId}/transition/${action}`, { token, method: 'POST' }); }
+export async function createOperationalSurveyVersion(token: string, surveyId: string) { return request<OperationalSurvey>(`/operational-surveys/${surveyId}/versions`, { token, method: 'POST' }); }
+export async function getResearchPlans(token: string, companyId: string) { return request<ResearchPlan[]>(`/companies/${companyId}/research-plans`, { token }); }
+export async function createResearchPlan(token: string, payload: { company_id: string; project_id?: string | null; name: string; starts_at?: string | null; ends_at?: string | null }) { return request<ResearchPlan>('/research-plans', { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function addResearchCycle(token: string, planId: string, payload: { name: string; frequency: string; starts_at?: string | null; ends_at?: string | null }) { return request<ResearchCycle>(`/research-plans/${planId}/cycles`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function addResearchStage(token: string, cycleId: string, payload: { name: string; survey_id?: string | null; stage_type: string; order: number; due_at?: string | null }) { return request<ResearchStage>(`/research-cycles/${cycleId}/stages`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function transitionResearchPlan(token: string, planId: string, action: string) { return request<ResearchPlan>(`/research-plans/${planId}/transition/${action}`, { token, method: 'POST' }); }
+export async function getFagulhaAccess(token: string) { return request<FagulhaAccess[]>('/fagulha-admin/access', { token }); }
+export async function updateFagulhaAccess(token: string, companyId: string, active: boolean) { return request(`/fagulha-admin/companies/${companyId}/access`, { token, method: 'PUT', body: JSON.stringify({ active }), headers: { 'Content-Type': 'application/json' } }); }
+export async function getFagulhaCampaigns(token: string, companyId: string) { return request<FagulhaCampaign[]>(`/fagulha-admin/companies/${companyId}/campaigns`, { token }); }
+export async function createFagulhaCampaign(token: string, payload: { company_id: string; slug: string; title: string; description?: string | null; questions: FagulhaQuestion[] }) { return request<FagulhaCampaign>('/fagulha-admin/campaigns', { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function transitionFagulhaCampaign(token: string, campaignId: string, action: string) { return request<FagulhaCampaign>(`/fagulha-admin/campaigns/${campaignId}/transition/${action}`, { token, method: 'POST' }); }
+export async function getFagulhaAchievements(token: string, companyId: string) { return request<FagulhaAchievement[]>(`/fagulha-admin/companies/${companyId}/achievements`, { token }); }
+export async function createFagulhaAchievement(token: string, payload: { company_id: string; name: string; description?: string | null; badge?: string | null }) { return request<FagulhaAchievement>('/fagulha-admin/achievements', { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function createFagulhaActivation(token: string, payload: { company_id: string; name: string; email: string; expires_at?: string | null }) { return request<FagulhaActivation>('/fagulha-admin/activations', { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+export async function activateFagulhaInvite(inviteToken: string) { return request<FagulhaActivation>(`/public/fagulha/activate/${inviteToken}`, { method: 'POST' }); }
+export async function getPublicFagulhaCampaign(companyId: string, slug: string) { return request<FagulhaCampaign>(`/public/fagulha/${companyId}/${slug}`); }
+export async function submitPublicFagulhaResponse(companyId: string, slug: string, payload: { participant_name: string; participant_email: string; answers: Record<string, string | string[]> }) { return request(`/public/fagulha/${companyId}/${slug}/responses`, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
+
+export async function getProducts(token: string) {
+  return request<Product[]>('/products', { token });
+}
+
+export async function updateProduct(token: string, productId: string, payload: ProductPayload) {
+  return request<Product>(`/products/${productId}`, {
+    token,
+    method: 'PUT',
+    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export async function getCompanyProducts(token: string, companyId: string) {
+  return request<CompanyProducts>(`/companies/${companyId}/products`, { token });
+}
+
+export async function updateCompanyProducts(token: string, companyId: string, productIds: string[]) {
+  return request<CompanyProducts>(`/companies/${companyId}/products`, {
+    token,
+    method: 'PUT',
+    body: JSON.stringify({ product_ids: productIds }),
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export async function listCompanyModules(token: string, companyId: string) {
+  return request<ModuleEntitlement[]>(`/companies/${companyId}/modules`, { token });
+}
+
+export async function listCompanyModuleHistory(token: string, companyId: string) {
+  return request<ModuleOverrideHistoryEntry[]>(`/companies/${companyId}/modules/history`, { token });
+}
+
+export async function updateCompanyModule(
+  token: string,
+  companyId: string,
+  moduleCode: string,
+  mode: ModuleOverrideMode,
+  reason?: string | null,
+) {
+  return request(`/companies/${companyId}/modules/${moduleCode}`, {
+    token,
+    method: 'PATCH',
+    body: JSON.stringify({ mode, reason: reason || null }),
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export async function reviewMeeting(
+  token: string,
+  meetingId: string,
+  decision: 'approved' | 'changes_requested',
+  notes?: string,
+) {
+  return request<Meeting>(`/meetings/${meetingId}/review`, {
+    token,
+    method: 'POST',
+    body: JSON.stringify({ decision, notes: notes?.trim() || null }),
+    headers: { 'Content-Type': 'application/json' },
   });
 }
 

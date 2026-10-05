@@ -5,9 +5,10 @@ import { useAuth } from './auth-context';
 
 type ProtectedRouteProps = {
   roles?: UserRole[];
+  platformAdmin?: boolean;
 };
 
-export function ProtectedRoute({ roles }: ProtectedRouteProps) {
+export function ProtectedRoute({ roles, platformAdmin }: ProtectedRouteProps) {
   const { isAuthenticated, user } = useAuth();
 
   if (!isAuthenticated || !user) {
@@ -16,6 +17,10 @@ export function ProtectedRoute({ roles }: ProtectedRouteProps) {
 
   if (roles && !roles.includes(user.role)) {
     return <Navigate to={`/${user.role}`} replace />;
+  }
+
+  if (platformAdmin && !user.platform_admin) {
+    return <Navigate to={user.admin_product_ids?.includes('product-jornadas') ? '/admin' : '/fagulha-admin'} replace />;
   }
 
   return <Outlet />;

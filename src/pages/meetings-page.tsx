@@ -1,30 +1,24 @@
 import {
-  Building2,
   CalendarCheck,
   CalendarClock,
-  CheckCircle2,
   ClipboardCheck,
-  Clock3,
   Download,
   FileUp,
-  FolderKanban,
   House,
   Plus,
   Route as RouteIcon,
   Trash2,
-  Upload,
 } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 
 import { API_URL, ApiError } from '../api/client';
 import {
-  approveMeeting,
   createMeeting,
   deleteMeeting,
   getCompanies,
   getProjects,
   listMeetings,
-  uploadMeetingAta,
+  reviewMeeting,
 } from '../api/services';
 import type { Company, Meeting, Project } from '../api/types';
 import { useAuth } from '../auth/auth-context';
@@ -32,16 +26,12 @@ import { AppShell } from '../components/app-shell';
 import { EmptyState } from '../components/empty-state';
 import { SectionPanel } from '../components/section-panel';
 import { StatusPill } from '../components/status-pill';
+import { useConfirm } from '../components/ui';
+import { productAdminNavigation } from '../components/admin-navigation';
 
 type MeetingsMode = 'admin' | 'manager';
 
-const adminNavigation = [
-  { to: '/admin', label: 'Home', icon: House },
-  { to: '/admin/companies', label: 'Cadastro', icon: Building2 },
-  { to: '/admin/projects', label: 'Clientes', icon: FolderKanban },
-  { to: '/admin/schedule', label: 'Cronograma', icon: CalendarClock },
-  { to: '/admin/meetings', label: 'Reuniões', icon: ClipboardCheck },
-];
+const adminNavigation = productAdminNavigation;
 
 const managerNavigation = [
   { to: '/manager', label: 'Visão geral', icon: House },
@@ -71,6 +61,7 @@ function parseError(err: unknown, fallback: string) {
 }
 
 export function MeetingsPage({ mode }: { mode: MeetingsMode }) {
+  const confirm = useConfirm();
   const { token, user } = useAuth();
   const isAdmin = mode === 'admin';
 
@@ -87,6 +78,7 @@ export function MeetingsPage({ mode }: { mode: MeetingsMode }) {
   const [formError, setFormError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
   async function loadMeetings() {
     if (!token) return;
@@ -168,29 +160,21 @@ export function MeetingsPage({ mode }: { mode: MeetingsMode }) {
     }
   }
 
-  async function handleAta(meetingId: string, file: File | null) {
-    if (!token || !file) return;
-    const payload = new FormData();
-    payload.append('file', file);
-    setBusyId(meetingId);
-    try {
-      await uploadMeetingAta(token, meetingId, payload);
-      await loadMeetings();
-    } catch (err) {
-      setError(parseError(err, 'Não foi possível anexar a ata.'));
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function handleApprove(meetingId: string) {
+  async function handleReview(meetingId: string, decision: 'approved' | 'changes_requested') {
     if (!token) return;
+    const notes = reviewNotes[meetingId]?.trim() ?? '';
+    if (decision === 'changes_requested' && !notes) {
+      setError('Explique por que a ata precisa de ajustes.');
+      return;
+    }
     setBusyId(meetingId);
+    setError(null);
     try {
-      await approveMeeting(token, meetingId);
+      await reviewMeeting(token, meetingId, decision, notes);
+      setReviewNotes((current) => ({ ...current, [meetingId]: '' }));
       await loadMeetings();
     } catch (err) {
-      setError(parseError(err, 'Não foi possível registrar a aprovação.'));
+      setError(parseError(err, 'Não foi possível registrar o parecer.'));
     } finally {
       setBusyId(null);
     }
@@ -198,6 +182,7 @@ export function MeetingsPage({ mode }: { mode: MeetingsMode }) {
 
   async function handleDelete(meetingId: string) {
     if (!token) return;
+    if (!(await confirm({ title: 'Remover esta reunião?', description: 'Essa ação não pode ser desfeita.', confirmLabel: 'Remover reunião', tone: 'danger' }))) return;
     setBusyId(meetingId);
     try {
       await deleteMeeting(token, meetingId);
@@ -212,8 +197,8 @@ export function MeetingsPage({ mode }: { mode: MeetingsMode }) {
   return (
     <AppShell
       eyebrow="Reuniões e atas"
-      title="Reuniões"
-      description="Registre as reuniões do projeto, anexe a ata e aprove em conjunto. A ata só é aprovada quando o admin e o gestor confirmam."
+      title={isAdmin ? 'Criar reunião' : 'Reuniões e atas'}
+      description={isAdmin ? 'Registre uma nova reunião. Atas, pareceres e histórico ficam organizados dentro de cada cliente.' : 'Agende reuniões do seu projeto, consulte as atas publicadas e registre sua aprovação ou solicitação de ajustes.'}
       navigation={isAdmin ? adminNavigation : managerNavigation}
     >
       <SectionPanel title="Nova reunião" eyebrow="Agendar">
@@ -268,7 +253,7 @@ export function MeetingsPage({ mode }: { mode: MeetingsMode }) {
 
       <SectionPanel
         title="Reuniões registradas"
-        eyebrow="Atas"
+        eyebrow="Atas para revisão"
         action={<StatusPill>{meetings.length} reuniões</StatusPill>}
       >
         {error ? <div className="form-error">{error}</div> : null}
@@ -279,8 +264,6 @@ export function MeetingsPage({ mode }: { mode: MeetingsMode }) {
           <div className="meeting-list">
             {meetings.map((meeting) => {
               const href = fileHref(meeting.ata_file_url);
-              const canApprove =
-                (isAdmin && !meeting.admin_approved) || (!isAdmin && !meeting.manager_approved);
               const canDelete = isAdmin || meeting.created_by === user?.id;
               const busy = busyId === meeting.id;
 
@@ -294,8 +277,8 @@ export function MeetingsPage({ mode }: { mode: MeetingsMode }) {
                       <strong>{meeting.title}</strong>
                       {isAdmin ? <em>{projectLabel(meeting.project_id)}</em> : null}
                     </div>
-                    <StatusPill tone={meeting.status === 'approved' ? 'success' : 'warning'}>
-                      {meeting.status === 'approved' ? 'Aprovada' : 'Pendente'}
+                    <StatusPill tone={meeting.status === 'approved' ? 'success' : meeting.status === 'changes_requested' ? 'warning' : 'muted'}>
+                      {meeting.status === 'approved' ? 'Aprovada' : meeting.status === 'changes_requested' ? 'Ajustes solicitados' : 'Aguardando parecer'}
                     </StatusPill>
                   </div>
 
@@ -309,46 +292,13 @@ export function MeetingsPage({ mode }: { mode: MeetingsMode }) {
                     ) : (
                       <span className="meeting-card__file meeting-card__file--empty">Nenhuma ata anexada</span>
                     )}
-                    <label className="meeting-card__upload">
-                      <input
-                        type="file"
-                        onChange={(event) => handleAta(meeting.id, event.target.files?.[0] ?? null)}
-                        disabled={busy}
-                      />
-                      <span className="secondary-button">
-                        <Upload size={15} /> {href ? 'Substituir ata' : 'Anexar ata'}
-                      </span>
-                    </label>
                   </div>
 
-                  <div className="meeting-card__approvals">
-                    <span className={`meeting-approval ${meeting.admin_approved ? 'is-done' : ''}`}>
-                      {meeting.admin_approved ? <CheckCircle2 size={14} /> : <Clock3 size={14} />}
-                      Admin {meeting.admin_approved ? 'aprovou' : 'pendente'}
-                    </span>
-                    <span className={`meeting-approval ${meeting.manager_approved ? 'is-done' : ''}`}>
-                      {meeting.manager_approved ? <CheckCircle2 size={14} /> : <Clock3 size={14} />}
-                      Gestor {meeting.manager_approved ? 'aprovou' : 'pendente'}
-                    </span>
-                  </div>
+                  <label className="meeting-review-notes"><span>Comentário do parecer</span><textarea rows={2} value={reviewNotes[meeting.id] ?? ''} onChange={(event) => setReviewNotes((current) => ({ ...current, [meeting.id]: event.target.value }))} placeholder="Obrigatório ao solicitar ajustes" /></label>
 
                   <div className="meeting-card__actions">
-                    {canApprove ? (
-                      <button
-                        type="button"
-                        className="primary-button"
-                        disabled={busy || !meeting.ata_file_url}
-                        onClick={() => handleApprove(meeting.id)}
-                        title={meeting.ata_file_url ? undefined : 'Anexe a ata antes de aprovar'}
-                      >
-                        <CheckCircle2 size={16} />
-                        <span>Aprovar como {isAdmin ? 'admin' : 'gestor'}</span>
-                      </button>
-                    ) : (
-                      <span className="meeting-card__done">
-                        <CheckCircle2 size={16} /> Você já aprovou
-                      </span>
-                    )}
+                    <button type="button" className="primary-button" disabled={busy || !meeting.ata_file_url} onClick={() => handleReview(meeting.id, 'approved')}><span>Aprovar ata</span></button>
+                    <button type="button" className="secondary-button" disabled={busy || !meeting.ata_file_url} onClick={() => handleReview(meeting.id, 'changes_requested')}><span>Solicitar ajustes</span></button>
 
                     {canDelete ? (
                       <button
@@ -362,6 +312,8 @@ export function MeetingsPage({ mode }: { mode: MeetingsMode }) {
                       </button>
                     ) : null}
                   </div>
+
+                  {meeting.reviews.length ? <div className="meeting-review-history"><strong>Histórico</strong>{meeting.reviews.map((review) => <div key={review.id}><span>{review.reviewer_name} · {formatDate(review.created_at)}</span><StatusPill tone={review.decision === 'approved' ? 'success' : 'warning'}>{review.decision === 'approved' ? 'Aprovou' : 'Solicitou ajustes'}</StatusPill>{review.notes ? <p>{review.notes}</p> : null}</div>)}</div> : null}
                 </article>
               );
             })}

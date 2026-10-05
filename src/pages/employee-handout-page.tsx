@@ -15,8 +15,8 @@ import {
   ShieldCheck,
   Upload,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { type ChangeEvent, type DragEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
   getEmployeeFormDetail,
@@ -33,6 +33,8 @@ import {
   saveManagerFormDraft,
   submitEmployeeForm,
   submitManagerForm,
+  uploadEmployeeDocumentFile,
+  uploadManagerJourneyDocumentFile,
 } from '../api/services';
 import type {
   FormDetail,
@@ -550,6 +552,7 @@ type JourneyPageConfig = {
     formId: string,
     answers: Record<string, string | string[]>,
   ) => Promise<FormResponseOut>;
+  uploadDocument: (token: string, itemId: string, payload: FormData) => Promise<unknown>;
 };
 
 const journeyPageConfigs: Record<JourneyPageMode, JourneyPageConfig> = {
@@ -563,6 +566,7 @@ const journeyPageConfigs: Record<JourneyPageMode, JourneyPageConfig> = {
     clearFormDraft: clearEmployeeFormDraft,
     completeJourneyItem: completeEmployeeJourneyItem,
     submitForm: submitEmployeeForm,
+    uploadDocument: uploadEmployeeDocumentFile,
   },
   manager: {
     sidebarLabel: 'Jornada do gestor',
@@ -574,6 +578,7 @@ const journeyPageConfigs: Record<JourneyPageMode, JourneyPageConfig> = {
     clearFormDraft: clearManagerFormDraft,
     completeJourneyItem: completeManagerJourneyItem,
     submitForm: submitManagerForm,
+    uploadDocument: uploadManagerJourneyDocumentFile,
   },
 };
 
@@ -623,6 +628,8 @@ function JourneyLoadingShell({ config }: { config: JourneyPageConfig }) {
 export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageMode }) {
   const config = journeyPageConfigs[mode];
   const { token, user } = useAuth();
+  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [journey, setJourney] = useState<Journey | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('item'));
@@ -638,6 +645,10 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
   const [error, setError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [finishing, setFinishing] = useState(false);
 
   const allItems = useMemo(
     () => journey?.sections.flatMap((s) => s.items) ?? [],
@@ -756,7 +767,7 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
     void loadSelectedForm();
   }, [token, selected?.id, selected?.form_id, selected?.item_type]);
 
-  function markItemCompletedLocally(itemId: string, completedAt?: string | null) {
+  function setItemStatusLocally(itemId: string, status: string | undefined, submittedAt?: string | null) {
     setJourney((current) => {
       if (!current) return current;
       return {
@@ -765,11 +776,7 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
           ...section,
           items: section.items.map((item) =>
             item.id === itemId
-              ? {
-                  ...item,
-                  user_status: 'completed',
-                  submitted_at: completedAt ?? new Date().toISOString(),
-                }
+              ? { ...item, user_status: status, submitted_at: submittedAt ?? item.submitted_at }
               : item,
           ),
         })),
@@ -777,9 +784,15 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
     });
   }
 
-  async function completeContentItem(item: JourneyItem | null) {
-    if (!token || !item || !isCompletableContentItem(item) || isCompleted(item)) return;
+  function markItemCompletedLocally(itemId: string, completedAt?: string | null) {
+    setItemStatusLocally(itemId, 'completed', completedAt ?? new Date().toISOString());
+  }
 
+  async function completeContentItem(item: JourneyItem | null): Promise<boolean> {
+    if (!token || !item || !isCompletableContentItem(item) || isCompleted(item)) return true;
+
+    const previousStatus = item.user_status;
+    const previousSubmittedAt = item.submitted_at;
     markItemCompletedLocally(item.id);
     try {
       const progress = await config.completeJourneyItem(token, item.id);
@@ -790,8 +803,11 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
       ) {
         markItemCompletedLocally(item.id, progress.completed_at as string | null);
       }
-    } catch {
-      // Progresso visual não deve bloquear a navegação entre conteúdos.
+      return true;
+    } catch (err) {
+      setItemStatusLocally(item.id, previousStatus, previousSubmittedAt);
+      setError(parseApiError(err));
+      return false;
     }
   }
 
@@ -802,6 +818,56 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
     setSelectedId(itemId);
     setSearchParams({ item: itemId });
     setIsJourneyNavOpen(false);
+  }
+
+  async function finishJourney() {
+    setFinishing(true);
+    const ok = await completeContentItem(selected);
+    setFinishing(false);
+    if (ok) navigate(config.overviewPath);
+  }
+
+  async function handleUploadDocument(file: File) {
+    if (!token || !selected) return;
+    setUploadError(null);
+    setUploadSuccess(null);
+
+    const acceptedFormats = selected.accepted_formats ?? [];
+    const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (acceptedFormats.length && !acceptedFormats.some((format) => format.toLowerCase() === extension)) {
+      setUploadError(`Formato .${extension || '?'} não aceito. Use um dos formatos: ${acceptedFormats.join(', ')}.`);
+      return;
+    }
+    const maxSizeBytes = 25 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      setUploadError('Arquivo maior que 25 MB. Envie um arquivo menor.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      await config.uploadDocument(token, selected.id, formData);
+      setUploadSuccess('Documento enviado com sucesso.');
+      await loadJourney(selected.id);
+    } catch (err) {
+      setUploadError(parseApiError(err));
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  function handleFileInputChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) void handleUploadDocument(file);
+  }
+
+  function handleFileDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const file = event.dataTransfer.files?.[0];
+    if (file) void handleUploadDocument(file);
   }
 
   function toggleSection(sectionId: string) {
@@ -1086,11 +1152,29 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
                 </div>
               ) : null}
 
-              <div className="journey-upload">
+              <div
+                className={`journey-upload ${uploading ? 'is-uploading' : ''}`}
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={handleFileDrop}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') fileInputRef.current?.click(); }}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={selected.accepted_formats?.length ? selected.accepted_formats.map((fmt) => `.${fmt}`).join(',') : undefined}
+                  onChange={handleFileInputChange}
+                  disabled={uploading}
+                  hidden
+                />
                 <Upload size={20} />
-                <strong>Arraste seu arquivo aqui ou clique para selecionar</strong>
-                <span>O upload completo será habilitado em breve.</span>
+                <strong>{uploading ? 'Enviando...' : 'Arraste seu arquivo aqui ou clique para selecionar'}</strong>
+                <span>Envie diretamente por aqui — a consultoria recebe assim que o arquivo sobe.</span>
               </div>
+              {uploadError ? <div className="form-error">{uploadError}</div> : null}
+              {uploadSuccess ? <div className="form-success"><CheckCircle2 size={16} /> {uploadSuccess}</div> : null}
             </div>
           ) : null}
 
@@ -1145,19 +1229,18 @@ export function EmployeeHandoutPage({ mode = 'employee' }: { mode?: JourneyPageM
                 <ArrowRight size={16} />
               </button>
             ) : (
-              <Link
-                to={config.overviewPath}
+              <button
+                type="button"
                 className="journey-pager__btn journey-pager__btn--next"
-                onClick={() => {
-                  void completeContentItem(selected);
-                }}
+                onClick={() => void finishJourney()}
+                disabled={finishing}
               >
                 <span>
-                  <em>Finalizar</em>
+                  <em>{finishing ? 'Salvando...' : 'Finalizar'}</em>
                   <strong>Voltar à visão geral</strong>
                 </span>
                 <ArrowRight size={16} />
-              </Link>
+              </button>
             )}
           </nav>
         </div>

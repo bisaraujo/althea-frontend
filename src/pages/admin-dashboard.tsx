@@ -2,10 +2,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Building2,
-  CalendarClock,
-  ClipboardCheck,
   FolderKanban,
-  House,
   Mail,
   Plus,
   RefreshCw,
@@ -17,47 +14,54 @@ import {
   Users,
 } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
-import { API_URL, ApiError } from '../api/client';
+import { ApiError } from '../api/client';
 import {
   createCompany,
   createUser,
   getCompanies,
+  getForms,
+  getProducts,
   getProjectManagerDeliveries,
   getProjects,
+  getResponses,
   getUsers,
   importProjectEmployees,
+  listMeetings,
+  uploadMeetingAta,
 } from '../api/services';
 import type {
   ClientUserCreatePayload,
   Company,
   CompanyCreatePayload,
   EmployeeImportResult,
+  FormSummary,
   ManagerDeliveries,
+  Meeting,
+  Product,
   Project,
+  ResponseRecord,
   UserRecord,
 } from '../api/types';
 import { useAuth } from '../auth/auth-context';
 import { AppShell } from '../components/app-shell';
+import { AdminProjectWorkspace } from '../components/admin-project-workspace';
 import { EmptyState } from '../components/empty-state';
 import { SectionPanel } from '../components/section-panel';
 import { StatCard } from '../components/stat-card';
+import { InfoTooltip } from '../components/info-tooltip';
 import { StatusPill } from '../components/status-pill';
+import { useToast } from '../components/toast';
+import { platformAdminNavigation, productAdminNavigation } from '../components/admin-navigation';
 
 type AdminSection = 'home' | 'companies' | 'projects' | 'project-detail' | 'project-users';
 type SavingTarget = 'company' | 'context-user' | null;
-type UserForm = Pick<ClientUserCreatePayload, 'name' | 'email' | 'senha' | 'role'>;
+type UserForm = Pick<ClientUserCreatePayload, 'name' | 'email' | 'role'>;
 type InitialUserDraft = UserForm & { localId: string };
-type InitialUserField = 'name' | 'email' | 'senha';
+type InitialUserField = 'name' | 'email';
 
-const adminNavigation = [
-  { to: '/admin', label: 'Home', icon: House },
-  { to: '/admin/companies', label: 'Cadastro', icon: Building2 },
-  { to: '/admin/projects', label: 'Clientes', icon: FolderKanban },
-  { to: '/admin/schedule', label: 'Cronograma', icon: CalendarClock },
-  { to: '/admin/meetings', label: 'Reuniões', icon: ClipboardCheck },
-];
+export const adminNavigation = productAdminNavigation;
 
 const screenMeta = {
   home: {
@@ -78,7 +82,7 @@ const screenMeta = {
   },
   'project-users': {
     title: 'Usuários do cliente',
-    description: 'Adicione gestores ou funcionários diretamente no projeto selecionado.',
+    description: 'Adicione gestores ou colaboradores diretamente no projeto selecionado.',
   },
 } satisfies Record<AdminSection, { title: string; description: string }>;
 
@@ -86,13 +90,11 @@ const initialCompanyForm: CompanyCreatePayload = {
   name: '',
   description: '',
   email: '',
-  senha: '',
 };
 
 const initialUserForm: UserForm = {
   name: '',
   email: '',
-  senha: '',
   role: 'employee',
 };
 
@@ -107,7 +109,7 @@ function createInitialUserDraft(role: InitialUserDraft['role']): InitialUserDraf
 function roleLabel(role: UserRecord['role']) {
   if (role === 'company') return 'Empresa';
   if (role === 'manager') return 'Gestor';
-  if (role === 'employee') return 'Funcionário';
+  if (role === 'employee') return 'Colaborador';
   return 'Admin';
 }
 
@@ -119,41 +121,14 @@ function sortByName<T extends { name: string }>(items: T[]) {
   return [...items].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return 'Sem prazo';
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(date);
-}
-
-function deliveryStatusLabel(status?: string) {
-  if (status === 'submitted') return 'Enviado';
-  if (status === 'submitted_late') return 'Enviado atrasado';
-  if (status === 'overdue') return 'Atrasado';
-  return 'Pendente';
-}
-
-function deliveryStatusTone(status?: string) {
-  if (status === 'submitted') return 'success';
-  if (status === 'submitted_late' || status === 'overdue') return 'warning';
-  return 'muted';
-}
-
-function fileHref(fileUrl?: string | null) {
-  if (!fileUrl) return null;
-  if (fileUrl.startsWith('http')) return fileUrl;
-  return `${API_URL}${fileUrl}`;
-}
-
-export function AdminDashboard({ section }: { section: AdminSection }) {
+export function AdminDashboard({ section, mode = 'product' }: { section: AdminSection; mode?: 'platform' | 'product' }) {
   const { projectId } = useParams<{ projectId: string }>();
   const { token, user } = useAuth();
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [productCatalog, setProductCatalog] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [newCompanyProductIds, setNewCompanyProductIds] = useState<string[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -163,17 +138,46 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   const [contextUserForm, setContextUserForm] = useState<UserForm>(initialUserForm);
   const [clientSearch, setClientSearch] = useState('');
   const [managerDeliveries, setManagerDeliveries] = useState<ManagerDeliveries | null>(null);
+  const [forms, setForms] = useState<FormSummary[]>([]);
+  const [responses, setResponses] = useState<ResponseRecord[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [meetingBusyId, setMeetingBusyId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState<SavingTarget>(null);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResetKey, setImportResetKey] = useState(0);
   const [importResult, setImportResult] = useState<EmployeeImportResult | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
 
-  const meta = screenMeta[section];
+  const meta =
+    section === 'companies' && mode === 'platform'
+      ? {
+          title: 'Cadastrar empresa',
+          description: 'Registre a empresa, escolha os produtos que ela contratou e cadastre os primeiros acessos.',
+        }
+      : screenMeta[section];
+
+  useEffect(() => {
+    if (section !== 'companies' || !token) return;
+    let active = true;
+    setProductsLoading(true);
+    getProducts(token)
+      .then((items) => active && setProductCatalog(items))
+      .catch(() => active && toast.error('Não foi possível carregar o catálogo de produtos.'))
+      .finally(() => active && setProductsLoading(false));
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section, token]);
+
+  function toggleNewCompanyProduct(productId: string) {
+    setNewCompanyProductIds((current) =>
+      current.includes(productId) ? current.filter((id) => id !== productId) : [...current, productId],
+    );
+  }
 
   async function loadAdminData() {
     if (!token) {
@@ -185,15 +189,20 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     setError(null);
 
     try {
-      const [companyData, projectData, userData] = await Promise.all([
+      const [companyData, projectData, userData, formData, responseData] = await Promise.all([
         getCompanies(token),
         getProjects(token),
         getUsers(token),
+        getForms(token),
+        getResponses(token),
       ]);
 
-      setCompanies(companyData);
+      // No admin de Jornadas, empresas sem o produto Jornadas não aparecem como clientes.
+      setCompanies(mode === 'product' ? companyData.filter((c) => c.has_jornadas !== false) : companyData);
       setProjects(sortByName(projectData.projects));
       setUsers(sortByName(userData));
+      setForms(formData.forms);
+      setResponses(responseData.responses);
     } catch (err) {
       setError(formatApiError(err, 'Não foi possível carregar os dados administrativos.'));
     } finally {
@@ -244,7 +253,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       if (!token || !projectId) return;
 
       try {
-        setManagerDeliveries(await getProjectManagerDeliveries(token, projectId));
+        const [deliveryData, meetingData] = await Promise.all([
+          getProjectManagerDeliveries(token, projectId),
+          listMeetings(token, projectId),
+        ]);
+        setManagerDeliveries(deliveryData);
+        setMeetings(meetingData.meetings);
       } catch (err) {
         setError(formatApiError(err, 'Não foi possível carregar as entregas do gestor.'));
       }
@@ -252,6 +266,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
     void loadProjectContext();
   }, [projectId, section, token]);
+
 
   const managers = useMemo(() => users.filter((item) => item.role === 'manager'), [users]);
   const employees = useMemo(() => users.filter((item) => item.role === 'employee'), [users]);
@@ -325,13 +340,21 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     () => users.filter((item) => item.project_id === selectedProject?.id && item.role === 'employee'),
     [selectedProject, users],
   );
-  const managerDeliveryItems = useMemo(
-    () => managerDeliveries?.sections.flatMap((section) => section.items) ?? [],
-    [managerDeliveries],
-  );
-  const submittedDeliveries = managerDeliveryItems.filter((item) =>
-    ['submitted', 'submitted_late'].includes(item.delivery_status),
-  ).length;
+  async function handleProjectAta(meetingId: string, file: File | null) {
+    if (!token || !projectId || !file) return;
+    const payload = new FormData();
+    payload.append('file', file);
+    setMeetingBusyId(meetingId);
+    setError(null);
+    try {
+      await uploadMeetingAta(token, meetingId, payload);
+      setMeetings((await listMeetings(token, projectId)).meetings);
+    } catch (err) {
+      setError(formatApiError(err, 'Não foi possível anexar a ata.'));
+    } finally {
+      setMeetingBusyId(null);
+    }
+  }
 
   function addInitialUser(role: InitialUserDraft['role']) {
     const setter = role === 'manager' ? setInitialManagers : setInitialEmployees;
@@ -360,8 +383,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     if (!token) return;
 
     setSaving('company');
-    setError(null);
-    setSuccess(null);
 
     const initialUsers = [...initialManagers, ...initialEmployees];
 
@@ -369,6 +390,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       const company = await createCompany(token, {
         ...companyForm,
         description: companyForm.description?.trim() || null,
+        product_ids: newCompanyProductIds,
       });
       const projectData = await getProjects(token);
       const createdProject = projectData.projects.find((project) => project.company_id === company.id);
@@ -392,14 +414,19 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       setCompanyForm(initialCompanyForm);
       setInitialManagers([]);
       setInitialEmployees([]);
-      setSuccess(
+      setNewCompanyProductIds([]);
+      toast.success(
         initialUsers.length
-          ? `Cliente, projeto e ${initialUsers.length} usuário${initialUsers.length > 1 ? 's' : ''} inicial${initialUsers.length > 1 ? 'is' : ''} criado${initialUsers.length > 1 ? 's' : ''}.`
-          : 'Cliente e projeto criados.',
+          ? `Empresa criada com ${initialUsers.length} acesso${initialUsers.length > 1 ? 's' : ''} inicia${initialUsers.length > 1 ? 'is' : 'l'}.`
+          : 'Empresa criada.',
       );
+      if (mode === 'platform') {
+        navigate(`/platform-admin/companies/${company.id}`);
+        return;
+      }
       await loadAdminData();
     } catch (err) {
-      setError(formatApiError(err, 'Não foi possível concluir o cadastro do cliente.'));
+      toast.error(formatApiError(err, 'Não foi possível concluir o cadastro da empresa.'));
     } finally {
       setSaving(null);
     }
@@ -411,7 +438,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
     setSaving('context-user');
     setError(null);
-    setSuccess(null);
 
     try {
       await createUser(token, {
@@ -420,7 +446,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         project_id: selectedProject.id,
       });
       setContextUserForm(initialUserForm);
-      setSuccess(`${roleLabel(contextUserForm.role)} criado em ${selectedProject.name}.`);
+      toast.success(`${roleLabel(contextUserForm.role)} criado em ${selectedProject.name}.`);
       await loadAdminData();
       setManagerDeliveries(await getProjectManagerDeliveries(token, selectedProject.id));
     } catch (err) {
@@ -436,13 +462,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
   return (
     <AppShell
-      eyebrow="Admin"
+      eyebrow={mode === 'platform' ? 'Administração geral' : 'Administração de Jornadas'}
       title={meta.title}
       description={meta.description}
-      navigation={adminNavigation}
+      navigation={mode === 'platform' ? platformAdminNavigation : adminNavigation}
     >
       {error ? <div className="form-error">{error}</div> : null}
-      {success ? <div className="form-success">{success}</div> : null}
 
       {section === 'home' ? (
         <>
@@ -466,7 +491,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
               icon={<ShieldCheck size={18} />}
             />
             <StatCard
-              label="Funcionários"
+              label="Colaboradores"
               value={employees.length}
               meta="Usuários employee"
               icon={<Users size={18} />}
@@ -497,7 +522,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                       <p>{company.email}</p>
                       <span className="entity-meta">
                         {project ? project.name : 'Projeto automático pendente'} | {rowManagers.length} gestores |{' '}
-                        {rowEmployees.length} funcionários
+                        {rowEmployees.length} colaboradores
                       </span>
                     </div>
                     <StatusPill tone={project ? 'success' : 'warning'}>{project ? 'Projeto criado' : 'Pendente'}</StatusPill>
@@ -516,7 +541,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
       {section === 'companies' ? (
         <div className="admin-registration">
-          <SectionPanel title="Cadastrar cliente" eyebrow="Cadastro completo">
+          <SectionPanel title="Cadastrar empresa" eyebrow="Cadastro completo">
             <form className="admin-form admin-form--registration" onSubmit={handleCreateCompany}>
               <div className="field-grid">
                 <label>
@@ -524,13 +549,13 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                   <input
                     value={companyForm.name}
                     onChange={(event) => setCompanyForm((current) => ({ ...current, name: event.target.value }))}
-                    placeholder="Empresa cliente"
+                    placeholder="Nome da empresa"
                     required
                   />
                 </label>
 
                 <label>
-                  <span>Email de acesso da empresa</span>
+                  <span>E-mail de acesso da empresa</span>
                   <input
                     type="email"
                     value={companyForm.email}
@@ -549,20 +574,39 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                   onChange={(event) =>
                     setCompanyForm((current) => ({ ...current, description: event.target.value }))
                   }
-                  placeholder="Contexto do cliente, unidade ou escopo principal."
+                  placeholder="Contexto da empresa, unidade ou escopo principal."
                 />
               </label>
 
-              <label>
-                <span>Senha inicial da empresa</span>
-                <input
-                  type="password"
-                  value={companyForm.senha}
-                  onChange={(event) => setCompanyForm((current) => ({ ...current, senha: event.target.value }))}
-                  placeholder="Defina uma senha provisória"
-                  required
-                />
-              </label>
+              <div className="ca-create-products">
+                <div className="ca-create-products__head">
+                  <span>Produtos contratados</span>
+                  <InfoTooltip text="Nenhum produto vem marcado por padrão. Escolha apenas o que a empresa contratou; você pode mudar isso depois na página da empresa. O conteúdo padrão de Jornadas só é criado se o produto for marcado." />
+                </div>
+                {productsLoading ? (
+                  <div className="ca-skeletons" aria-busy="true"><div className="ca-skeleton" /></div>
+                ) : !productCatalog.length ? (
+                  <p className="form-hint">Nenhum produto no catálogo ainda. A empresa será criada sem produtos.</p>
+                ) : (
+                  <div className="ca-products">
+                    {productCatalog.map((product) => {
+                      const on = newCompanyProductIds.includes(product.id);
+                      return (
+                        <label key={product.id} className={`ca-product${on ? ' ca-product--on' : ''}`}>
+                          <input type="checkbox" checked={on} onChange={() => toggleNewCompanyProduct(product.id)} />
+                          <span className="ca-product__copy">
+                            <strong>{product.name}</strong>
+                            <p>{product.description || 'Sem descrição.'}</p>
+                          </span>
+                          <span />
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <p className="form-hint">A senha temporária será gerada com segurança e enviada para o email da empresa.</p>
 
               <div className="admin-initial-users">
                 <div className="admin-user-column">
@@ -614,18 +658,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                               required
                             />
                           </label>
-                          <label>
-                            <span>Senha inicial</span>
-                            <input
-                              type="password"
-                              value={draft.senha}
-                              onChange={(event) =>
-                                updateInitialUser('manager', draft.localId, 'senha', event.target.value)
-                              }
-                              placeholder="Senha provisória"
-                              required
-                            />
-                          </label>
                         </div>
                       ))}
                     </div>
@@ -645,7 +677,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                       <Mail size={16} />
                     </span>
                     <div>
-                      <strong>Funcionários iniciais</strong>
+                      <strong>Colaboradores iniciais</strong>
                       <p>{initialEmployees.length} cadastrados neste registro</p>
                     </div>
                   </div>
@@ -655,12 +687,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                       {initialEmployees.map((draft, index) => (
                         <div key={draft.localId} className="admin-user-row">
                           <div className="admin-user-row__head">
-                            <strong>Funcionário {index + 1}</strong>
+                            <strong>Colaborador {index + 1}</strong>
                             <button
                               type="button"
                               className="icon-button"
                               onClick={() => removeInitialUser('employee', draft.localId)}
-                              aria-label="Remover funcionário"
+                              aria-label="Remover colaborador"
                             >
                               <Trash2 size={15} />
                             </button>
@@ -684,19 +716,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                               onChange={(event) =>
                                 updateInitialUser('employee', draft.localId, 'email', event.target.value)
                               }
-                              placeholder="funcionario@empresa.com"
-                              required
-                            />
-                          </label>
-                          <label>
-                            <span>Senha inicial</span>
-                            <input
-                              type="password"
-                              value={draft.senha}
-                              onChange={(event) =>
-                                updateInitialUser('employee', draft.localId, 'senha', event.target.value)
-                              }
-                              placeholder="Senha provisória"
+                              placeholder="colaborador@empresa.com"
                               required
                             />
                           </label>
@@ -704,19 +724,19 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                       ))}
                     </div>
                   ) : (
-                    <div className="admin-user-empty">Nenhum funcionário inicial.</div>
+                    <div className="admin-user-empty">Nenhum colaborador inicial.</div>
                   )}
 
                   <button type="button" className="secondary-button admin-add-button" onClick={() => addInitialUser('employee')}>
                     <Plus size={16} />
-                    <span>Adicionar funcionário</span>
+                    <span>Adicionar colaborador</span>
                   </button>
                 </div>
               </div>
 
               <button type="submit" className="primary-button" disabled={saving === 'company'}>
                 <Plus size={16} />
-                <span>{saving === 'company' ? 'Criando...' : 'Criar cliente'}</span>
+                <span>{saving === 'company' ? 'Criando...' : 'Criar empresa'}</span>
               </button>
             </form>
           </SectionPanel>
@@ -729,6 +749,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
             <label className="admin-search">
               <Search size={17} />
               <input
+                aria-label="Pesquisar clientes de Jornadas"
                 value={clientSearch}
                 onChange={(event) => setClientSearch(event.target.value)}
                 placeholder="Pesquisar por empresa, e-mail, projeto ou descrição"
@@ -753,7 +774,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                   </div>
                   <div className="admin-client-card__footer">
                     <span>{projectManagers.length} gestores</span>
-                    <span>{projectEmployees.length} funcionários</span>
+                    <span>{projectEmployees.length} colaboradores</span>
                     <ArrowRight size={16} />
                   </div>
                 </Link>
@@ -771,143 +792,23 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       {section === 'project-detail' ? (
         selectedProject && selectedCompany ? (
           <div className="admin-detail">
-            <Link to="/admin/projects" className="secondary-link admin-back-link">
-              <ArrowLeft size={16} />
+            <Link to="/admin/projects" className="secondary-link admin-back-link admin-back-link--prominent">
+              <ArrowLeft size={18} />
               <span>Voltar para clientes</span>
             </Link>
-
-            <SectionPanel
-              title={selectedCompany.name}
-              eyebrow="Cliente selecionado"
-              action={
-                <Link to={`/admin/projects/${selectedProject.id}/users/new`} className="primary-button admin-action-link">
-                  <UserPlus size={16} />
-                  <span>Adicionar usuários</span>
-                </Link>
-              }
-            >
-              <div className="admin-detail__hero">
-                <div>
-                  <span className="admin-detail__label">Projeto principal</span>
-                  <strong>{selectedProject.name}</strong>
-                  <p>{selectedProject.description || 'Sem descrição cadastrada.'}</p>
-                </div>
-                <div className="admin-detail__meta">
-                  <span>{selectedCompany.email}</span>
-                  <span>{selectedManagers.length} gestores</span>
-                  <span>{selectedEmployees.length} funcionários</span>
-                </div>
-              </div>
-            </SectionPanel>
-
-            <SectionPanel
-              title="Entregas do gestor"
-              eyebrow="Cronograma"
-              action={<StatusPill>{submittedDeliveries}/{managerDeliveryItems.length} enviadas</StatusPill>}
-            >
-              {managerDeliveryItems.length ? (
-                <div className="admin-delivery-list">
-                  {managerDeliveries?.sections.map((section) => (
-                    <div key={section.id} className="admin-delivery-section">
-                      <div className="admin-delivery-section__head">
-                        <strong>{section.title}</strong>
-                        <span>{section.items.length} entregas</span>
-                      </div>
-
-                      {section.items.map((item) => {
-                        const latest = item.latest_submission;
-                        const href = fileHref(latest?.file_url);
-
-                        return (
-                          <article key={item.id} className="admin-delivery-item">
-                            <div className="admin-delivery-item__main">
-                              <div>
-                                <strong>{item.document_title ?? item.title}</strong>
-                                <p>{item.description || 'Sem descrição cadastrada.'}</p>
-                              </div>
-                              <div className="admin-delivery-item__badges">
-                                <StatusPill tone={deliveryStatusTone(item.delivery_status)}>
-                                  {deliveryStatusLabel(item.delivery_status)}
-                                </StatusPill>
-                                <StatusPill>Prazo {formatDate(item.due_at)}</StatusPill>
-                              </div>
-                            </div>
-
-                            {latest ? (
-                              <div className="admin-delivery-submission">
-                                <span>
-                                  {latest.user_name} enviou em {formatDate(latest.submitted_at)}
-                                  {latest.is_late ? ' (atrasado)' : ''}
-                                </span>
-                                {href ? (
-                                  <a href={href} target="_blank" rel="noreferrer" className="admin-delivery-file-link">
-                                    {latest.file_name}
-                                  </a>
-                                ) : null}
-                                {latest.notes ? <p>{latest.notes}</p> : null}
-                              </div>
-                            ) : (
-                              <div className="admin-delivery-submission admin-delivery-submission--empty">
-                                Nenhum envio registrado.
-                              </div>
-                            )}
-                          </article>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  title="Sem cronograma de entregas"
-                  description="Quando houver uma jornada ativa do gestor com pedidos de documento, os registros aparecem aqui."
-                />
-              )}
-            </SectionPanel>
-
-            <div className="admin-people-grid">
-              <SectionPanel title="Gestores" eyebrow="Manager" action={<StatusPill>{selectedManagers.length}</StatusPill>}>
-                {selectedManagers.length ? (
-                  <div className="admin-list">
-                    {selectedManagers.map((item) => (
-                      <article key={item.id} className="list-item list-item--rich">
-                        <span className="list-item__icon">
-                          <ShieldCheck size={16} />
-                        </span>
-                        <div className="list-item__copy">
-                          <strong>{item.name}</strong>
-                          <p>{item.email}</p>
-                        </div>
-                        <StatusPill>Gestor</StatusPill>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState title="Sem gestores" description="Nenhum gestor vinculado a este projeto." />
-                )}
-              </SectionPanel>
-
-              <SectionPanel title="Funcionários" eyebrow="Employee" action={<StatusPill>{selectedEmployees.length}</StatusPill>}>
-                {selectedEmployees.length ? (
-                  <div className="admin-list">
-                    {selectedEmployees.map((item) => (
-                      <article key={item.id} className="list-item list-item--rich">
-                        <span className="list-item__icon">
-                          <Mail size={16} />
-                        </span>
-                        <div className="list-item__copy">
-                          <strong>{item.name}</strong>
-                          <p>{item.email}</p>
-                        </div>
-                        <StatusPill>Funcionário</StatusPill>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState title="Sem funcionários" description="Nenhum funcionário vinculado a este projeto." />
-                )}
-              </SectionPanel>
-            </div>
+            <AdminProjectWorkspace
+              key={selectedProject.id}
+              company={selectedCompany}
+              project={selectedProject}
+              managers={selectedManagers}
+              employees={selectedEmployees}
+              deliveries={managerDeliveries}
+              forms={forms}
+              responses={responses}
+              meetings={meetings}
+              meetingBusyId={meetingBusyId}
+              onAta={(meetingId, file) => void handleProjectAta(meetingId, file)}
+            />
           </div>
         ) : (
           <EmptyState
@@ -940,7 +841,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                       }
                       required
                     >
-                      <option value="employee">Funcionário</option>
+                      <option value="employee">Colaborador</option>
                       <option value="manager">Gestor</option>
                     </select>
                   </label>
@@ -967,23 +868,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                       onChange={(event) =>
                         setContextUserForm((current) => ({ ...current, email: event.target.value }))
                       }
-                      placeholder="pessoa@empresa.com"
+                      placeholder="colaborador@empresa.com"
                       required
                     />
                   </label>
 
-                  <label>
-                    <span>Senha inicial</span>
-                    <input
-                      type="password"
-                      value={contextUserForm.senha}
-                      onChange={(event) =>
-                        setContextUserForm((current) => ({ ...current, senha: event.target.value }))
-                      }
-                      placeholder="Senha provisória"
-                      required
-                    />
-                  </label>
+                  <p className="form-hint">O colaborador receberá uma senha temporária por email.</p>
                 </div>
 
                 <button type="submit" className="primary-button" disabled={saving === 'context-user'}>
@@ -1000,7 +890,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
             >
               <p className="admin-form__hint">
                 Suba uma planilha com uma coluna de nomes e outra de e-mail para cadastrar todos os
-                colaboradores deste projeto de uma vez. A senha inicial de cada um é <strong>123456</strong>.
+                colaboradores deste projeto de uma vez. Cada colaborador receberá uma senha temporária exclusiva por email.
               </p>
 
               <form className="employee-import" onSubmit={handleEmployeeImport}>
@@ -1057,7 +947,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                 )}
               </SectionPanel>
 
-              <SectionPanel title="Funcionários" eyebrow="Employee" action={<StatusPill>{selectedEmployees.length}</StatusPill>}>
+              <SectionPanel title="Colaboradores" eyebrow="Employee" action={<StatusPill>{selectedEmployees.length}</StatusPill>}>
                 {selectedEmployees.length ? (
                   <div className="admin-list">
                     {selectedEmployees.map((item) => (
@@ -1073,7 +963,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState title="Sem funcionários" description="Nenhum funcionário vinculado a este projeto." />
+                  <EmptyState title="Sem colaboradores" description="Nenhum colaborador vinculado a este projeto." />
                 )}
               </SectionPanel>
             </div>

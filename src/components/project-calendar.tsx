@@ -221,12 +221,10 @@ export function ProjectCalendar({
     .map((event) => `${event.id}:${event.endsAt ?? event.startsAt ?? ''}:${event.status ?? ''}`)
     .join('|');
   const [visibleMonth, setVisibleMonth] = useState(() => {
-    const firstDate = visibleEvents[0] ? eventDate(visibleEvents[0]) : null;
-    return startOfMonth(firstDate ?? new Date());
+    return startOfMonth(new Date());
   });
   const [selectedDateKey, setSelectedDateKey] = useState(() => {
-    const firstDate = visibleEvents[0] ? eventDate(visibleEvents[0]) : null;
-    return dateKey(firstDate ?? new Date());
+    return dateKey(new Date());
   });
   const [documentPreview, setDocumentPreview] = useState<ProjectCalendarEvent | null>(null);
 
@@ -237,11 +235,8 @@ export function ProjectCalendar({
       const date = eventDate(event);
       return date ? dateKey(date) === todayKey : false;
     });
-    const preferredEvent = eventToday ?? visibleEvents[0];
-    const preferredDate = preferredEvent ? eventDate(preferredEvent) ?? today : today;
-
-    setVisibleMonth(startOfMonth(preferredDate));
-    setSelectedDateKey(dateKey(preferredDate));
+    setVisibleMonth(startOfMonth(today));
+    setSelectedDateKey(dateKey(eventToday ? eventDate(eventToday) ?? today : today));
   }, [eventSignature]);
 
   if (!visibleEvents.length) {

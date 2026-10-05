@@ -20,6 +20,7 @@ import type { FormSummary, Journey, JourneyItem, Presentation } from '../api/typ
 import { useAuth } from '../auth/auth-context';
 import { AppShell } from '../components/app-shell';
 import { EmptyState } from '../components/empty-state';
+import { useJornadasProduct } from '../api/company';
 import { SectionPanel } from '../components/section-panel';
 import { StatCard } from '../components/stat-card';
 import { StatusPill } from '../components/status-pill';
@@ -59,7 +60,10 @@ function isCompleted(item: JourneyItem) {
 }
 
 function isTrackableItem(item: JourneyItem) {
-  return item.item_type === 'survey' || item.item_type === 'document_request';
+  // Mesmo criterio usado na jornada de verdade (employee-handout-page.tsx),
+  // pra este resumo nunca mostrar um numero diferente do que a pessoa ve ao
+  // abrir a jornada.
+  return item.user_status !== 'locked';
 }
 
 function getJourneyItemLink(item: JourneyItem | null) {
@@ -69,6 +73,7 @@ function getJourneyItemLink(item: JourneyItem | null) {
 
 export function EmployeeDashboard() {
   const { token, user } = useAuth();
+  const hasJornadas = useJornadasProduct(token);
   const [journey, setJourney] = useState<Journey | null>(null);
   const [forms, setForms] = useState<FormSummary[]>([]);
   const [presentations, setPresentations] = useState<Presentation[]>([]);
@@ -150,9 +155,15 @@ export function EmployeeDashboard() {
       description="Acompanhe sua jornada, retome de onde parou e responda às pesquisas no seu ritmo."
       navigation={employeeNavigation}
     >
-      {error ? <div className="form-error">{error}</div> : null}
+      {hasJornadas === false ? (
+        <EmptyState
+          title="Jornadas não contratada"
+          description="A empresa ainda não contratou a Plataforma de Jornadas. Fale com o administrador da sua empresa."
+        />
+      ) : null}
+      {hasJornadas !== false && error ? <div className="form-error">{error}</div> : null}
 
-      {isLoading ? (
+      {hasJornadas === false ? null : isLoading ? (
         <section className="emp-hero">
           <div className="emp-hero__copy">
             <span className="emp-hero__eyebrow">Sua jornada</span>

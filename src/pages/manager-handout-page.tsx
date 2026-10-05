@@ -17,7 +17,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { API_URL, ApiError } from '../api/client';
 import {
@@ -398,6 +398,7 @@ function JourneyLoadingShell() {
 
 export function ManagerHandoutPage() {
   const { token, user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [journey, setJourney] = useState<Journey | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('item'));
@@ -411,6 +412,7 @@ export function ManagerHandoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [finishing, setFinishing] = useState(false);
 
   const allItems = useMemo<JourneyItemWithSection[]>(
     () =>
@@ -509,7 +511,7 @@ export function ManagerHandoutPage() {
     setApprovalNotes(selected?.submission_notes ?? '');
   }, [selected?.id]);
 
-  function markItemCompletedLocally(itemId: string, completedAt?: string | null) {
+  function setItemStatusLocally(itemId: string, status: string | undefined, submittedAt?: string | null) {
     setJourney((current) => {
       if (!current) return current;
       return {
@@ -518,11 +520,7 @@ export function ManagerHandoutPage() {
           ...section,
           items: section.items.map((item) =>
             item.id === itemId
-              ? {
-                  ...item,
-                  user_status: 'completed',
-                  submitted_at: completedAt ?? new Date().toISOString(),
-                }
+              ? { ...item, user_status: status, submitted_at: submittedAt ?? item.submitted_at }
               : item,
           ),
         })),
@@ -530,15 +528,24 @@ export function ManagerHandoutPage() {
     });
   }
 
-  async function completeContentItem(item: JourneyItem | null) {
-    if (!token || !item || !isCompletableContentItem(item) || isDelivered(item)) return;
+  function markItemCompletedLocally(itemId: string, completedAt?: string | null) {
+    setItemStatusLocally(itemId, 'completed', completedAt ?? new Date().toISOString());
+  }
 
+  async function completeContentItem(item: JourneyItem | null): Promise<boolean> {
+    if (!token || !item || !isCompletableContentItem(item) || isDelivered(item)) return true;
+
+    const previousStatus = item.user_status;
+    const previousSubmittedAt = item.submitted_at;
     markItemCompletedLocally(item.id);
     try {
       const progress = await completeManagerCompanyJourneyItem(token, item.id);
       markItemCompletedLocally(item.id, progress.completed_at);
-    } catch {
-      // Progresso visual não deve bloquear a navegação entre conteúdos.
+      return true;
+    } catch (err) {
+      setItemStatusLocally(item.id, previousStatus, previousSubmittedAt);
+      setError(parseApiError(err));
+      return false;
     }
   }
 
@@ -549,6 +556,13 @@ export function ManagerHandoutPage() {
     setSelectedId(itemId);
     setSearchParams({ item: itemId });
     setIsJourneyNavOpen(false);
+  }
+
+  async function finishJourney() {
+    setFinishing(true);
+    const ok = await completeContentItem(selected);
+    setFinishing(false);
+    if (ok) navigate('/manager');
   }
 
   function toggleSection(sectionId: string) {
@@ -594,6 +608,19 @@ export function ManagerHandoutPage() {
     const draft = uploadDrafts[item.id];
     if (!draft?.file) {
       setUploadError('Selecione um arquivo antes de registrar a entrega.');
+      setUploadSuccess(null);
+      return;
+    }
+
+    const extension = draft.file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (item.accepted_formats.length && !item.accepted_formats.some((format) => format.toLowerCase() === extension)) {
+      setUploadError(`Formato .${extension || '?'} não aceito. Use um dos formatos: ${item.accepted_formats.join(', ')}.`);
+      setUploadSuccess(null);
+      return;
+    }
+    const maxSizeBytes = 25 * 1024 * 1024;
+    if (draft.file.size > maxSizeBytes) {
+      setUploadError('Arquivo maior que 25 MB. Envie um arquivo menor.');
       setUploadSuccess(null);
       return;
     }
@@ -897,7 +924,7 @@ export function ManagerHandoutPage() {
                     <Download size={16} /> Baixar modelo
                   </a>
                 ) : (
-                  <StatusPill tone="muted">Padrao do projeto</StatusPill>
+                  <StatusPill tone="muted">Padrão do projeto</StatusPill>
                 )}
               </div>
 
@@ -906,7 +933,7 @@ export function ManagerHandoutPage() {
                   <div className="manager-submission__head">
                     <CheckCircle2 size={18} />
                     <div>
-                      <strong>Ultimo envio registrado</strong>
+                      <strong>Último envio registrado</strong>
                       <span>{formatDateTime(selected.submitted_at)}</span>
                     </div>
                   </div>
@@ -1073,19 +1100,18 @@ export function ManagerHandoutPage() {
                 <ArrowRight size={16} />
               </button>
             ) : (
-              <Link
-                to="/manager"
+              <button
+                type="button"
                 className="journey-pager__btn journey-pager__btn--next"
-                onClick={() => {
-                  void completeContentItem(selected);
-                }}
+                onClick={() => void finishJourney()}
+                disabled={finishing}
               >
                 <span>
-                  <em>Finalizar</em>
+                  <em>{finishing ? 'Salvando...' : 'Finalizar'}</em>
                   <strong>Voltar para a visão geral</strong>
                 </span>
                 <ArrowRight size={16} />
-              </Link>
+              </button>
             )}
           </nav>
         </div>

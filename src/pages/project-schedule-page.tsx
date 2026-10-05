@@ -1,9 +1,7 @@
 import {
-  Building2,
   CalendarClock,
   ClipboardCheck,
   FileUp,
-  FolderKanban,
   House,
   Route as RouteIcon,
 } from 'lucide-react';
@@ -18,16 +16,11 @@ import { EmptyState } from '../components/empty-state';
 import { ProjectCalendar, type ProjectCalendarEvent } from '../components/project-calendar';
 import { SectionPanel } from '../components/section-panel';
 import { StatusPill } from '../components/status-pill';
+import { productAdminNavigation } from '../components/admin-navigation';
 
 type ScheduleMode = 'admin' | 'manager';
 
-const adminNavigation = [
-  { to: '/admin', label: 'Home', icon: House },
-  { to: '/admin/companies', label: 'Cadastro', icon: Building2 },
-  { to: '/admin/projects', label: 'Clientes', icon: FolderKanban },
-  { to: '/admin/schedule', label: 'Cronograma', icon: CalendarClock },
-  { to: '/admin/meetings', label: 'Reuniões', icon: ClipboardCheck },
-];
+const adminNavigation = productAdminNavigation;
 
 const managerNavigation = [
   { to: '/manager', label: 'Visão geral', icon: House },

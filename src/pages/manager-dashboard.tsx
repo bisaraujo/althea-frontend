@@ -22,6 +22,7 @@ import type { EmployeeRecord, Journey, JourneyItem } from '../api/types';
 import { useAuth } from '../auth/auth-context';
 import { AppShell } from '../components/app-shell';
 import { EmptyState } from '../components/empty-state';
+import { useJornadasProduct } from '../api/company';
 import { SectionPanel } from '../components/section-panel';
 import { StatCard } from '../components/stat-card';
 import { StatusPill } from '../components/status-pill';
@@ -66,6 +67,7 @@ function statusLabel(status?: string) {
   if (status === 'overdue') return 'Atrasado';
   if (status === 'pending') return 'Pendente';
   if (status === 'available') return 'Disponível';
+  if (status === 'locked') return 'Bloqueado';
   return 'Não iniciado';
 }
 
@@ -97,6 +99,7 @@ function itemLink(item: JourneyItem | null) {
 
 export function ManagerDashboard() {
   const { token, user } = useAuth();
+  const hasJornadas = useJornadasProduct(token);
   const [journey, setJourney] = useState<Journey | null>(null);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -183,9 +186,15 @@ export function ManagerDashboard() {
       description="Acompanhe o projeto, veja as próximas entregas e avance pela jornada documental."
       navigation={managerNavigation}
     >
-      {error ? <div className="form-error">{error}</div> : null}
+      {hasJornadas === false ? (
+        <EmptyState
+          title="Jornadas não contratada"
+          description="A empresa ainda não contratou a Plataforma de Jornadas. Fale com o administrador da sua empresa."
+        />
+      ) : null}
+      {hasJornadas !== false && error ? <div className="form-error">{error}</div> : null}
 
-      {isLoading ? (
+      {hasJornadas === false ? null : isLoading ? (
         <section className="emp-hero">
           <div className="emp-hero__copy">
             <span className="emp-hero__eyebrow">Sua jornada</span>
@@ -246,7 +255,7 @@ export function ManagerDashboard() {
                     <strong>{nextItem.document_title ?? nextItem.title}</strong>
                     <span>
                       {itemTypeLabel(nextItem)}
-                      {nextItem.is_required ? ' - Obrigatório' : ''}
+                      {nextItem.is_required ? ' · Obrigatório' : ''}
                     </span>
                   </div>
                   <MoveRight size={18} className="emp-hero__next-arrow" />
@@ -378,8 +387,8 @@ export function ManagerDashboard() {
 
             <SectionPanel
               title="Equipe do projeto"
-              eyebrow="Pessoas"
-              action={<StatusPill>{employees.length} pessoas</StatusPill>}
+              eyebrow="Colaboradores"
+              action={<StatusPill>{employees.length} colaboradores</StatusPill>}
             >
               {employees.length ? (
                 <div className="list">

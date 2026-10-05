@@ -1,14 +1,18 @@
-import { LogOut } from 'lucide-react';
+import { Building2, Flame, LogOut, Route as RouteIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../auth/auth-context';
 import { BrandLockup } from './brand';
 
-type NavigationItem = {
+export type NavigationItem = {
   label: string;
   to: string;
   icon: LucideIcon;
+  exact?: boolean;
+  /** Sobrescreve o destaque quando a rota ativa é uma página filha (ex.: detalhe da empresa). */
+  activeFor?: (pathname: string) => boolean;
+  platformOnly?: boolean;
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -45,6 +49,13 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const { user, signOut } = useAuth();
+  const location = useLocation();
+  const visibleNavigation = navigation.filter((item) => !item.platformOnly || user?.platform_admin);
+  const showAdminWorkspaceSwitcher = user?.role === 'admin';
+  const isPlatformWorkspace = location.pathname.startsWith('/platform-admin');
+  const isFagulhaWorkspace = location.pathname.startsWith('/fagulha-admin');
+  const canUseJornadas = Boolean(user?.platform_admin || user?.admin_product_ids?.includes('product-jornadas'));
+  const canUseFagulha = Boolean(user?.platform_admin || user?.admin_product_ids?.includes('product-fagulha'));
 
   return (
     <div className="shell">
@@ -59,7 +70,7 @@ export function AppShell({
         </div>
 
         <nav className="shell__nav" aria-label="Navegação principal">
-          {navigation.map((item) => {
+          {visibleNavigation.map((item) => {
             const Icon = item.icon;
 
             return (
@@ -67,9 +78,9 @@ export function AppShell({
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `shell__nav-link ${isActive ? 'active' : ''}`
+                  `shell__nav-link ${(item.activeFor ? item.activeFor(location.pathname) : isActive) ? 'active' : ''}`
                 }
-                end={['/admin', '/company', '/manager', '/employee'].includes(item.to)}
+                end={item.exact ?? ['/admin', '/company', '/manager', '/employee'].includes(item.to)}
               >
                 <Icon size={18} />
                 <span>{item.label}</span>
@@ -93,8 +104,33 @@ export function AppShell({
           </button>
         </div>
 
+        {showAdminWorkspaceSwitcher ? (
+          <nav className="admin-workspace-switcher" aria-label="Ambiente administrativo">
+            <span className="admin-workspace-switcher__label">Ambiente</span>
+            <div className="admin-workspace-switcher__options">
+              {user?.platform_admin ? <Link
+                to="/platform-admin/companies"
+                className={`admin-workspace-switcher__link ${isPlatformWorkspace ? 'active' : ''}`}
+                aria-current={isPlatformWorkspace ? 'page' : undefined}
+              >
+                <Building2 size={16} />
+                <span>Admin Geral</span>
+              </Link> : null}
+              {canUseJornadas ? <Link
+                to="/admin"
+                className={`admin-workspace-switcher__link ${!isPlatformWorkspace && !isFagulhaWorkspace ? 'active' : ''}`}
+                aria-current={!isPlatformWorkspace && !isFagulhaWorkspace ? 'page' : undefined}
+              >
+                <RouteIcon size={16} />
+                <span>Admin Jornadas</span>
+              </Link> : null}
+              {canUseFagulha ? <Link to="/fagulha-admin" className={`admin-workspace-switcher__link ${isFagulhaWorkspace ? 'active' : ''}`} aria-current={isFagulhaWorkspace ? 'page' : undefined}><Flame size={16}/><span>Admin Fagulha</span></Link> : null}
+            </div>
+          </nav>
+        ) : null}
+
         <nav className="shell__mobile-nav" aria-label="Navegação principal mobile">
-          {navigation.map((item) => {
+          {visibleNavigation.map((item) => {
             const Icon = item.icon;
 
             return (
@@ -102,9 +138,9 @@ export function AppShell({
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `shell__mobile-nav-link ${isActive ? 'active' : ''}`
+                  `shell__mobile-nav-link ${(item.activeFor ? item.activeFor(location.pathname) : isActive) ? 'active' : ''}`
                 }
-                end={['/admin', '/company', '/manager', '/employee'].includes(item.to)}
+                end={item.exact ?? ['/admin', '/company', '/manager', '/employee'].includes(item.to)}
               >
                 <Icon size={16} />
                 <span>{item.label}</span>

@@ -1,191 +1,250 @@
-import { Building2, ClipboardList, FolderKanban, House, Presentation, Reply } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Lock } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { getMyCompanyProducts } from '../api/company';
+import type { MyCompanyProducts } from '../api/company';
 import { ApiError } from '../api/client';
 import { getForms, getMyCompany, getPresentations, getProjects, getResponses } from '../api/services';
 import type { Company, FormSummary, Presentation as PresentationType, Project, ResponseRecord } from '../api/types';
 import { AppShell } from '../components/app-shell';
-import { EmptyState } from '../components/empty-state';
-import { SectionPanel } from '../components/section-panel';
-import { StatCard } from '../components/stat-card';
+import { CompanyAvatar } from '../components/company-avatar';
+import { companyNavigation } from '../components/company-navigation';
 import { StatusPill } from '../components/status-pill';
+import { DataTable, ErrorState, LoadingState, SearchInput, SectionHeader } from '../components/ui';
+import type { DataTableColumn } from '../components/ui';
 import { useAuth } from '../auth/auth-context';
+import './company-dashboard.css';
 
-const companyNavigation = [
-  { to: '/company', label: 'Visão geral', icon: House },
-];
+const FORMS_PAGE = 8;
+
+const audienceLabel: Record<string, string> = { all: 'Todos', manager: 'Gestores', employee: 'Colaboradores' };
+
+type JornadasData = {
+  projects: Project[];
+  forms: FormSummary[];
+  presentations: PresentationType[];
+  responses: ResponseRecord[];
+};
+
+function LockedProduct({ text }: { text: string }) {
+  return (
+    <div className="cd-locked">
+      <Lock size={16} aria-hidden />
+      <div>
+        <strong>Produto não contratado</strong>
+        <span>{text}</span>
+      </div>
+    </div>
+  );
+}
 
 export function CompanyDashboard() {
   const { token, user } = useAuth();
   const [company, setCompany] = useState<Company | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [forms, setForms] = useState<FormSummary[]>([]);
-  const [presentations, setPresentations] = useState<PresentationType[]>([]);
-  const [responses, setResponses] = useState<ResponseRecord[]>([]);
+  const [products, setProducts] = useState<MyCompanyProducts | null>(null);
+  const [data, setData] = useState<JornadasData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [formSearch, setFormSearch] = useState('');
+  const [formLimit, setFormLimit] = useState(FORMS_PAGE);
 
-  useEffect(() => {
-    if (!token) {
-      return;
-    }
-    const authToken: string = token;
-
-    async function load() {
-      try {
-        const [companyData, projectData, formData, presentationData, responseData] = await Promise.all([
-          getMyCompany(authToken),
-          getProjects(authToken),
-          getForms(authToken),
-          getPresentations(authToken),
-          getResponses(authToken),
+  const load = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const [companyData, productData] = await Promise.all([getMyCompany(token), getMyCompanyProducts(token)]);
+      setCompany(companyData);
+      setProducts(productData);
+      if (productData.has_jornadas) {
+        const [projectData, formData, presentationData, responseData] = await Promise.all([
+          getProjects(token),
+          getForms(token),
+          getPresentations(token),
+          getResponses(token),
         ]);
-
-        setCompany(companyData);
-        setProjects(projectData.projects);
-        setForms(formData.forms);
-        setPresentations(presentationData.presentations);
-        setResponses(responseData.responses);
-      } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Não foi possível carregar a área da empresa.');
+        setData({
+          projects: projectData.projects,
+          forms: formData.forms,
+          presentations: presentationData.presentations,
+          responses: responseData.responses,
+        });
+      } else {
+        setData(null);
       }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Não foi possível carregar a área da empresa.');
+    } finally {
+      setLoading(false);
     }
-
-    void load();
   }, [token]);
 
-  if (!user) {
-    return null;
-  }
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const filteredForms = useMemo(() => {
+    const term = formSearch.trim().toLowerCase();
+    const all = data?.forms ?? [];
+    return term ? all.filter((f) => `${f.title} ${f.description ?? ''}`.toLowerCase().includes(term)) : all;
+  }, [data, formSearch]);
+
+  const formTitles = useMemo(() => new Map((data?.forms ?? []).map((f) => [f.id, f.title])), [data]);
+
+  const projectColumns: DataTableColumn<Project>[] = [
+    { key: 'name', header: 'Projeto', render: (p) => <strong>{p.name}</strong> },
+    { key: 'description', header: 'Descrição', hideOnMobile: true, render: (p) => p.description || '—' },
+  ];
+
+  if (!user) return null;
+
+  const hasJornadas = Boolean(products?.has_jornadas);
 
   return (
     <AppShell
       eyebrow="Plataforma turi"
       title="Área da empresa"
-      description="Uma visão consolidada da operação da própria empresa, com projetos, conteúdos e respostas."
+      description="Dados da empresa, produtos contratados e acompanhamento da operação."
       navigation={companyNavigation}
     >
-      {error ? <div className="form-error">{error}</div> : null}
+      {loading ? (
+        <LoadingState />
+      ) : error || !company ? (
+        <ErrorState message={error ?? undefined} onRetry={() => void load()} />
+      ) : (
+        <div className="cd-stack">
+          <section className="cd-header" aria-label="Dados institucionais">
+            <CompanyAvatar name={company.name} size="lg" />
+            <div className="cd-header__main">
+              <h2>{company.name}</h2>
+              <p>{company.email}</p>
+            </div>
+            <div className="cd-header__products">
+              {products?.products.length ? (
+                products.products.map((p) => (
+                  <StatusPill key={p.id} tone="success">
+                    {p.name}
+                  </StatusPill>
+                ))
+              ) : hasJornadas ? (
+                <StatusPill tone="success">Plataforma de Jornadas</StatusPill>
+              ) : (
+                <StatusPill>Nenhum produto contratado</StatusPill>
+              )}
+            </div>
+          </section>
 
-      <div className="stats-grid">
-        <StatCard label="Projetos" value={projects.length} icon={<FolderKanban size={18} />} />
-        <StatCard label="Formulários" value={forms.length} icon={<ClipboardList size={18} />} />
-        <StatCard label="Apresentações" value={presentations.length} icon={<Presentation size={18} />} />
-        <StatCard label="Respostas" value={responses.length} icon={<Reply size={18} />} />
-      </div>
-
-      <SectionPanel title="Conta institucional" eyebrow="Empresa">
-        {company ? (
-          <div className="company-card">
-            <div>
-              <span className="company-card__icon">
-                <Building2 size={18} />
-              </span>
-              <div>
-                <strong>{company.name}</strong>
-                <p>{company.email}</p>
+          {hasJornadas && data ? (
+            <>
+              <div className="cd-stats">
+                <span className="cd-stat"><strong>{data.projects.length}</strong> projetos</span>
+                <span className="cd-stat"><strong>{data.forms.length}</strong> formulários</span>
+                <span className="cd-stat"><strong>{data.presentations.length}</strong> apresentações</span>
+                <span className="cd-stat"><strong>{data.responses.length}</strong> respostas</span>
               </div>
-            </div>
-            <StatusPill tone="success">Conta company vinculada</StatusPill>
-          </div>
-        ) : (
-          <EmptyState
-            title="Empresa ainda não carregada"
-            description="A relação company-empresa foi formalizada no backend. Quando a API responder, os dados aparecem aqui."
-          />
-        )}
-      </SectionPanel>
 
-      <div className="content-grid">
-        <SectionPanel title="Projetos" eyebrow="Escopo" action={<StatusPill>{projects.length} ativos</StatusPill>}>
-          {projects.length ? (
-            <div className="list">
-              {projects.map((project) => (
-                <article key={project.id} className="list-item">
-                  <div>
-                    <strong>{project.name}</strong>
-                    <p>{project.description || 'Sem descrição cadastrada.'}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="Nenhum projeto encontrado"
-              description="Quando o admin criar projetos para esta empresa, eles aparecem aqui."
-            />
-          )}
-        </SectionPanel>
+              <section className="cd-panel">
+                <SectionHeader title="Projetos" count={data.projects.length} />
+                <DataTable
+                  dense
+                  columns={projectColumns}
+                  rows={data.projects}
+                  rowKey={(p) => p.id}
+                  empty={<p className="cd-empty">Nenhum projeto cadastrado para esta empresa.</p>}
+                />
+              </section>
 
-        <SectionPanel title="Formulários e pesquisas" eyebrow="Conteúdo" action={<StatusPill>{forms.length} itens</StatusPill>}>
-          {forms.length ? (
-            <div className="list">
-              {forms.map((form) => (
-                <article key={form.id} className="list-item">
-                  <div>
-                    <strong>{form.title}</strong>
-                    <p>{form.description || 'Sem descrição.'}</p>
-                  </div>
-                  <StatusPill>{form.audience}</StatusPill>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="Sem formulários ainda"
-              description="A empresa vai acompanhar por aqui os formulários ligados aos projetos dela."
-            />
-          )}
-        </SectionPanel>
-      </div>
+              <section className="cd-panel">
+                <SectionHeader
+                  title="Formulários e pesquisas"
+                  count={data.forms.length}
+                  actions={
+                    data.forms.length > FORMS_PAGE ? (
+                      <SearchInput
+                        value={formSearch}
+                        onChange={(v) => {
+                          setFormSearch(v);
+                          setFormLimit(FORMS_PAGE);
+                        }}
+                        placeholder="Buscar formulário"
+                      />
+                    ) : undefined
+                  }
+                />
+                {filteredForms.length ? (
+                  <>
+                    <ul className="cd-list">
+                      {filteredForms.slice(0, formLimit).map((form) => (
+                        <li key={form.id}>
+                          <div className="cd-list__text">
+                            <strong>{form.title}</strong>
+                            <span>{form.description || 'Sem descrição.'}</span>
+                          </div>
+                          <StatusPill>{audienceLabel[form.audience] ?? form.audience}</StatusPill>
+                        </li>
+                      ))}
+                    </ul>
+                    {filteredForms.length > formLimit ? (
+                      <button type="button" className="cd-more" onClick={() => setFormLimit((n) => n + FORMS_PAGE)}>
+                        Ver mais ({filteredForms.length - formLimit})
+                      </button>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="cd-empty">{formSearch ? 'Nenhum formulário encontrado para a busca.' : 'Nenhum formulário ainda.'}</p>
+                )}
+              </section>
 
-      <div className="content-grid">
-        <SectionPanel title="Apresentações" eyebrow="Biblioteca" action={<StatusPill>{presentations.length} itens</StatusPill>}>
-          {presentations.length ? (
-            <div className="list">
-              {presentations.map((presentation) => (
-                <article key={presentation.id} className="list-item">
-                  <div>
-                    <strong>{presentation.title}</strong>
-                    <p>{presentation.description || 'Sem descrição.'}</p>
-                  </div>
-                  {presentation.file_url ? (
-                    <a href={presentation.file_url} target="_blank" rel="noreferrer" className="secondary-link">
-                      abrir
-                    </a>
+              <div className="cd-grid">
+                <section className="cd-panel">
+                  <SectionHeader title="Apresentações" count={data.presentations.length} />
+                  {data.presentations.length ? (
+                    <ul className="cd-list">
+                      {data.presentations.slice(0, 5).map((presentation) => (
+                        <li key={presentation.id}>
+                          <div className="cd-list__text">
+                            <strong>{presentation.title}</strong>
+                            <span>{presentation.description || 'Sem descrição.'}</span>
+                          </div>
+                          {presentation.file_url ? (
+                            <a href={presentation.file_url} target="_blank" rel="noreferrer" className="secondary-link">
+                              abrir
+                            </a>
+                          ) : (
+                            <span className="secondary-link">em breve</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
                   ) : (
-                    <span className="secondary-link">em breve</span>
+                    <p className="cd-empty">Nenhuma apresentação ainda.</p>
                   )}
-                </article>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="Sem apresentações ainda"
-              description="As apresentações vinculadas aos projetos da empresa vão aparecer aqui."
-            />
-          )}
-        </SectionPanel>
+                </section>
 
-        <SectionPanel title="Respostas recentes" eyebrow="Acompanhamento" action={<StatusPill>{responses.length} registros</StatusPill>}>
-          {responses.length ? (
-            <div className="list">
-              {responses.slice(0, 6).map((response) => (
-                <article key={response.id} className="list-item">
-                  <div>
-                    <strong>Resposta {response.id.slice(0, 8)}</strong>
-                    <p>Formulário {response.form_id.slice(0, 8)} • Usuário {response.user_id.slice(0, 8)}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
+                <section className="cd-panel">
+                  <SectionHeader title="Respostas recentes" count={data.responses.length} />
+                  {data.responses.length ? (
+                    <ul className="cd-list">
+                      {data.responses.slice(0, 5).map((response) => (
+                        <li key={response.id}>
+                          <div className="cd-list__text">
+                            <strong>{formTitles.get(response.form_id) ?? `Formulário ${response.form_id.slice(0, 8)}`}</strong>
+                            <span>Resposta {response.id.slice(0, 8)}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="cd-empty">Nenhuma resposta registrada.</p>
+                  )}
+                </section>
+              </div>
+            </>
           ) : (
-            <EmptyState
-              title="Sem respostas registradas"
-              description="Quando os colaboradores responderem pesquisas, os registros vão aparecer aqui."
-            />
+            <LockedProduct text="Projetos, formulários, jornadas, apresentações e respostas fazem parte da Plataforma de Jornadas. Fale com a turi para contratar." />
           )}
-        </SectionPanel>
-      </div>
+        </div>
+      )}
     </AppShell>
   );
 }

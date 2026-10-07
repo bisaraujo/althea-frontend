@@ -114,7 +114,7 @@ function errorKind(reason: unknown) { return reason instanceof ApiError && reaso
 
 /* --------------------------------------------------------- Campos personalizados */
 
-function FieldsSection({ token, companyId }: { token: string; companyId: string }) {
+function FieldsSection({ token, companyId, canManage }: { token: string; companyId: string; canManage: boolean }) {
   const toast = useToast();
   const [fields, setFields] = useState<CustomFieldDefinition[] | null>(null);
   const [failure, setFailure] = useState<'forbidden' | 'error' | null>(null);
@@ -143,7 +143,7 @@ function FieldsSection({ token, companyId }: { token: string; companyId: string 
 
   return (
     <SectionPanel title="Campos personalizados" eyebrow="Cadastro de colaboradores">
-      <SectionHeader title="Campos extras do colaborador" info="Use para guardar dados que a empresa precisa e que não existem no cadastro padrão, como matrícula ou centro de custo." count={fields?.length} actions={failure ? null : <button type="button" className="secondary-button" onClick={open}><Plus size={15} />Novo campo</button>} />
+      <SectionHeader title="Campos extras do colaborador" info="Use para guardar dados que a empresa precisa e que não existem no cadastro padrão, como matrícula ou centro de custo." count={fields?.length} actions={failure || !canManage ? null : <button type="button" className="secondary-button" onClick={open}><Plus size={15} />Novo campo</button>} />
       {failure === 'forbidden' ? <NoPermissionState message="Você não tem permissão para ver os campos desta empresa." /> : null}
       {failure === 'error' ? <ErrorState message="Não foi possível carregar os campos." onRetry={load} /> : null}
       {!failure ? (
@@ -256,11 +256,13 @@ function AuditSection({ token, companyId }: { token: string; companyId: string }
   );
 }
 
-export function AuditTab({ token, companyId }: { token: string; companyId: string }) {
+type AuditTabProps = { token: string; companyId: string; showFields?: boolean; canManageFields?: boolean; showAudit?: boolean };
+
+export function AuditTab({ token, companyId, showFields = true, canManageFields = true, showAudit = true }: AuditTabProps) {
   return (
     <div className="org-governance">
-      <FieldsSection token={token} companyId={companyId} />
-      <AuditSection token={token} companyId={companyId} />
+      {showFields ? <FieldsSection token={token} companyId={companyId} canManage={canManageFields} /> : null}
+      {showAudit ? <AuditSection token={token} companyId={companyId} /> : null}
     </div>
   );
 }

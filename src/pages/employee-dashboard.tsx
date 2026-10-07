@@ -4,7 +4,6 @@ import {
   CirclePlay,
   ClipboardList,
   FileText,
-  House,
   MoveRight,
   PlayCircle,
   Presentation as PresentationIcon,
@@ -24,11 +23,7 @@ import { useJornadasProduct } from '../api/company';
 import { SectionPanel } from '../components/section-panel';
 import { StatCard } from '../components/stat-card';
 import { StatusPill } from '../components/status-pill';
-
-const employeeNavigation = [
-  { to: '/employee', label: 'Visão geral', icon: House },
-  { to: '/employee/journey', label: 'Minha jornada', icon: RouteIcon },
-];
+import { employeeNavigation } from '../components/role-navigation';
 
 function itemTypeIcon(item: JourneyItem) {
   if (item.item_type === 'survey') return <ClipboardList size={16} />;

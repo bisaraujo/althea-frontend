@@ -1,5 +1,5 @@
 import { AlertTriangle, BriefcaseBusiness, Building2, ChevronDown, ChevronRight, Network, Pencil, Plus, Power, Users } from 'lucide-react';
-import { type FormEvent, type ReactNode, useMemo, useRef, useState } from 'react';
+import { type FormEvent, type ReactNode, createContext, useContext, useMemo, useRef, useState } from 'react';
 
 import {
   apiErrorMessage, moveOrganizationalArea, moveOrganizationalPosition,
@@ -35,6 +35,8 @@ type StructureTabProps = {
   employments: Employment[];
   loading: boolean;
   onReload: () => Promise<void>;
+  canManage?: boolean;
+  showPeopleCounts?: boolean;
 };
 
 function plural(count: number, one: string, many: string) { return `${count} ${count === 1 ? one : many}`; }
@@ -56,15 +58,19 @@ function InlineAdd({ label, placeholder, saving, onSubmit, onCancel }: { label: 
   );
 }
 
+const CanManageStructure = createContext(true);
+
 function AddButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+  if (!useContext(CanManageStructure)) return null;
   return <button type="button" className="org-action" onClick={onClick}><Plus size={13} aria-hidden />{children}</button>;
 }
 
 function IconButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
+  if (!useContext(CanManageStructure)) return null;
   return <button type="button" className="org-icon-btn" aria-label={label} title={label} onClick={onClick} disabled={disabled}>{children}</button>;
 }
 
-export function StructureTab({ token, companyId, company, structure, employments, loading, onReload }: StructureTabProps) {
+export function StructureTab({ token, companyId, company, structure, employments, loading, onReload, canManage = true, showPeopleCounts = true }: StructureTabProps) {
   const toast = useToast();
   const confirm = useConfirm();
   const [adding, setAdding] = useState<Adding>(null);
@@ -200,14 +206,14 @@ export function StructureTab({ token, companyId, company, structure, employments
           <Users size={15} aria-hidden />
           <strong>{area.name}</strong>
           {!area.active ? <span className="org-tag">inativa</span> : null}
-          <span className="org-meta">{plural(people, 'colaborador', 'colaboradores')}</span>
+          {showPeopleCounts ? <span className="org-meta">{plural(people, 'colaborador', 'colaboradores')}</span> : null}
           <div className="org-area__actions">{extra}{area.active ? <AddButton onClick={() => setAdding({ kind: 'position', parentId: area.id })}>Cargo</AddButton> : null}{itemActions('area', area)}</div>
         </div>
         <div className="org-positions">
           {positions.map((position) => {
             const count = model.peopleByPosition.get(position.id) || 0;
             return (
-              <span className={`org-chip${position.active ? '' : ' is-inactive'}`} key={position.id} title={plural(count, 'colaborador', 'colaboradores')}>
+              <span className={`org-chip${position.active ? '' : ' is-inactive'}`} key={position.id} title={showPeopleCounts ? plural(count, 'colaborador', 'colaboradores') : undefined}>
                 <BriefcaseBusiness size={12} aria-hidden />{position.name}{count ? <em>{count}</em> : null}{!position.active ? <small>inativo</small> : null}
                 <span className="org-chip__actions">{itemActions('position', position)}</span>
               </span>
@@ -236,7 +242,7 @@ export function StructureTab({ token, companyId, company, structure, employments
             {legacyType ? <span className="org-tag">{legacyType}</span> : null}
             {!unit.active ? <span className="org-tag">inativa</span> : null}
           </button>
-          <span className="org-meta">{plural(stats.areas, 'área', 'áreas')} · {plural(stats.positions, 'cargo', 'cargos')} · {plural(stats.people, 'colaborador', 'colaboradores')}</span>
+          <span className="org-meta">{plural(stats.areas, 'área', 'áreas')} · {plural(stats.positions, 'cargo', 'cargos')}{showPeopleCounts ? ` · ${plural(stats.people, 'colaborador', 'colaboradores')}` : ''}</span>
           <div className="org-unit__actions">
             {unit.active ? <>
               <AddButton onClick={() => { setAdding({ kind: 'area', parentId: unit.id }); if (!open) toggle(unit.id); }}>Área</AddButton>
@@ -266,6 +272,7 @@ export function StructureTab({ token, companyId, company, structure, employments
   const activeCount = (items: Array<{ active: boolean }>) => items.filter((item) => item.active).length;
 
   return (
+    <CanManageStructure.Provider value={canManage}>
     <div className="org-structure">
       <SectionPanel
         title={company?.name || 'Empresa'}
@@ -280,7 +287,7 @@ export function StructureTab({ token, companyId, company, structure, employments
         </ol>
         <div className="org-summary-row">
           <p className="org-summary">
-            {plural(activeCount(structure.units), 'unidade', 'unidades')} · {plural(activeCount(structure.areas), 'área', 'áreas')} · {plural(activeCount(structure.positions), 'cargo', 'cargos')} · {plural(totalPeople, 'colaborador ativo', 'colaboradores ativos')}
+            {plural(activeCount(structure.units), 'unidade', 'unidades')} · {plural(activeCount(structure.areas), 'área', 'áreas')} · {plural(activeCount(structure.positions), 'cargo', 'cargos')}{showPeopleCounts ? ` · ${plural(totalPeople, 'colaborador ativo', 'colaboradores ativos')}` : ''}
           </p>
           {inactiveCount ? (
             <label className="org-check"><input type="checkbox" checked={showInactive} onChange={(event) => setShowInactive(event.target.checked)} />Mostrar inativos ({inactiveCount})</label>
@@ -303,7 +310,7 @@ export function StructureTab({ token, companyId, company, structure, employments
           </p>
           {legacyAreas.length ? <h3 className="org-subtitle">Áreas sem unidade ({legacyAreas.length})</h3> : null}
           {legacyAreas.map((area) => (
-            renderArea(area,
+            renderArea(area, canManage &&
               <select className="org-move" aria-label={`Mover a área ${area.name} para uma unidade`} value="" disabled={saving || !structure.units.length} onChange={(event) => { const unitId = event.target.value; if (unitId) void run(() => moveOrganizationalArea(token, area.id, unitId), 'Área movida para a unidade.'); }}>
                 <option value="">Mover para unidade…</option>
                 {structure.units.filter((unit) => unit.active).map((unit) => <option value={unit.id} key={unit.id}>{unitPath(unit)}</option>)}
@@ -316,12 +323,12 @@ export function StructureTab({ token, companyId, company, structure, employments
               <div className="org-area__head">
                 <BriefcaseBusiness size={15} aria-hidden /><strong>{position.name}</strong>
                 {!position.active ? <span className="org-tag">inativo</span> : null}
-                <span className="org-meta">{plural(model.peopleByPosition.get(position.id) || 0, 'colaborador', 'colaboradores')}</span>
+                {showPeopleCounts ? <span className="org-meta">{plural(model.peopleByPosition.get(position.id) || 0, 'colaborador', 'colaboradores')}</span> : null}
                 <div className="org-area__actions">
-                  <select className="org-move" aria-label={`Mover o cargo ${position.name} para uma área`} value="" disabled={saving || !structure.areas.length} onChange={(event) => { const areaId = event.target.value; if (areaId) void run(() => moveOrganizationalPosition(token, position.id, areaId), 'Cargo movido para a área.'); }}>
+                  {canManage ? <select className="org-move" aria-label={`Mover o cargo ${position.name} para uma área`} value="" disabled={saving || !structure.areas.length} onChange={(event) => { const areaId = event.target.value; if (areaId) void run(() => moveOrganizationalPosition(token, position.id, areaId), 'Cargo movido para a área.'); }}>
                     <option value="">Mover para área…</option>
                     {structure.areas.filter((area) => area.active).map((area) => { const unit = structure.units.find((item) => item.id === area.unit_id); return <option value={area.id} key={area.id}>{area.name}{unit ? ` — ${unit.name}` : ''}</option>; })}
-                  </select>
+                  </select> : null}
                   {itemActions('position', position)}
                 </div>
               </div>
@@ -343,5 +350,6 @@ export function StructureTab({ token, companyId, company, structure, employments
         </form>
       </Modal>
     </div>
+    </CanManageStructure.Provider>
   );
 }

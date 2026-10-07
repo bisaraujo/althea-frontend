@@ -4,12 +4,9 @@ import {
   CalendarClock,
   CheckCircle2,
   CirclePlay,
-  ClipboardCheck,
   FileText,
   FileUp,
-  House,
   MoveRight,
-  Route as RouteIcon,
   Upload,
   Users,
 } from 'lucide-react';
@@ -26,14 +23,7 @@ import { useJornadasProduct } from '../api/company';
 import { SectionPanel } from '../components/section-panel';
 import { StatCard } from '../components/stat-card';
 import { StatusPill } from '../components/status-pill';
-
-const managerNavigation = [
-  { to: '/manager', label: 'Visão geral', icon: House },
-  { to: '/manager/journey', label: 'Minha jornada', icon: RouteIcon },
-  { to: '/manager/company-journey', label: 'Jornada da empresa', icon: FileUp },
-  { to: '/manager/schedule', label: 'Cronograma', icon: CalendarClock },
-  { to: '/manager/meetings', label: 'Reuniões', icon: ClipboardCheck },
-];
+import { managerNavigation } from '../components/role-navigation';
 
 type JourneyItemWithSection = JourneyItem & {
   sectionTitle: string;

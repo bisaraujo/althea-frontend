@@ -7,6 +7,7 @@ import { ToastProvider } from './components/toast';
 import { ConfirmProvider } from './components/ui';
 import { AdminDashboard } from './pages/admin-dashboard';
 import { CompanyAccessPage } from './pages/company-access-page';
+import { OrganizationWorkspacePage } from './pages/organization-workspace-page';
 import { CompanyDashboard } from './pages/company-dashboard';
 import { EmployeeDashboard } from './pages/employee-dashboard';
 import { EmployeeHandoutPage } from './pages/employee-handout-page';
@@ -84,6 +85,10 @@ export function App() {
           <Route element={<ProtectedRoute roles={['company']} />}>
             <Route path="/company" element={<CompanyDashboard />} />
             <Route path="/company/access" element={<CompanyAccessPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute roles={['company', 'manager', 'employee']} />}>
+            <Route path="/organization" element={<OrganizationWorkspacePage />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={['manager']} />}>

@@ -4,6 +4,7 @@ import { request } from './client';
 
 export type MyCompanyProducts = {
   company_id: string;
+  company_name?: string | null;
   products: { id: string; name: string; description: string | null }[];
   product_ids: string[];
   has_jornadas: boolean;

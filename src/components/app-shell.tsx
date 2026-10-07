@@ -1,7 +1,8 @@
-import { Building2, Flame, LogOut, Route as RouteIcon } from 'lucide-react';
+import { Building2, Flame, LogOut, Network, Route as RouteIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 
+import { hasWorkspaceAccess, useMyPermissions } from '../api/workspace-access';
 import { useAuth } from '../auth/auth-context';
 import { BrandLockup } from './brand';
 
@@ -48,9 +49,15 @@ export function AppShell({
   navigation,
   children,
 }: AppShellProps) {
-  const { user, signOut } = useAuth();
+  const { user, token, signOut } = useAuth();
   const location = useLocation();
-  const visibleNavigation = navigation.filter((item) => !item.platformOnly || user?.platform_admin);
+  // Gestores e colaboradores so veem "Gestao organizacional" quando receberam alguma permissao dela por perfil.
+  const isTeamMember = user?.role === 'manager' || user?.role === 'employee';
+  const permissions = useMyPermissions(isTeamMember ? token : null, user?.company_id);
+  const workspaceItem: NavigationItem[] = isTeamMember && hasWorkspaceAccess(permissions) && !navigation.some((item) => item.to === '/organization')
+    ? [{ to: '/organization', label: 'Gestão organizacional', icon: Network }]
+    : [];
+  const visibleNavigation = [...navigation, ...workspaceItem].filter((item) => !item.platformOnly || user?.platform_admin);
   const showAdminWorkspaceSwitcher = user?.role === 'admin';
   const isPlatformWorkspace = location.pathname.startsWith('/platform-admin');
   const isFagulhaWorkspace = location.pathname.startsWith('/fagulha-admin');

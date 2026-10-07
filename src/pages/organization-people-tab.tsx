@@ -9,7 +9,7 @@ import { EmptyState } from '../components/empty-state';
 import { InfoTooltip } from '../components/info-tooltip';
 import { StatusPill } from '../components/status-pill';
 import { useToast } from '../components/toast';
-import { DataTable, Drawer, FilterBar, SearchInput, SegmentedFilter, useConfirm } from '../components/ui';
+import { DataTable, type DataTableColumn, Drawer, FilterBar, SearchInput, SegmentedFilter, useConfirm } from '../components/ui';
 import { CONCEPT_HELP } from './organization-structure-tab';
 
 /** Mostra a alocação como Unidade › Área › Cargo, omitindo o que não existe. */
@@ -46,9 +46,10 @@ type PeopleTabProps = {
   loading: boolean;
   onReload: () => Promise<void>;
   onGoToStructure: () => void;
+  canManage?: boolean;
 };
 
-export function PeopleTab({ token, companyId, structure, people, employments, loading, onReload, onGoToStructure }: PeopleTabProps) {
+export function PeopleTab({ token, companyId, structure, people, employments, loading, onReload, onGoToStructure, canManage = true }: PeopleTabProps) {
   const confirm = useConfirm();
   const toast = useToast();
   const [drawer, setDrawer] = useState<DrawerState>(null);
@@ -100,8 +101,8 @@ export function PeopleTab({ token, companyId, structure, people, employments, lo
 
   const emptyMessage = !rows.length ? (
     <div className="org-empty-action">
-      <EmptyState icon={Users} title="Nenhum colaborador ainda" description="Cadastre o primeiro colaborador: nome, onde ele atua e, se quiser, o acesso, tudo em uma tela." />
-      <button type="button" className="primary-button" onClick={() => setDrawer({ mode: 'create' })}><UserPlus size={16} />Novo colaborador</button>
+      <EmptyState icon={Users} title="Nenhum colaborador ainda" description={canManage ? 'Cadastre o primeiro colaborador: nome, onde ele atua e, se quiser, o acesso, tudo em uma tela.' : 'Nenhum colaborador dentro do que você pode ver.'} />
+      {canManage ? <button type="button" className="primary-button" onClick={() => setDrawer({ mode: 'create' })}><UserPlus size={16} />Novo colaborador</button> : null}
     </div>
   ) : (
     <EmptyState icon={Users} title="Nenhum colaborador encontrado" description="Ajuste a busca ou os filtros para ver outros colaboradores." />
@@ -109,7 +110,7 @@ export function PeopleTab({ token, companyId, structure, people, employments, lo
 
   return (
     <div className="org-people">
-      <FilterBar actions={<button type="button" className="primary-button" onClick={() => setDrawer({ mode: 'create' })}><UserPlus size={16} />Novo colaborador</button>}>
+      <FilterBar actions={canManage ? <button type="button" className="primary-button" onClick={() => setDrawer({ mode: 'create' })}><UserPlus size={16} />Novo colaborador</button> : undefined}>
         <SearchInput value={query} onChange={setQuery} placeholder="Buscar por nome, e-mail, unidade, área ou cargo" label="Buscar colaborador" />
         <select className="org-filter-select" aria-label="Filtrar por unidade" value={unitFilter} onChange={(event) => { setUnitFilter(event.target.value); setAreaFilter(''); }}>
           <option value="">Todas as unidades</option>
@@ -131,8 +132,8 @@ export function PeopleTab({ token, companyId, structure, people, employments, lo
         rowKey={(row) => row.key}
         loading={loading && !rows.length}
         empty={emptyMessage}
-        onRowClick={(row) => setDrawer({ mode: 'edit', row })}
-        columns={[
+        onRowClick={canManage ? (row) => setDrawer({ mode: 'edit', row }) : undefined}
+        columns={([
           { key: 'person', header: 'Colaborador', render: ({ person }) => (
             <span className="org-person-cell"><span className="org-avatar" aria-hidden>{initials(person.name)}</span><span className="org-person__copy"><strong>{person.name}</strong><span className="org-person__email">{person.email || 'Sem e-mail'}</span></span></span>
           ) },
@@ -145,7 +146,7 @@ export function PeopleTab({ token, companyId, structure, people, employments, lo
               {row.employment?.status === 'active' ? <button type="button" className="org-icon-btn" aria-label={`Encerrar vínculo de ${row.person.name}`} title="Encerrar vínculo" disabled={busyId === row.key} onClick={() => void end(row)}><UserMinus size={14} aria-hidden /></button> : null}
             </span>
           ) },
-        ]}
+        ] satisfies DataTableColumn<Row>[]).filter((column) => canManage || column.key !== 'actions')}
       />
 
       {drawer ? (

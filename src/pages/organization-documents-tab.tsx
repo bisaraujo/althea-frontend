@@ -98,7 +98,7 @@ function NewDocumentModal({ token, companyId, onClose, onCreated }: { token: str
   );
 }
 
-function VersionsDrawer({ token, doc, onClose, onChanged }: { token: string; doc: OrgDocument; onClose: () => void; onChanged: () => void }) {
+function VersionsDrawer({ token, doc, onClose, onChanged, canManage }: { token: string; doc: OrgDocument; onClose: () => void; onChanged: () => void; canManage: boolean }) {
   const toast = useToast();
   const [versions, setVersions] = useState<OrgDocumentVersion[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -130,7 +130,7 @@ function VersionsDrawer({ token, doc, onClose, onChanged }: { token: string; doc
 
   return (
     <Drawer open onClose={saving ? () => undefined : onClose} title={doc.title} description={`${typeLabel(doc.document_type)} · versão atual ${doc.current_version}`}>
-      <form className="org-drawer-form" onSubmit={(event) => void submit(event)}>
+      {canManage ? <form className="org-drawer-form" onSubmit={(event) => void submit(event)}>
         <fieldset disabled={saving}>
           <legend>Enviar nova versão</legend>
           <SourceFields value={source} onChange={setSource} disabled={saving} error={error} />
@@ -138,7 +138,7 @@ function VersionsDrawer({ token, doc, onClose, onChanged }: { token: string; doc
           {percent !== null ? <UploadProgress percent={percent} /> : null}
           <button type="submit" className="primary-button" disabled={saving || !sourceReady(source)}>{saving ? 'Enviando…' : 'Registrar versão'}</button>
         </fieldset>
-      </form>
+      </form> : null}
       <h3 className="org-subtitle">Histórico de versões</h3>
       {failed ? <ErrorState message="Não foi possível carregar o histórico." onRetry={load} /> : null}
       {!failed && versions === null ? <LoadingState /> : null}
@@ -161,7 +161,7 @@ function VersionsDrawer({ token, doc, onClose, onChanged }: { token: string; doc
   );
 }
 
-export function DocumentsTab({ token, companyId }: { token: string; companyId: string }) {
+export function DocumentsTab({ token, companyId, canManage = true }: { token: string; companyId: string; canManage?: boolean }) {
   const toast = useToast();
   const confirm = useConfirm();
   const [documents, setDocuments] = useState<OrgDocument[] | null>(null);
@@ -198,7 +198,7 @@ export function DocumentsTab({ token, companyId }: { token: string; companyId: s
 
   return (
     <div className="org-documents">
-      <FilterBar actions={<button type="button" className="primary-button" onClick={() => setCreating(true)}><Plus size={16} />Novo documento</button>}>
+      <FilterBar actions={canManage ? <button type="button" className="primary-button" onClick={() => setCreating(true)}><Plus size={16} />Novo documento</button> : undefined}>
         <SearchInput value={query} onChange={setQuery} placeholder="Buscar por título, arquivo ou tipo" label="Buscar documento" />
         <SegmentedFilter<'all' | DocumentOrigin> label="Origem" value={origin} onChange={setOrigin} options={[{ value: 'all', label: 'Todos', count: counts.all }, { value: 'file', label: 'Arquivos', count: counts.file }, { value: 'link', label: 'Links', count: counts.link }]} />
       </FilterBar>
@@ -207,7 +207,7 @@ export function DocumentsTab({ token, companyId }: { token: string; companyId: s
         rows={visible}
         rowKey={(item) => item.id}
         loading={documents === null}
-        empty={documents?.length ? <EmptyState icon={FileText} title="Nenhum documento encontrado" description="Ajuste a busca ou o filtro de origem." /> : <div className="org-empty-action"><EmptyState icon={FileText} title="Nenhum documento ainda" description="Guarde políticas, manuais e contratos da empresa. Envie o arquivo ou registre um link, com histórico de versões." /><button type="button" className="primary-button" onClick={() => setCreating(true)}><Plus size={16} />Novo documento</button></div>}
+        empty={documents?.length ? <EmptyState icon={FileText} title="Nenhum documento encontrado" description="Ajuste a busca ou o filtro de origem." /> : <div className="org-empty-action"><EmptyState icon={FileText} title="Nenhum documento ainda" description="Guarde políticas, manuais e contratos da empresa. Envie o arquivo ou registre um link, com histórico de versões." />{canManage ? <button type="button" className="primary-button" onClick={() => setCreating(true)}><Plus size={16} />Novo documento</button> : null}</div>}
         columns={[
           { key: 'title', header: 'Documento', render: (item) => <span className="org-doc-cell"><FileText size={18} aria-hidden /><span className="org-person__copy"><strong>{item.title}</strong><span className="org-person__email">{item.file_name}</span></span></span> },
           { key: 'type', header: 'Tipo', hideOnMobile: true, render: (item) => typeLabel(item.document_type) },
@@ -218,13 +218,13 @@ export function DocumentsTab({ token, companyId }: { token: string; companyId: s
             <span className="org-row-actions">
               <button type="button" className="org-icon-btn" aria-label={`Abrir ${item.title}`} title="Abrir / baixar" onClick={() => void open({ documentId: item.id, origin: item.origin, fileUrl: item.file_url, fileName: item.file_name })}><ExternalLink size={14} aria-hidden /></button>
               <button type="button" className="org-icon-btn" aria-label={`Versões de ${item.title}`} title="Versões" onClick={() => setHistory(item)}><History size={14} aria-hidden /></button>
-              <button type="button" className="org-icon-btn org-icon-btn--danger" aria-label={`Remover ${item.title}`} title="Remover" onClick={() => void remove(item)}><Trash2 size={14} aria-hidden /></button>
+              {canManage ? <button type="button" className="org-icon-btn org-icon-btn--danger" aria-label={`Remover ${item.title}`} title="Remover" onClick={() => void remove(item)}><Trash2 size={14} aria-hidden /></button> : null}
             </span>
           ) },
         ]}
       />
       {creating ? <NewDocumentModal token={token} companyId={companyId} onClose={() => setCreating(false)} onCreated={load} /> : null}
-      {history ? <VersionsDrawer token={token} doc={documents?.find((item) => item.id === history.id) ?? history} onClose={() => setHistory(null)} onChanged={load} /> : null}
+      {history ? <VersionsDrawer token={token} doc={documents?.find((item) => item.id === history.id) ?? history} onClose={() => setHistory(null)} onChanged={load} canManage={canManage} /> : null}
     </div>
   );
 }

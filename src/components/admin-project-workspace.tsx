@@ -15,11 +15,11 @@ import {
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { API_URL } from '../api/client';
 import type { Company, FormSummary, ManagerDeliveries, Meeting, Project, ResponseRecord, UserRecord } from '../api/types';
 import { EmptyState } from './empty-state';
 import { SectionPanel } from './section-panel';
 import { StatusPill } from './status-pill';
+import { StoredFileLink } from './stored-file-link';
 
 type ProjectView = 'overview' | 'manager-deliveries' | 'employee-deliveries' | 'team' | 'meetings';
 
@@ -41,11 +41,6 @@ function formatDate(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
-}
-
-function fileHref(fileUrl?: string | null) {
-  if (!fileUrl) return null;
-  return fileUrl.startsWith('http') ? fileUrl : `${API_URL}${fileUrl}`;
 }
 
 function deliveryLabel(status?: string) {
@@ -113,11 +108,11 @@ export function AdminProjectWorkspace({ company, project, managers, employees, d
               <header><strong>{section.title}</strong><span>{section.items.length}</span></header>
               <div className="admin-delivery-column__items">{section.items.map((item) => {
                 const latest = item.latest_submission;
-                const href = fileHref(latest?.file_url);
+                const fileUrl = latest?.file_url ?? null;
                 return <article key={item.id} className="admin-delivery-compact">
                   <div><strong>{item.document_title ?? item.title}</strong><StatusPill tone={deliveryTone(item.delivery_status)}>{deliveryLabel(item.delivery_status)}</StatusPill></div>
                   <p>{item.description || 'Sem descrição cadastrada.'}</p><small>Prazo {formatDate(item.due_at)}</small>
-                  {latest ? <div className="admin-delivery-compact__submission"><span>{latest.user_name} · {formatDate(latest.submitted_at)}</span>{href ? <a href={href} target="_blank" rel="noreferrer">{latest.file_name}</a> : null}</div> : null}
+                  {latest ? <div className="admin-delivery-compact__submission"><span>{latest.user_name} · {formatDate(latest.submitted_at)}</span>{fileUrl ? <StoredFileLink fileUrl={fileUrl} fileName={latest.file_name}>{latest.file_name}</StoredFileLink> : null}</div> : null}
                 </article>;
               })}</div>
             </section>
@@ -144,12 +139,12 @@ export function AdminProjectWorkspace({ company, project, managers, employees, d
       {view === 'meetings' ? (
         <SectionPanel title="Reuniões, atas e pareceres" eyebrow="Histórico do cliente" action={<StatusPill>{meetings.length} reuniões</StatusPill>}>
           {meetings.length ? <div className="admin-meeting-grid">{meetings.map((meeting) => {
-            const href = fileHref(meeting.ata_file_url);
+            const ataUrl = meeting.ata_file_url ?? null;
             const statusLabel = meeting.status === 'approved' ? 'Aprovada' : meeting.status === 'changes_requested' ? 'Ajustes solicitados' : 'Aguardando parecer';
             return <article key={meeting.id} className="admin-meeting-card">
               <header><div><span><CalendarCheck size={14} />{formatDate(meeting.meeting_date)}</span><strong>{meeting.title}</strong></div><StatusPill tone={meeting.status === 'approved' ? 'success' : meeting.status === 'changes_requested' ? 'warning' : 'muted'}>{statusLabel}</StatusPill></header>
               {meeting.description ? <p>{meeting.description}</p> : null}
-              <div className="admin-meeting-card__ata">{href ? <a href={href} target="_blank" rel="noreferrer"><Download size={15} />{meeting.ata_file_name ?? 'Baixar ata'}</a> : <span>Nenhuma ata anexada</span>}<label className="secondary-button"><input type="file" disabled={meetingBusyId === meeting.id} onChange={(event) => onAta(meeting.id, event.target.files?.[0] ?? null)} /><Upload size={15} />{href ? 'Substituir ata' : 'Anexar ata'}</label></div>
+              <div className="admin-meeting-card__ata">{ataUrl ? <StoredFileLink fileUrl={ataUrl} fileName={meeting.ata_file_name}><Download size={15} />{meeting.ata_file_name ?? 'Baixar ata'}</StoredFileLink> : <span>Nenhuma ata anexada</span>}<label className="secondary-button"><input type="file" disabled={meetingBusyId === meeting.id} onChange={(event) => onAta(meeting.id, event.target.files?.[0] ?? null)} /><Upload size={15} />{ataUrl ? 'Substituir ata' : 'Anexar ata'}</label></div>
               <div className="admin-meeting-history"><strong>Histórico de pareceres</strong>{meeting.reviews.length ? meeting.reviews.map((review) => <div key={review.id}><span>{review.reviewer_name} · {formatDate(review.created_at)}</span><StatusPill tone={review.decision === 'approved' ? 'success' : 'warning'}>{review.decision === 'approved' ? 'Aprovou' : 'Solicitou ajustes'}</StatusPill>{review.notes ? <p>{review.notes}</p> : null}</div>) : <p>Nenhum parecer do gestor registrado.</p>}</div>
             </article>;
           })}</div> : <EmptyState title="Nenhuma reunião" description="Crie reuniões pela área Reuniões; elas aparecerão aqui organizadas por cliente." />}

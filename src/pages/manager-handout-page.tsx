@@ -19,7 +19,7 @@ import {
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { API_URL, ApiError } from '../api/client';
+import { ApiError } from '../api/client';
 import {
   approveManagerCompanyJourneyItem,
   completeManagerCompanyJourneyItem,
@@ -30,6 +30,7 @@ import type { Journey, JourneyItem, JourneySection } from '../api/types';
 import { useAuth } from '../auth/auth-context';
 import { BrandLockup } from '../components/brand';
 import { StatusPill } from '../components/status-pill';
+import { StoredFileLink } from '../components/stored-file-link';
 
 type JourneyItemWithSection = JourneyItem & {
   sectionTitle?: string;
@@ -238,12 +239,6 @@ function formatDateTime(value?: string | null) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(date);
-}
-
-function fileHref(fileUrl?: string | null) {
-  if (!fileUrl) return null;
-  if (fileUrl.startsWith('http')) return fileUrl;
-  return `${API_URL}${fileUrl}`;
 }
 
 function acceptedFormatAttribute(formats: string[]) {
@@ -716,7 +711,7 @@ export function ManagerHandoutPage() {
 
   const template = selected.item_type === 'document_request' ? getTemplateInfo(selected) : null;
   const draft = uploadDrafts[selected.id] ?? { file: null, notes: '' };
-  const submissionHref = fileHref(selected.submission_file_url);
+  const submissionUrl = selected.submission_file_url ?? null;
   const scheduleApprovalEvents = selected.item_type === 'schedule_approval'
     ? getScheduleApprovalEvents(selected)
     : [];
@@ -937,10 +932,10 @@ export function ManagerHandoutPage() {
                       <span>{formatDateTime(selected.submitted_at)}</span>
                     </div>
                   </div>
-                  {submissionHref ? (
-                    <a href={submissionHref} target="_blank" rel="noreferrer">
+                  {submissionUrl ? (
+                    <StoredFileLink fileUrl={submissionUrl} fileName={selected.submission_file_name}>
                       {selected.submission_file_name ?? 'Abrir arquivo enviado'}
-                    </a>
+                    </StoredFileLink>
                   ) : null}
                   {selected.submission_notes ? <p>{selected.submission_notes}</p> : null}
                 </div>

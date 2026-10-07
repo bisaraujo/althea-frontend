@@ -113,3 +113,26 @@
   visibility: visible;
   transform: translate(-50%, 0);
 }
+
+/* Botao que se comporta como link para arquivos enviados (download autenticado). Especificidade zero:
+   classes como .primary-button ou .meeting-card__file continuam mandando no visual. */
+:where(.stored-file-link) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand-deep);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.stored-file-link:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}

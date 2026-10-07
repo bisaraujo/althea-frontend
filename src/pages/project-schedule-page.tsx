@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { API_URL, ApiError } from '../api/client';
+import { ApiError } from '../api/client';
 import { getCompanies, getProjectSchedule, getProjects } from '../api/services';
 import type { Company, Project, ProjectSchedule } from '../api/types';
 import { useAuth } from '../auth/auth-context';
@@ -37,12 +37,6 @@ function projectLabel(project: Project, companies: Company[]) {
   return `${company.name} - ${project.name}`;
 }
 
-function fileHref(fileUrl?: string | null) {
-  if (!fileUrl) return null;
-  if (fileUrl.startsWith('http')) return fileUrl;
-  return `${API_URL}${fileUrl}`;
-}
-
 function mapScheduleEvents(schedule: ProjectSchedule | null, mode: ScheduleMode): ProjectCalendarEvent[] {
   return schedule?.items
     .filter((item) =>
@@ -61,7 +55,7 @@ function mapScheduleEvents(schedule: ProjectSchedule | null, mode: ScheduleMode)
       expectedCount: item.expected_count,
       submittedAt: item.latest_submission?.submitted_at ?? item.latest_approval?.updated_at ?? item.last_response_at,
       fileName: item.latest_submission?.file_name ?? null,
-      fileUrl: fileHref(item.latest_submission?.file_url),
+      fileUrl: item.latest_submission?.file_url ?? null,
       submissionNotes: item.latest_submission?.notes ?? item.latest_approval?.notes ?? null,
       submittedBy: item.latest_submission?.user_name ?? null,
       submittedByEmail: item.latest_submission?.user_email ?? null,

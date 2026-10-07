@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 
-import { API_URL, ApiError } from '../api/client';
+import { ApiError } from '../api/client';
 import {
   createMeeting,
   deleteMeeting,
@@ -28,6 +28,7 @@ import { SectionPanel } from '../components/section-panel';
 import { StatusPill } from '../components/status-pill';
 import { useConfirm } from '../components/ui';
 import { productAdminNavigation } from '../components/admin-navigation';
+import { StoredFileLink } from '../components/stored-file-link';
 
 type MeetingsMode = 'admin' | 'manager';
 
@@ -40,12 +41,6 @@ const managerNavigation = [
   { to: '/manager/schedule', label: 'Cronograma', icon: CalendarClock },
   { to: '/manager/meetings', label: 'Reuniões', icon: ClipboardCheck },
 ];
-
-function fileHref(fileUrl?: string | null) {
-  if (!fileUrl) return null;
-  if (fileUrl.startsWith('http')) return fileUrl;
-  return `${API_URL}${fileUrl}`;
-}
 
 function formatDate(value?: string | null) {
   if (!value) return 'Sem data';
@@ -263,7 +258,7 @@ export function MeetingsPage({ mode }: { mode: MeetingsMode }) {
         ) : meetings.length ? (
           <div className="meeting-list">
             {meetings.map((meeting) => {
-              const href = fileHref(meeting.ata_file_url);
+              const ataUrl = meeting.ata_file_url ?? null;
               const canDelete = isAdmin || meeting.created_by === user?.id;
               const busy = busyId === meeting.id;
 
@@ -285,10 +280,10 @@ export function MeetingsPage({ mode }: { mode: MeetingsMode }) {
                   {meeting.description ? <p className="meeting-card__desc">{meeting.description}</p> : null}
 
                   <div className="meeting-card__ata">
-                    {href ? (
-                      <a href={href} target="_blank" rel="noreferrer" className="meeting-card__file">
+                    {ataUrl ? (
+                      <StoredFileLink fileUrl={ataUrl} fileName={meeting.ata_file_name} className="meeting-card__file">
                         <Download size={15} /> {meeting.ata_file_name ?? 'Baixar ata'}
-                      </a>
+                      </StoredFileLink>
                     ) : (
                       <span className="meeting-card__file meeting-card__file--empty">Nenhuma ata anexada</span>
                     )}

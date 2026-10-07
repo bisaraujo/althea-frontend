@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { StoredFileLink } from './stored-file-link';
 
 export type ProjectCalendarEvent = {
   id: string;
@@ -463,10 +464,10 @@ export function ProjectCalendar({
             ) : null}
 
             {documentPreview.fileUrl ? (
-              <a href={documentPreview.fileUrl} target="_blank" rel="noreferrer" className="primary-button">
+              <StoredFileLink fileUrl={documentPreview.fileUrl} fileName={documentPreview.fileName} className="primary-button">
                 <ExternalLink size={16} />
                 Abrir arquivo
-              </a>
+              </StoredFileLink>
             ) : null}
           </section>
         </div>,

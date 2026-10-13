@@ -1,8 +1,8 @@
-import { Building2, Flame, LogOut, Network, Route as RouteIcon } from 'lucide-react';
+import { Building2, Flame, LogOut, Network, Route as RouteIcon, ShieldAlert } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 
-import { hasWorkspaceAccess, useMyPermissions } from '../api/workspace-access';
+import { hasWorkspaceAccess, INTEGRITY_PRODUCT_ID, useMyPermissions, useMyProducts } from '../api/workspace-access';
 import { useAuth } from '../auth/auth-context';
 import { BrandLockup } from './brand';
 
@@ -53,11 +53,17 @@ export function AppShell({
   const location = useLocation();
   // Gestores e colaboradores so veem "Gestao organizacional" quando receberam alguma permissao dela por perfil.
   const isTeamMember = user?.role === 'manager' || user?.role === 'employee';
-  const permissions = useMyPermissions(isTeamMember ? token : null, user?.company_id);
+  const isCompanySide = isTeamMember || user?.role === 'company';
+  const permissions = useMyPermissions(isCompanySide ? token : null, user?.company_id);
+  const products = useMyProducts(isCompanySide ? token : null);
   const workspaceItem: NavigationItem[] = isTeamMember && hasWorkspaceAccess(permissions) && !navigation.some((item) => item.to === '/organization')
     ? [{ to: '/organization', label: 'Gestão organizacional', icon: Network }]
     : [];
-  const visibleNavigation = [...navigation, ...workspaceItem].filter((item) => !item.platformOnly || user?.platform_admin);
+  // Canal de Denuncias: so com o produto contratado e para quem ve os casos (conta da empresa ou comite).
+  const integrityItem: NavigationItem[] = isCompanySide && products?.has(INTEGRITY_PRODUCT_ID) && permissions?.has('integrity.cases.view')
+    ? [{ to: '/integrity', label: 'Canal de Denúncias', icon: ShieldAlert }]
+    : [];
+  const visibleNavigation = [...navigation, ...workspaceItem, ...integrityItem].filter((item) => !item.platformOnly || user?.platform_admin);
   const showAdminWorkspaceSwitcher = user?.role === 'admin';
   const isPlatformWorkspace = location.pathname.startsWith('/platform-admin');
   const isFagulhaWorkspace = location.pathname.startsWith('/fagulha-admin');

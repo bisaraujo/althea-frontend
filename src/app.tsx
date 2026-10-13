@@ -8,6 +8,10 @@ import { ConfirmProvider } from './components/ui';
 import { AdminDashboard } from './pages/admin-dashboard';
 import { CompanyAccessPage } from './pages/company-access-page';
 import { OrganizationWorkspacePage } from './pages/organization-workspace-page';
+import { IntegrityPage } from './pages/integrity-page';
+import { IntegrityReportPage } from './pages/integrity-report-page';
+import { IntegrityTrackPage } from './pages/integrity-track-page';
+import { PlatformIntegrityPage } from './pages/platform-integrity-page';
 import { CompanyDashboard } from './pages/company-dashboard';
 import { EmployeeDashboard } from './pages/employee-dashboard';
 import { EmployeeHandoutPage } from './pages/employee-handout-page';
@@ -53,6 +57,8 @@ export function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/fagulha/:companyId/:slug" element={<FagulhaPublicPage />} />
+          <Route path="/denuncia/acompanhar" element={<IntegrityTrackPage />} />
+          <Route path="/denuncia/:companyId" element={<IntegrityReportPage />} />
           <Route path="/fagulha/ativar/:token" element={<FagulhaActivationPage />} />
 
           <Route element={<ProtectedRoute roles={['admin']} />}>
@@ -80,6 +86,7 @@ export function App() {
             <Route path="/platform-admin/access-packages" element={<PlatformAccessPackagesPage />} />
             <Route path="/platform-admin/requests" element={<PlatformRequestsPage />} />
             <Route path="/platform-admin/administrators" element={<PlatformAdministratorsPage />} />
+            <Route path="/platform-admin/integrity" element={<PlatformIntegrityPage />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={['company']} />}>
@@ -89,6 +96,7 @@ export function App() {
 
           <Route element={<ProtectedRoute roles={['company', 'manager', 'employee']} />}>
             <Route path="/organization" element={<OrganizationWorkspacePage />} />
+            <Route path="/integrity" element={<IntegrityPage />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={['manager']} />}>

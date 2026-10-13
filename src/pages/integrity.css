@@ -1,0 +1,511 @@
+/* Canal de Denuncias: paginas publicas (formulario e acompanhamento) e painel do comite. */
+
+.int-public {
+  min-height: 100vh;
+  padding: 1.5rem 1rem 3rem;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(75, 46, 131, 0.1), transparent 40%),
+    linear-gradient(160deg, #fffaf4, #f6efe8);
+  color: var(--text);
+}
+
+.int-public__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 720px;
+  margin: 0 auto 1.25rem;
+}
+
+.int-public__header nav a {
+  color: var(--purple);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.int-public__card {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.6rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: #fffdfa;
+  box-shadow: var(--shadow-lg);
+}
+
+.int-public__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--purple);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.int-public__card h1 {
+  margin: 0.5rem 0 0.4rem;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  line-height: 1.15;
+}
+
+.int-public__lead {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.int-assurances {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 1.2rem 0 1.4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.int-assurances li {
+  display: flex;
+  gap: 0.55rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: var(--purple-soft);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.int-assurances svg {
+  flex: 0 0 auto;
+  color: var(--purple);
+}
+
+.int-assurances strong {
+  display: block;
+  color: var(--text);
+}
+
+.int-assurances span {
+  color: var(--text-soft);
+}
+
+.int-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.int-form fieldset {
+  display: grid;
+  gap: 0.8rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.int-form legend {
+  margin-bottom: 0.2rem;
+  padding: 0;
+  font-weight: 800;
+}
+
+.int-form label,
+.int-field {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.int-form textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.int-required {
+  color: var(--danger);
+}
+
+.int-optional {
+  color: var(--text-faint);
+  font-weight: 500;
+}
+
+.int-hint {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.int-choices {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.int-choices label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 500;
+}
+
+.int-choices input[type='radio'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
+}
+
+.int-identify {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  cursor: pointer;
+}
+
+.int-identify strong {
+  display: block;
+}
+
+.int-identify span {
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.int-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.int-file input[type='file'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.int-file__name {
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.int-submit {
+  justify-self: start;
+}
+
+.int-receipt {
+  display: grid;
+  gap: 1rem;
+}
+
+.int-receipt__keys {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.int-key {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.int-key span {
+  color: var(--text-soft);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.int-key code {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.int-key button {
+  justify-self: start;
+}
+
+.int-warning {
+  display: flex;
+  gap: 0.55rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(255, 176, 102, 0.18);
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.int-warning svg {
+  flex: 0 0 auto;
+  color: var(--brand-deep);
+}
+
+.int-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+/* Linha do tempo (acompanhamento publico e detalhe do caso) */
+.int-timeline {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.int-timeline li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.int-timeline__icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--purple-soft);
+  color: var(--purple);
+}
+
+.int-timeline__icon--note {
+  background: rgba(47, 28, 79, 0.06);
+  color: var(--text-soft);
+}
+
+.int-timeline__copy {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.88rem;
+}
+
+.int-timeline__copy strong {
+  font-weight: 700;
+}
+
+.int-timeline__meta {
+  color: var(--text-faint);
+  font-size: 0.76rem;
+}
+
+.int-timeline__note {
+  margin: 0.15rem 0 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.int-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: fit-content;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(47, 28, 79, 0.06);
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.int-tag--public {
+  background: var(--brand-soft);
+  color: var(--brand-deep);
+}
+
+/* Painel do comite */
+.int-workspace {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.int-company-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.8rem;
+}
+
+.int-company-picker label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: min(100%, 320px);
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-soft);
+}
+
+.int-status-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.int-protocol {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.int-case-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.int-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 1rem;
+  margin: 0;
+}
+
+.int-facts div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.int-facts dt {
+  color: var(--text-faint);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.int-facts dd {
+  margin: 0;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.int-description {
+  margin: 0;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.int-drawer-section {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.int-drawer-section h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.int-question-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.int-question {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fffdfa;
+}
+
+.int-question__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 0.6rem;
+}
+
+.int-question__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.int-question__footer label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.int-question label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.int-share {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.int-share__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.int-share__row input {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 760px) {
+  .int-assurances,
+  .int-receipt__keys,
+  .int-facts,
+  .int-question__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .int-status-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .int-share__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .int-public__card {
+    padding: 1.15rem;
+  }
+}

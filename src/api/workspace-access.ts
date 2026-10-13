@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { getMyCompanyProducts } from './company';
 import { getMyEffectiveAccess } from './services';
 
 /** Permissoes que dao sentido a area "Gestao organizacional" fora do Administrador Geral. */
@@ -46,3 +47,29 @@ export function useMyPermissions(token: string | null, companyId: string | null 
 export function hasWorkspaceAccess(permissions: Set<string> | null) {
   return Boolean(permissions && WORKSPACE_PERMISSIONS.some((key) => permissions.has(key)));
 }
+
+const productCache = new Map<string, Promise<Set<string>>>();
+
+/** Produtos contratados pela propria empresa do usuario. `null` enquanto carrega; vazio se falhar. */
+export function useMyProducts(token: string | null) {
+  const [products, setProducts] = useState<Set<string> | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    let pending = productCache.get(token);
+    if (!pending) {
+      pending = getMyCompanyProducts(token).then((data) => new Set(data.product_ids));
+      pending.catch(() => productCache.delete(token));
+      productCache.set(token, pending);
+    }
+    pending.then((value) => active && setProducts(value)).catch(() => active && setProducts(new Set()));
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  return products;
+}
+
+export const INTEGRITY_PRODUCT_ID = 'product-integrity';

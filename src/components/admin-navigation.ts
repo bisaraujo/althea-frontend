@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   Network,
   UserCog,
+  ShieldAlert,
   UserPlus,
   ClipboardList,
   Sparkles,
@@ -21,6 +22,7 @@ export const platformAdminNavigation: NavigationItem[] = [
   { to: '/platform-admin/access-packages', label: 'Pacotes de acesso', icon: ShieldCheck },
   { to: '/platform-admin/requests', label: 'Central de solicitações', icon: Inbox },
   { to: '/platform-admin/products', label: 'Catálogo de produtos', icon: PackageCheck },
+  { to: '/platform-admin/integrity', label: 'Canal de Denúncias', icon: ShieldAlert },
   { to: '/platform-admin/administrators', label: 'Administradores', icon: UserCog },
 ];
 

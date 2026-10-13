@@ -1,7 +1,7 @@
 import { BriefcaseBusiness, ChevronRight, Network, Pencil, UserMinus, UserPlus, Users } from 'lucide-react';
 import { type FormEvent, Fragment, useEffect, useMemo, useState } from 'react';
 
-import { apiErrorMessage, endEmployment, updateEmployment, updatePerson } from '../api/organization';
+import { apiErrorMessage, endEmployment, getPlatformUsers, type PlatformUser, updateEmployment, updatePerson } from '../api/organization';
 import { assignEmploymentAccessScope, createEmployment, createPerson, getOrganizationalAccessProfiles } from '../api/services';
 import type { Employment, OrganizationalAccessProfile, OrganizationalStructure, Person } from '../api/types';
 import { ApiError } from '../api/client';
@@ -192,6 +192,17 @@ function ColaboradorDrawer({ token, companyId, structure, row, onClose, onSaved,
   const [saving, setSaving] = useState(false);
   const [createdPersonId, setCreatedPersonId] = useState<string | null>(null);
   const [createdEmploymentId, setCreatedEmploymentId] = useState<string | null>(null);
+  const [userId, setUserId] = useState(employment?.user_id ?? '');
+  const [platformUsers, setPlatformUsers] = useState<PlatformUser[] | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    getPlatformUsers(token, companyId).then((data) => { if (alive) setPlatformUsers(data); }).catch(() => { if (alive) setPlatformUsers([]); });
+    return () => { alive = false; };
+  }, [token, companyId]);
+  // So oferece logins livres (ou o que ja esta neste vinculo), para um login nao virar dois colaboradores.
+  const currentEmploymentId = employment?.id ?? createdEmploymentId;
+  const userOptions = (platformUsers ?? []).filter((user) => !user.linked_employment_id || user.linked_employment_id === currentEmploymentId || user.id === userId);
 
   useEffect(() => {
     let alive = true;
@@ -249,10 +260,10 @@ function ColaboradorDrawer({ token, companyId, structure, row, onClose, onSaved,
       else if (row && (payload.name !== row.person.name || payload.email !== row.person.email || payload.phone !== row.person.phone)) await updatePerson(token, personId, payload);
 
       step = 'vínculo';
-      const draft = { unit_id: unitId || null, area_id: areaId || null, position_id: positionId || null, started_at: startedAt || null };
+      const draft = { unit_id: unitId || null, area_id: areaId || null, position_id: positionId || null, started_at: startedAt || null, user_id: userId || null };
       let employmentId = employment?.id ?? createdEmploymentId;
       if (!employmentId) { const created = await createEmployment(token, personId, draft); employmentId = created.id; setCreatedEmploymentId(created.id); }
-      else if (employment && (draft.unit_id !== employment.unit_id || draft.area_id !== employment.area_id || draft.position_id !== employment.position_id || draft.started_at !== (employment.started_at?.slice(0, 10) ?? null))) await updateEmployment(token, employmentId, draft);
+      else if (employment && (draft.unit_id !== employment.unit_id || draft.area_id !== employment.area_id || draft.position_id !== employment.position_id || draft.started_at !== (employment.started_at?.slice(0, 10) ?? null) || draft.user_id !== (employment.user_id ?? null))) await updateEmployment(token, employmentId, draft);
 
       if (profileId) {
         step = 'acesso';
@@ -354,6 +365,13 @@ function ColaboradorDrawer({ token, companyId, structure, row, onClose, onSaved,
             <label><span>Data de início</span><input type="date" value={startedAt} onChange={(event) => setStartedAt(event.target.value)} /></label>
             <div className="org-readonly"><span>Situação</span>{employment ? <StatusPill status={employment.status} tone={employment.status === 'active' ? 'success' : 'muted'} /> : <StatusPill status="active" />}</div>
           </div>
+          <label><span>Login na plataforma<InfoTooltip text="Liga este colaborador à conta que ele usa para entrar na plataforma. É assim que os perfis de acesso dados a ele passam a valer quando ele faz login." label="Sobre o login" /></span>
+            <select value={userId} onChange={(event) => setUserId(event.target.value)} disabled={platformUsers === null}>
+              <option value="">{platformUsers === null ? 'Carregando…' : 'Sem login (só cadastro)'}</option>
+              {userOptions.map((user) => <option key={user.id} value={user.id}>{user.name} · {user.email} ({user.role === 'manager' ? 'gestor' : 'colaborador'})</option>)}
+            </select>
+          </label>
+          {platformUsers && !userOptions.length ? <p className="org-hint">Nenhum login livre nesta empresa. Gestores e colaboradores com login são criados no projeto de Jornadas da empresa.</p> : null}
           {ended ? <p className="org-hint">Vínculo encerrado em {formatDate(employment?.ended_at ?? null)}. Use “Reativar vínculo” para voltar a editá-lo.</p> : null}
         </fieldset>
 

@@ -14,6 +14,8 @@ export type NavigationItem = {
   /** Sobrescreve o destaque quando a rota ativa é uma página filha (ex.: detalhe da empresa). */
   activeFor?: (pathname: string) => boolean;
   platformOnly?: boolean;
+  /** Produto que a empresa precisa ter para o item aparecer (ex.: product-jornadas). */
+  product?: string;
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -63,7 +65,9 @@ export function AppShell({
   const integrityItem: NavigationItem[] = isCompanySide && products?.has(INTEGRITY_PRODUCT_ID) && permissions?.has('integrity.cases.view')
     ? [{ to: '/integrity', label: 'Canal de Denúncias', icon: ShieldAlert }]
     : [];
-  const visibleNavigation = [...navigation, ...workspaceItem, ...integrityItem].filter((item) => !item.platformOnly || user?.platform_admin);
+  const visibleNavigation = [...navigation, ...workspaceItem, ...integrityItem]
+    .filter((item) => !item.platformOnly || user?.platform_admin)
+    .filter((item) => !item.product || !products || products.has(item.product));
   const showAdminWorkspaceSwitcher = user?.role === 'admin';
   const isPlatformWorkspace = location.pathname.startsWith('/platform-admin');
   const isFagulhaWorkspace = location.pathname.startsWith('/fagulha-admin');

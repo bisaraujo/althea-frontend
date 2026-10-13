@@ -178,8 +178,8 @@ export function ManagerDashboard() {
     >
       {hasJornadas === false ? (
         <EmptyState
-          title="Jornadas não contratada"
-          description="A empresa ainda não contratou a Plataforma de Jornadas. Fale com o administrador da sua empresa."
+          title="Nenhum produto liberado para você ainda"
+          description="Seu login está ativo, mas sua empresa ainda não contratou a Plataforma de Jornadas. O que estiver liberado para você (por exemplo, gestão organizacional ou Canal de Denúncias) aparece no menu."
         />
       ) : null}
       {hasJornadas !== false && error ? <div className="form-error">{error}</div> : null}

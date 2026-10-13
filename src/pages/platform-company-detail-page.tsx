@@ -16,6 +16,7 @@ import { InfoTooltip } from '../components/info-tooltip';
 import { SectionPanel } from '../components/section-panel';
 import { StatCard } from '../components/stat-card';
 import { useToast } from '../components/toast';
+import { CompanyUsersPanel } from '../components/company-users-panel';
 import './companies-admin.css';
 
 function errorText(error: unknown, fallback: string) {
@@ -219,6 +220,8 @@ export function PlatformCompanyDetailPage() {
                 </Link>
               </div>
             </SectionPanel>
+
+            <CompanyUsersPanel companyId={company.id} allowProjectChoice />
 
             <SectionPanel title="Colaboradores" eyebrow="Vínculos com a empresa">
               <dl className="ca-facts">

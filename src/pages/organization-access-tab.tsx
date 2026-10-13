@@ -21,12 +21,14 @@ import { StatCard } from '../components/stat-card';
 import { StatusPill } from '../components/status-pill';
 import { useToast } from '../components/toast';
 import { Drawer, ErrorState, LoadingState, SectionHeader, useConfirm } from '../components/ui';
+import { CompanyUsersPanel } from '../components/company-users-panel';
 import './access-admin.css';
 
-type Tab = 'profiles' | 'people' | 'requests';
+type Tab = 'profiles' | 'people' | 'logins' | 'requests';
 const tabs: Array<{ id: Tab; label: string }> = [
   { id: 'profiles', label: 'Perfis de acesso' },
   { id: 'people', label: 'Quem tem acesso' },
+  { id: 'logins', label: 'Logins' },
   { id: 'requests', label: 'Solicitações' },
 ];
 
@@ -256,6 +258,8 @@ export function OrganizationAccessTab({ companyId, mode = 'admin' }: { companyId
           </SectionPanel>
         </div>
       ) : null}
+
+      {tab === 'logins' ? <CompanyUsersPanel companyId={companyId} allowProjectChoice={mode === 'admin'} /> : null}
 
       {tab === 'requests' ? (
         <div className="content-grid">

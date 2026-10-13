@@ -1,7 +1,7 @@
 import { BriefcaseBusiness, ChevronRight, Network, Pencil, UserMinus, UserPlus, Users } from 'lucide-react';
 import { type FormEvent, Fragment, useEffect, useMemo, useState } from 'react';
 
-import { apiErrorMessage, endEmployment, getPlatformUsers, type PlatformUser, updateEmployment, updatePerson } from '../api/organization';
+import { apiErrorMessage, createPlatformUser, endEmployment, getPlatformUsers, type PlatformUser, type PlatformUserRole, updateEmployment, updatePerson } from '../api/organization';
 import { assignEmploymentAccessScope, createEmployment, createPerson, getOrganizationalAccessProfiles } from '../api/services';
 import type { Employment, OrganizationalAccessProfile, OrganizationalStructure, Person } from '../api/types';
 import { ApiError } from '../api/client';
@@ -172,6 +172,7 @@ type DrawerProps = {
 };
 
 type ScopeMode = 'company' | 'unit' | 'area';
+const NEW_LOGIN = '__novo_login__';
 
 function ColaboradorDrawer({ token, companyId, structure, row, onClose, onSaved, onGoToStructure }: DrawerProps) {
   const toast = useToast();
@@ -193,6 +194,8 @@ function ColaboradorDrawer({ token, companyId, structure, row, onClose, onSaved,
   const [createdPersonId, setCreatedPersonId] = useState<string | null>(null);
   const [createdEmploymentId, setCreatedEmploymentId] = useState<string | null>(null);
   const [userId, setUserId] = useState(employment?.user_id ?? '');
+  const [newLoginRole, setNewLoginRole] = useState<PlatformUserRole>('employee');
+  const creatingLogin = userId === NEW_LOGIN;
   const [platformUsers, setPlatformUsers] = useState<PlatformUser[] | null>(null);
 
   useEffect(() => {
@@ -251,6 +254,7 @@ function ColaboradorDrawer({ token, companyId, structure, row, onClose, onSaved,
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (saving || !name.trim() || scopeUnavailable) return;
+    if (creatingLogin && !email.trim()) { toast.error('Informe o e-mail do colaborador: a senha temporária vai para ele.'); return; }
     setSaving(true);
     let step = 'colaborador';
     try {
@@ -260,21 +264,26 @@ function ColaboradorDrawer({ token, companyId, structure, row, onClose, onSaved,
       else if (row && (payload.name !== row.person.name || payload.email !== row.person.email || payload.phone !== row.person.phone)) await updatePerson(token, personId, payload);
 
       step = 'vínculo';
-      const draft = { unit_id: unitId || null, area_id: areaId || null, position_id: positionId || null, started_at: startedAt || null, user_id: userId || null };
+      const draft = { unit_id: unitId || null, area_id: areaId || null, position_id: positionId || null, started_at: startedAt || null, user_id: creatingLogin ? (employment?.user_id ?? null) : userId || null };
       let employmentId = employment?.id ?? createdEmploymentId;
       if (!employmentId) { const created = await createEmployment(token, personId, draft); employmentId = created.id; setCreatedEmploymentId(created.id); }
       else if (employment && (draft.unit_id !== employment.unit_id || draft.area_id !== employment.area_id || draft.position_id !== employment.position_id || draft.started_at !== (employment.started_at?.slice(0, 10) ?? null) || draft.user_id !== (employment.user_id ?? null))) await updateEmployment(token, employmentId, draft);
+
+      if (creatingLogin) {
+        step = 'login';
+        await createPlatformUser(token, companyId, { name: name.trim(), email: email.trim(), role: newLoginRole, employment_id: employmentId });
+      }
 
       if (profileId) {
         step = 'acesso';
         await assignEmploymentAccessScope(token, employmentId, { profile_id: profileId, unit_id: scopeUnitId || null, area_id: scopeAreaId || null });
       }
-      toast.success(editing ? 'Colaborador atualizado.' : profileId ? 'Colaborador cadastrado com acesso.' : 'Colaborador cadastrado.');
+      toast.success(creatingLogin ? `Colaborador salvo. A senha temporária foi enviada para ${email.trim()}.` : editing ? 'Colaborador atualizado.' : profileId ? 'Colaborador cadastrado com acesso.' : 'Colaborador cadastrado.');
       await onSaved().catch(() => undefined);
       onClose();
     } catch (reason) {
       const message = apiErrorMessage(reason);
-      toast.error(step === 'colaborador' ? message : `${step === 'acesso' ? 'Colaborador salvo, mas o acesso não foi concedido' : 'Colaborador salvo, mas o vínculo não foi salvo'}: ${message}`);
+      toast.error(step === 'colaborador' ? message : `${step === 'acesso' ? 'Colaborador salvo, mas o acesso não foi concedido' : step === 'login' ? 'Colaborador salvo, mas o login não foi criado' : 'Colaborador salvo, mas o vínculo não foi salvo'}: ${message}`);
       if (step !== 'colaborador') await onSaved().catch(() => undefined);
     } finally { setSaving(false); }
   }
@@ -369,9 +378,18 @@ function ColaboradorDrawer({ token, companyId, structure, row, onClose, onSaved,
             <select value={userId} onChange={(event) => setUserId(event.target.value)} disabled={platformUsers === null}>
               <option value="">{platformUsers === null ? 'Carregando…' : 'Sem login (só cadastro)'}</option>
               {userOptions.map((user) => <option key={user.id} value={user.id}>{user.name} · {user.email} ({user.role === 'manager' ? 'gestor' : 'colaborador'})</option>)}
+              {!employment?.user_id ? <option value={NEW_LOGIN}>+ Criar login para este colaborador</option> : null}
             </select>
           </label>
-          {platformUsers && !userOptions.length ? <p className="org-hint">Nenhum login livre nesta empresa. Gestores e colaboradores com login são criados no projeto de Jornadas da empresa.</p> : null}
+          {creatingLogin ? (
+            <label><span>Papel do novo login</span>
+              <select value={newLoginRole} onChange={(event) => setNewLoginRole(event.target.value as PlatformUserRole)}>
+                <option value="employee">Colaborador</option>
+                <option value="manager">Gestor</option>
+              </select>
+            </label>
+          ) : null}
+          {creatingLogin ? <p className="org-hint">A senha temporária vai para o e-mail informado acima{email.trim() ? ` (${email.trim()})` : ''}.</p> : null}
           {ended ? <p className="org-hint">Vínculo encerrado em {formatDate(employment?.ended_at ?? null)}. Use “Reativar vínculo” para voltar a editá-lo.</p> : null}
         </fieldset>
 

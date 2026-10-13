@@ -35,9 +35,15 @@ export function updatePerson(token: string, id: string, payload: { name?: string
 
 export type EmploymentPatch = { unit_id?: string | null; area_id?: string | null; position_id?: string | null; started_at?: string | null; status?: string; ended_at?: string | null; user_id?: string | null };
 
-export type PlatformUser = { id: string; name: string; email: string; role: 'manager' | 'employee'; linked_employment_id: string | null; linked_person_name: string | null };
+export type PlatformUserRole = 'manager' | 'employee';
+export type PlatformUser = { id: string; name: string; email: string; role: PlatformUserRole; project_id: string | null; project_name: string | null; linked_employment_id: string | null; linked_person_name: string | null };
+export const PLATFORM_ROLE_LABEL: Record<PlatformUserRole, string> = { manager: 'Gestor', employee: 'Colaborador' };
 export function getPlatformUsers(token: string, companyId: string) {
   return request<PlatformUser[]>(`/companies/${companyId}/platform-users`, { token });
+}
+/** Cria o login (senha temporaria vai por e-mail). Sem projeto, entra no projeto principal da empresa. */
+export function createPlatformUser(token: string, companyId: string, payload: { name: string; email: string; role: PlatformUserRole; project_id?: string | null; employment_id?: string | null }) {
+  return request<PlatformUser>(`/companies/${companyId}/platform-users`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } });
 }
 export function updateEmployment(token: string, id: string, payload: EmploymentPatch) {
   return request<Employment>(`/employments/${id}`, json('PATCH', token, payload));

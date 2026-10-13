@@ -18,7 +18,7 @@ const CATEGORY_LABEL: Record<Category, string> = { structure: 'Estrutura', peopl
 const CATEGORY_ICON: Record<Category, LucideIcon> = { structure: Network, people: Users, access: KeyRound, documents: FileText, imports: Upload, fields: ListChecks, other: Activity };
 const ENTITY_CATEGORY: Record<string, Category> = {
   organizational_unit: 'structure', area: 'structure', position: 'structure', person: 'people', employment: 'people',
-  access_profile: 'access', access_scope: 'access', document: 'documents', import_batch: 'imports', custom_field: 'fields',
+  access_profile: 'access', access_scope: 'access', platform_user: 'access', document: 'documents', import_batch: 'imports', custom_field: 'fields',
 };
 const STRUCTURE_LABEL: Record<string, string> = { organizational_unit: 'Unidade', area: 'Área', position: 'Cargo' };
 
@@ -57,6 +57,10 @@ export function describeAudit(entry: AuditEntry): string {
     if (d.status === 'inactive') return `Vínculo${who} desativado`;
     if (d.status === 'active') return `Vínculo${who} reativado`;
     return `Vínculo${who} atualizado`;
+  }
+  if (entity === 'platform_user') {
+    const role = d.role === 'manager' ? 'gestor' : 'colaborador';
+    return `Login de ${role} criado para ${quote(name, 'um usuário')}`;
   }
   if (entity === 'access_profile') {
     const label = quote(name || r.profile_name || null, '');

@@ -59,7 +59,8 @@ export function useMyProducts(token: string | null) {
     let active = true;
     let pending = productCache.get(token);
     if (!pending) {
-      pending = getMyCompanyProducts(token).then((data) => new Set(data.product_ids));
+      // Empresas antigas com conteudo de Jornadas sem o produto cadastrado continuam com Jornadas.
+      pending = getMyCompanyProducts(token).then((data) => new Set([...data.product_ids, ...(data.has_jornadas ? [JORNADAS_PRODUCT_ID] : [])]));
       pending.catch(() => productCache.delete(token));
       productCache.set(token, pending);
     }
@@ -73,3 +74,4 @@ export function useMyProducts(token: string | null) {
 }
 
 export const INTEGRITY_PRODUCT_ID = 'product-integrity';
+export const JORNADAS_PRODUCT_ID = 'product-jornadas';

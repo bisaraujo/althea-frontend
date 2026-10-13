@@ -1,0 +1,518 @@
+/* Beneficios e agenda do plano de acao. */
+
+.ben-workspace,
+.agd-layout {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.ben-fieldset {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.ben-optional {
+  color: var(--text-faint);
+  font-style: normal;
+  font-weight: 500;
+}
+
+.ben-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.ben-field {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.ben-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.4rem;
+  max-height: 14rem;
+  overflow-y: auto;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.ben-choices label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.ben-toggle {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  cursor: pointer;
+}
+
+.ben-toggle strong {
+  display: block;
+  font-size: 0.88rem;
+}
+
+.ben-toggle small {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.ben-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 0.75rem;
+}
+
+.ben-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fffdfa;
+}
+
+.ben-card.is-inactive {
+  opacity: 0.65;
+}
+
+.ben-card__head {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.ben-card__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.ben-card__title strong {
+  display: block;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.ben-card__title span {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
+.ben-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.3rem;
+}
+
+.ben-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.ben-tag--nr01 {
+  background: var(--purple-soft);
+  color: var(--purple);
+}
+
+.ben-card__desc {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.ben-card__howto {
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  font-size: 0.86rem;
+}
+
+.ben-card__howto p {
+  margin: 0.2rem 0 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.ben-card__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.8rem;
+  margin: 0;
+}
+
+.ben-card__facts div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.ben-card__facts dt {
+  color: var(--text-faint);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ben-card__facts dd {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.ben-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+
+.ben-card__footer .secondary-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ben-card__actions {
+  display: flex;
+  gap: 0.3rem;
+}
+
+/* --- Agenda --- */
+
+.agd-layout {
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: start;
+}
+
+.agd-side {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.agd-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.agd-today {
+  padding: 0.4rem 0.7rem;
+}
+
+.agd-month {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--border);
+}
+
+.agd-weekday {
+  padding: 0.4rem;
+  background: var(--surface-soft);
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.agd-day {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-height: 92px;
+  padding: 0.35rem;
+  background: #fffdfa;
+  min-width: 0;
+}
+
+.agd-day.is-outside {
+  background: var(--surface-soft);
+}
+
+.agd-day.is-outside .agd-day__number {
+  color: var(--text-faint);
+}
+
+.agd-day.is-today .agd-day__number {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+}
+
+.agd-day__number {
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.agd-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0.15rem 0.35rem;
+  border: 0;
+  border-left: 3px solid currentColor;
+  border-radius: 6px;
+  background: var(--surface-soft);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agd-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agd-chip--acao { color: var(--purple); }
+.agd-chip--evento { color: var(--brand-deep); }
+.agd-chip--pesquisa { color: #1f7a8c; }
+.agd-chip--beneficio { color: #2b8669; }
+.agd-chip--done { opacity: 0.6; text-decoration: line-through; }
+.agd-chip--overdue { background: var(--danger-soft); }
+
+.agd-more {
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.agd-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.agd-dot--acao { background: var(--purple); }
+.agd-dot--evento { background: var(--brand-deep); }
+.agd-dot--pesquisa { background: #1f7a8c; }
+.agd-dot--beneficio { background: #2b8669; }
+
+.agd-list {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.agd-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fffdfa;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agd-row:hover {
+  border-color: rgba(255, 122, 0, 0.35);
+}
+
+.agd-row.is-overdue {
+  border-color: rgba(201, 72, 72, 0.35);
+  background: var(--danger-soft);
+}
+
+.agd-row__copy {
+  display: grid;
+  min-width: 0;
+}
+
+.agd-row__copy strong {
+  overflow: hidden;
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agd-row__copy span {
+  color: var(--text-soft);
+  font-size: 0.75rem;
+}
+
+.agd-detail {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.agd-detail p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.agd-alert,
+.agd-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.agd-alert { background: var(--danger-soft); color: var(--danger); }
+.agd-ok { background: rgba(43, 134, 105, 0.1); color: #2b8669; }
+
+.agd-date-add {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.agd-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.agd-date-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.3rem 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-deep);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.agd-date-tag button {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.agd-plan-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.agd-plan-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fffdfa;
+}
+
+.agd-plan-item.is-cancelled {
+  opacity: 0.55;
+}
+
+.agd-plan-item__copy {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.agd-plan-item__copy > span:not(.ben-hint) {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
+.agd-plan-item__side {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+@media (max-width: 1100px) {
+  .agd-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .ben-card__facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agd-day {
+    min-height: 58px;
+  }
+
+  .agd-chip span {
+    display: none;
+  }
+
+  .agd-chip {
+    justify-content: center;
+    min-height: 10px;
+  }
+
+  .agd-plan-item {
+    grid-template-columns: 10px minmax(0, 1fr);
+  }
+
+  .agd-plan-item__side {
+    grid-column: 2;
+  }
+}

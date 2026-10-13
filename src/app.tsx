@@ -9,6 +9,9 @@ import { AdminDashboard } from './pages/admin-dashboard';
 import { CompanyAccessPage } from './pages/company-access-page';
 import { OrganizationWorkspacePage } from './pages/organization-workspace-page';
 import { IntegrityPage } from './pages/integrity-page';
+import { AgendaPage } from './pages/agenda-page';
+import { BenefitsPage } from './pages/benefits-page';
+import { PlatformBenefitsPage } from './pages/platform-benefits-page';
 import { IntegrityReportPage } from './pages/integrity-report-page';
 import { IntegrityTrackPage } from './pages/integrity-track-page';
 import { PlatformIntegrityPage } from './pages/platform-integrity-page';
@@ -87,6 +90,7 @@ export function App() {
             <Route path="/platform-admin/requests" element={<PlatformRequestsPage />} />
             <Route path="/platform-admin/administrators" element={<PlatformAdministratorsPage />} />
             <Route path="/platform-admin/integrity" element={<PlatformIntegrityPage />} />
+            <Route path="/platform-admin/benefits" element={<PlatformBenefitsPage />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={['company']} />}>
@@ -97,6 +101,11 @@ export function App() {
           <Route element={<ProtectedRoute roles={['company', 'manager', 'employee']} />}>
             <Route path="/organization" element={<OrganizationWorkspacePage />} />
             <Route path="/integrity" element={<IntegrityPage />} />
+            <Route path="/benefits" element={<BenefitsPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute roles={['company', 'manager']} />}>
+            <Route path="/agenda" element={<AgendaPage />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={['manager']} />}>

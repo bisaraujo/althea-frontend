@@ -9,6 +9,7 @@ import {
   Network,
   UserCog,
   ShieldAlert,
+  Gift,
   UserPlus,
   ClipboardList,
   Sparkles,
@@ -23,6 +24,7 @@ export const platformAdminNavigation: NavigationItem[] = [
   { to: '/platform-admin/requests', label: 'Central de solicitações', icon: Inbox },
   { to: '/platform-admin/products', label: 'Catálogo de produtos', icon: PackageCheck },
   { to: '/platform-admin/integrity', label: 'Canal de Denúncias', icon: ShieldAlert },
+  { to: '/platform-admin/benefits', label: 'Benefícios', icon: Gift },
   { to: '/platform-admin/administrators', label: 'Administradores', icon: UserCog },
 ];
 

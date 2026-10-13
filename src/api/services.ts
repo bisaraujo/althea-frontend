@@ -37,7 +37,6 @@ import type {
 } from './types';
 import type { AdminAccessPayload, AdminCreatePayload, CompanyPortfolio } from './types';
 import type { Employment, OrganizationalAccessProfile, OrganizationalArea, OrganizationalImport, OrganizationalPosition, OrganizationalStructure, OrganizationalUnit, Person } from './types';
-import type { ActionPlan, ActionPlanItem } from './types';
 import type { FagulhaAccess, FagulhaAchievement, FagulhaCampaign, FagulhaQuestion, OperationalSurvey, OperationalSurveyQuestion, ResearchCycle, ResearchPlan, ResearchStage } from './types';
 import type { CustomFieldDefinition, FagulhaActivation } from './types';
 import type { AccessAssignment, CompanyCustomCapability, CompanyCustomCapabilityStatus, EffectiveAccess, PermissionCatalogEntry } from './types';
@@ -296,10 +295,6 @@ export async function createCustomField(token: string, companyId: string, payloa
 export async function assignEmploymentAccessScope(token: string, employmentId: string, payload: { profile_id: string; unit_id?: string | null; area_id?: string | null }) { return request(`/employments/${employmentId}/access-scopes`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
 export async function createOrganizationalImport(token: string, companyId: string, payload: { file_name: string; rows: Array<{ name: string; email?: string; unit?: string; area?: string; position?: string; started_at?: string }> }) { return request<OrganizationalImport>(`/companies/${companyId}/organizational-imports`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
 export async function commitOrganizationalImport(token: string, batchId: string) { return request<OrganizationalImport>(`/organizational-imports/${batchId}/commit`, { token, method: 'POST' }); }
-export async function getActionPlan(token: string, projectId: string) { return request<ActionPlan>(`/projects/${projectId}/action-plan`, { token }); }
-export async function createActionPlanItem(token: string, projectId: string, payload: { title: string; description?: string | null; owner_name?: string | null; due_at?: string | null; frequency?: string | null }) { return request<ActionPlanItem>(`/projects/${projectId}/action-plan/items`, { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
-export async function updateActionPlanItem(token: string, itemId: string, payload: Partial<Pick<ActionPlanItem, 'title' | 'description' | 'owner_name' | 'due_at' | 'frequency' | 'status'>>) { return request<ActionPlanItem>(`/action-plan/items/${itemId}`, { token, method: 'PATCH', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }
-export async function submitActionPlan(token: string, projectId: string) { return request<ActionPlan>(`/projects/${projectId}/action-plan/submit`, { token, method: 'POST' }); }
 export async function listJourneys(token: string) { return request<Journey[]>('/journeys', { token }); }
 export async function getJourney(token: string, journeyId: string) { return request<Journey>(`/journeys/${journeyId}`, { token }); }
 export async function createJourney(token: string, payload: { project_id: string; role_target: 'manager' | 'employee'; title: string; description?: string | null; status?: 'draft' | 'active' | 'archived' }) { return request<Journey>('/journeys', { token, method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }); }

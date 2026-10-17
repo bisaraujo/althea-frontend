@@ -1,0 +1,62 @@
+# Deploy automatico do frontend no AWS Amplify a cada push na main.
+# Autentica por OIDC no papel github-deploy-althea: nenhuma chave da AWS fica no GitHub.
+name: Deploy AWS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-aws
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: sa-east-1
+  AMPLIFY_APP_ID: d36h98ojtuciv7
+  AMPLIFY_BRANCH: main
+  VITE_API_URL: https://dz31ieczcnppm.cloudfront.net
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar e gerar o site
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::359813812155:role/github-deploy-althea
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Publicar no Amplify
+        run: |
+          (cd dist && zip -qr ../site.zip .)
+          deployment=$(aws amplify create-deployment --app-id "$AMPLIFY_APP_ID" --branch-name "$AMPLIFY_BRANCH")
+          job_id=$(echo "$deployment" | jq -r .jobId)
+          upload_url=$(echo "$deployment" | jq -r .zipUploadUrl)
+          curl --fail -sS -X PUT -H "Content-Type: application/zip" --data-binary @site.zip "$upload_url"
+          aws amplify start-deployment --app-id "$AMPLIFY_APP_ID" --branch-name "$AMPLIFY_BRANCH" --job-id "$job_id" > /dev/null
+          for _ in $(seq 1 60); do
+            status=$(aws amplify get-job --app-id "$AMPLIFY_APP_ID" --branch-name "$AMPLIFY_BRANCH" --job-id "$job_id" --query job.summary.status --output text)
+            echo "status: $status"
+            case "$status" in
+              SUCCEED) exit 0 ;;
+              FAILED|CANCELLED) exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "Tempo esgotado esperando o Amplify" && exit 1

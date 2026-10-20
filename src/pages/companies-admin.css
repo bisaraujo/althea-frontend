@@ -136,3 +136,8 @@ a.ca-row:hover, a.ca-row:focus-visible { background: var(--surface-soft); outlin
   .ca-header__actions { width: 100%; }
   .ca-header__actions > * { flex: 1 1 auto; justify-content: center; }
 }
+
+/* Lateral da pagina da empresa acompanha a rolagem, sem deixar buraco ao lado do conteudo. */
+@media (min-width: 1121px) {
+  .ca-stack--side { position: sticky; top: 1rem; }
+}

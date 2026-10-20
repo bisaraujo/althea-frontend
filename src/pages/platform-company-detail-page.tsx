@@ -150,6 +150,7 @@ export function PlatformCompanyDetailPage() {
         </div>
 
         <div className="ca-detail-grid">
+          <div className="ca-stack">
           <SectionPanel
             title="Produtos"
             eyebrow="Contratação"
@@ -186,7 +187,10 @@ export function PlatformCompanyDetailPage() {
             )}
           </SectionPanel>
 
-          <div className="ca-stack">
+            <CompanyUsersPanel companyId={company.id} allowProjectChoice />
+          </div>
+
+          <div className="ca-stack ca-stack--side">
             <SectionPanel title="Atalhos" eyebrow="Administrar esta empresa">
               <div className="ca-links">
                 <Link className="ca-link" to={`/platform-admin/organization?company=${company.id}`}>
@@ -215,13 +219,11 @@ export function PlatformCompanyDetailPage() {
                 ) : null}
                 <Link className="ca-link" to="/platform-admin/products">
                   <PackageCheck size={18} />
-                  <span><strong>Catálogo de produtos</strong><span className="ca-link__desc">Criar ou editar os produtos disponíveis.</span></span>
+                  <span><strong>Catálogo de produtos</strong><span className="ca-link__desc">Os produtos que a Turi oferece.</span></span>
                   <ChevronRight size={16} />
                 </Link>
               </div>
             </SectionPanel>
-
-            <CompanyUsersPanel companyId={company.id} allowProjectChoice />
 
             <SectionPanel title="Colaboradores" eyebrow="Vínculos com a empresa">
               <dl className="ca-facts">

@@ -1,0 +1,211 @@
+/* Visao geral da empresa (pagina inicial de qualquer cliente). */
+
+.ch-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.panel.ch-company {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+}
+
+.ch-company__copy {
+  display: grid;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.ch-company__copy strong {
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.ch-company__copy span {
+  color: var(--text-soft);
+  font-size: 0.86rem;
+  overflow-wrap: anywhere;
+}
+
+.ch-company__products {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ch-attention {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.5rem;
+}
+
+.ch-attention__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 48px;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid rgba(255, 122, 0, 0.28);
+  border-radius: 12px;
+  background: rgba(255, 122, 0, 0.06);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.ch-attention__item:hover {
+  background: rgba(255, 122, 0, 0.12);
+}
+
+.ch-attention__item svg:first-child {
+  flex-shrink: 0;
+  color: var(--brand);
+}
+
+.ch-attention__item span {
+  flex: 1;
+  min-width: 0;
+}
+
+.ch-attention__item svg:last-child {
+  flex-shrink: 0;
+  color: var(--text-faint);
+}
+
+.ch-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  color: #2b8669;
+  font-weight: 700;
+}
+
+.ch-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.ch-link {
+  color: var(--purple);
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ch-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ch-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ch-list li:last-child {
+  border-bottom: 0;
+}
+
+.ch-list__icon {
+  flex-shrink: 0;
+  color: #2b8669;
+}
+
+.ch-list__copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.ch-list__copy strong {
+  overflow: hidden;
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ch-list__copy span {
+  color: var(--text-soft);
+  font-size: 0.78rem;
+}
+
+.ch-list__value {
+  flex-shrink: 0;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.ch-muted {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.ch-products {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.6rem;
+}
+
+.ch-product {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--text);
+}
+
+a.ch-product:hover {
+  border-color: rgba(255, 122, 0, 0.32);
+}
+
+.ch-product > svg:first-child {
+  flex-shrink: 0;
+  color: var(--brand);
+}
+
+.ch-product__copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.ch-product__copy strong {
+  font-size: 0.92rem;
+}
+
+.ch-product__copy span {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 900px) {
+  .ch-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .ch-attention,
+  .ch-products {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

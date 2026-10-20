@@ -83,11 +83,20 @@
   color: var(--brand-deep);
 }
 
-.info-tooltip__bubble {
+.info-tooltip__trigger {
+  position: relative;
+}
+
+/* Area de toque maior que o icone, sem mudar o layout. */
+.info-tooltip__trigger::after {
+  content: '';
   position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  z-index: 50;
+  inset: -10px;
+}
+
+.info-tooltip__bubble {
+  position: fixed;
+  z-index: 200;
   width: max-content;
   max-width: 260px;
   padding: 0.6rem 0.75rem;
@@ -100,18 +109,39 @@
   letter-spacing: 0;
   text-transform: none;
   box-shadow: 0 12px 30px rgba(31, 23, 51, 0.25);
-  opacity: 0;
-  visibility: hidden;
-  transform: translate(-50%, -4px);
-  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
   pointer-events: none;
+  animation: info-tooltip-in 0.12s ease;
 }
 
-.info-tooltip:hover .info-tooltip__bubble,
-.info-tooltip__trigger:focus-visible + .info-tooltip__bubble {
-  opacity: 1;
-  visibility: visible;
-  transform: translate(-50%, 0);
+/* Celular: icone maior e com fundo, facil de ver e de tocar. */
+@media (max-width: 760px) {
+  .info-tooltip__trigger {
+    width: 32px;
+    height: 32px;
+    background: var(--brand-soft);
+    color: var(--brand-deep);
+  }
+
+  .info-tooltip__trigger svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .info-tooltip__trigger::after {
+    inset: -7px;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+}
+
+@keyframes info-tooltip-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
 }
 
 /* Botao que se comporta como link para arquivos enviados (download autenticado). Especificidade zero:

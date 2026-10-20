@@ -1,6 +1,6 @@
-import { Building2, Flame, KeyRound, LogOut, Network, Route as RouteIcon, ShieldAlert } from 'lucide-react';
+import { Building2, Flame, KeyRound, LogOut, Menu, Network, Route as RouteIcon, ShieldAlert, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 
 import { hasWorkspaceAccess, INTEGRITY_PRODUCT_ID, useMyPermissions, useMyProducts } from '../api/workspace-access';
@@ -58,6 +58,18 @@ export function AppShell({
   const { user, token, signOut } = useAuth();
   const location = useLocation();
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // A gaveta do celular fecha ao trocar de pagina; enquanto aberta, a pagina atras nao rola.
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = previous; window.removeEventListener('keydown', onKey); };
+  }, [menuOpen]);
   // Gestores e colaboradores so veem "Gestao organizacional" quando receberam alguma permissao dela por perfil.
   const isTeamMember = user?.role === 'manager' || user?.role === 'employee';
   const isCompanySide = isTeamMember || user?.role === 'company';
@@ -81,11 +93,25 @@ export function AppShell({
   const canUseFagulha = Boolean(user?.platform_admin || user?.admin_product_ids?.includes('product-fagulha'));
 
   return (
-    <div className="shell">
-      <aside className="shell__sidebar">
+    <div className={`shell${menuOpen ? ' shell--menu-open' : ''}`}>
+      {/* No computador e a barra lateral; no celular vira a gaveta aberta pelo botao de menu. */}
+      <aside id="shell-menu" className={`shell__sidebar${menuOpen ? ' is-open' : ''}`} aria-label="Menu">
         <div className="shell__brand">
           <BrandLockup tone="light" />
+          <button type="button" className="shell__menu-close" onClick={() => setMenuOpen(false)} aria-label="Fechar menu">
+            <X size={20} />
+          </button>
         </div>
+
+        {user ? (
+          <div className="shell__drawer-user">
+            <span className="shell__user-avatar" aria-hidden>{userInitials(user.name)}</span>
+            <span className="shell__drawer-user-copy">
+              <strong>{user.name}</strong>
+              <span>{roleLabel(user.role)}</span>
+            </span>
+          </div>
+        ) : null}
 
         <div className="shell__sidebar-note">
           <span className="shell__sidebar-note-label">hub de cuidado</span>
@@ -113,7 +139,7 @@ export function AppShell({
         </nav>
 
         <div className="shell__account">
-          <button type="button" className="shell__account-link" onClick={() => setPasswordOpen(true)}>
+          <button type="button" className="shell__account-link" onClick={() => { setMenuOpen(false); setPasswordOpen(true); }}>
             <KeyRound size={16} />
             <span>Trocar senha</span>
           </button>
@@ -123,19 +149,15 @@ export function AppShell({
           </button>
         </div>
       </aside>
+      {menuOpen ? <div className="shell__backdrop" onClick={() => setMenuOpen(false)} aria-hidden /> : null}
 
       <main className="shell__main">
         <div className="shell__mobile-brand">
           <BrandLockup compact />
-          <span className="shell__mobile-actions">
-            <button type="button" className="shell__logout shell__logout--mobile" onClick={() => setPasswordOpen(true)} aria-label="Trocar senha" title="Trocar senha">
-              <KeyRound size={16} />
-            </button>
-            <button type="button" className="shell__logout shell__logout--mobile" onClick={signOut}>
-              <LogOut size={16} />
-              <span>Sair</span>
-            </button>
-          </span>
+          <button type="button" className="shell__menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu" aria-expanded={menuOpen} aria-controls="shell-menu">
+            <Menu size={20} />
+            <span>Menu</span>
+          </button>
         </div>
 
         {user?.must_change_password ? (
@@ -170,26 +192,6 @@ export function AppShell({
             </div>
           </nav>
         ) : null}
-
-        <nav className="shell__mobile-nav" aria-label="Navegação principal mobile">
-          {visibleNavigation.map((item) => {
-            const Icon = item.icon;
-
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `shell__mobile-nav-link ${(item.activeFor ? item.activeFor(location.pathname) : isActive) ? 'active' : ''}`
-                }
-                end={item.exact ?? ['/admin', '/company', '/manager', '/employee'].includes(item.to)}
-              >
-                <Icon size={16} />
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
 
         <header className="shell__header">
           <div className="shell__headline">

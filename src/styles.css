@@ -533,7 +533,9 @@ select:disabled {
 
 .shell__content {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
+  min-width: 0;
 }
 
 .stats-grid,
@@ -624,7 +626,6 @@ select:disabled {
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 800;
-  text-transform: capitalize;
   background: rgba(109, 97, 104, 0.09);
   color: var(--text-soft);
   border: 1px solid rgba(47, 28, 79, 0.06);
@@ -5575,7 +5576,12 @@ select:focus {
   margin: 0;
   padding: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
+}
+
+.emp-step {
+  min-width: 0;
 }
 
 .emp-step__link {
@@ -7396,5 +7402,253 @@ select:disabled {
 @media (max-width: 760px) {
   .shell__password-notice {
     flex-wrap: wrap;
+  }
+}
+
+/* --- Celular e tablet: barra no topo + menu em gaveta ------------------------- */
+.shell__menu-close,
+.shell__menu-button,
+.shell__drawer-user,
+.shell__backdrop {
+  display: none;
+}
+
+@media (max-width: 1120px) {
+  /* A coluna principal nunca fica mais larga que a tela. */
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .shell__main {
+    min-width: 0;
+    padding: 0 0.85rem 1.5rem;
+  }
+
+  .shell__mobile-brand {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: 0 -0.85rem 0.9rem;
+    padding: 0.6rem 0.85rem;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    background: rgba(253, 247, 238, 0.92);
+    backdrop-filter: blur(10px);
+  }
+
+  .shell__menu-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 42px;
+    padding: 0 0.9rem;
+    border: 1px solid rgba(75, 46, 131, 0.16);
+    border-radius: 12px;
+    background: rgba(75, 46, 131, 0.08);
+    color: var(--purple);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  /* A barra lateral vira a gaveta. */
+  .shell__sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 300;
+    display: flex;
+    width: min(310px, 86vw);
+    height: 100dvh;
+    overflow: hidden;
+    gap: 0.8rem;
+    padding: 1rem 0.85rem calc(1rem + env(safe-area-inset-bottom));
+    transform: translateX(-105%);
+    transition: transform 0.22s ease;
+    box-shadow: 0 0 40px rgba(24, 16, 45, 0.35);
+  }
+
+  .shell__sidebar.is-open {
+    transform: none;
+  }
+
+  .shell__brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .shell__menu-close {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fffaf4;
+    cursor: pointer;
+  }
+
+  .shell__drawer-user {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-shrink: 0;
+    padding: 0.7rem;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .shell__drawer-user-copy {
+    display: grid;
+    min-width: 0;
+  }
+
+  .shell__drawer-user-copy strong {
+    overflow: hidden;
+    color: #fffaf4;
+    font-size: 0.92rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .shell__drawer-user-copy span {
+    color: rgba(255, 250, 246, 0.6);
+    font-size: 0.78rem;
+  }
+
+  .shell__sidebar-note {
+    display: none;
+  }
+
+  .shell__nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    align-content: start;
+    gap: 0.15rem;
+  }
+
+  .shell__nav-link {
+    min-height: 46px;
+    padding: 0.6rem 0.8rem;
+  }
+
+  .shell__account {
+    flex-shrink: 0;
+  }
+
+  .shell__account-link {
+    min-height: 42px;
+  }
+
+  .shell__logout {
+    width: 100%;
+    margin-top: 0;
+    min-height: 46px;
+  }
+
+  .shell__backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 250;
+    background: rgba(24, 16, 45, 0.5);
+  }
+
+  /* Nome e papel ja aparecem na gaveta; no topo da pagina sobra espaco para o titulo. */
+  .shell__user {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell__sidebar {
+    transition: none;
+  }
+}
+
+/* --- Celular: ajustes gerais das telas ---------------------------------------- */
+@media (max-width: 760px) {
+  .shell__header {
+    padding: 1rem;
+    border-radius: 18px;
+  }
+
+  .shell__header h1 {
+    font-size: 1.55rem;
+    line-height: 1.15;
+  }
+
+  .shell__header p {
+    font-size: 0.9rem;
+  }
+
+  /* Numeros em 2 por linha em vez de um cartao inteiro por numero. */
+  .stats-grid,
+  .stats-grid--three,
+  .stats-grid:has(> :last-child:nth-child(3)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .stats-grid > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .stat-card {
+    padding: 0.85rem;
+  }
+
+  .stat-card__value {
+    font-size: 1.6rem;
+  }
+
+  /* Botoes so de icone com tamanho de dedo. */
+  .org-icon-btn,
+  .agd-nav .org-icon-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  /* Abas que nao cabem rolam para o lado dentro da propria faixa. */
+  .organization-tabs,
+  .agd-tabs,
+  .admin-workspace-switcher__options {
+    max-width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .organization-tabs > *,
+  .agd-tabs > * {
+    flex-shrink: 0;
+  }
+
+  .admin-workspace-switcher {
+    padding: 0.6rem;
+  }
+
+  .admin-workspace-switcher__label {
+    display: none;
+  }
+
+  .panel,
+  .section-panel {
+    padding: 0.95rem;
   }
 }

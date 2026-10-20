@@ -17,6 +17,7 @@ import { IntegrityReportPage } from './pages/integrity-report-page';
 import { IntegrityTrackPage } from './pages/integrity-track-page';
 import { PlatformIntegrityPage } from './pages/platform-integrity-page';
 import { CompanyDashboard } from './pages/company-dashboard';
+import { CompanyHomePage } from './pages/company-home-page';
 import { EmployeeDashboard } from './pages/employee-dashboard';
 import { EmployeeHandoutPage } from './pages/employee-handout-page';
 import { LoginPage } from './pages/login-page';
@@ -96,7 +97,8 @@ export function App() {
           </Route>
 
           <Route element={<ProtectedRoute roles={['company']} />}>
-            <Route path="/company" element={<CompanyDashboard />} />
+            <Route path="/company" element={<CompanyHomePage />} />
+            <Route path="/company/jornadas" element={<CompanyDashboard />} />
             <Route path="/company/access" element={<CompanyAccessPage />} />
           </Route>
 

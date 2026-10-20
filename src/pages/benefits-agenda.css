@@ -741,6 +741,68 @@
   white-space: nowrap;
 }
 
+/* Lista do mes por dia: so no celular, no lugar da grade. */
+.agd-month-list {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .agd-month {
+    display: none;
+  }
+
+  .agd-month-list {
+    display: grid;
+    gap: 0.9rem;
+    margin-top: 0.8rem;
+  }
+
+  .agd-month-list__day h4 {
+    margin: 0 0 0.2rem;
+    color: var(--text-soft);
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .agd-month-list__day.is-today h4 {
+    color: var(--brand);
+  }
+
+  /* Na lista do dia a data ja esta no titulo; a linha mostra so o que importa. */
+  .agd-month-list .agd-row {
+    padding: 0.6rem 0.2rem;
+  }
+
+  .agd-list--scroll {
+    max-height: 360px;
+  }
+
+  /* No celular: atrasadas primeiro; "proximos 30 dias" ja esta na lista do mes. */
+  .agd-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .agd-side {
+    order: -1;
+  }
+
+  .agd-side > :last-child {
+    display: none;
+  }
+
+  .agd-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .agd-select select {
+    width: 100%;
+  }
+}
+
 .agd-editor input,
 .agd-editor select {
   min-width: 0;

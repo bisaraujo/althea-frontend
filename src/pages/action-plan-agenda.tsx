@@ -161,6 +161,19 @@ export function ActionPlanAgenda({ token, companyId, canMark = true }: { token: 
             );
           })}
         </div>
+        {/* No celular o mes vira lista por dia (a grade de 7 colunas nao cabe com texto). */}
+        <div className="agd-month-list">
+          {[...byDay.entries()]
+            .filter(([key]) => key.slice(0, 7) === iso(month).slice(0, 7))
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, entries]) => (
+              <section key={key} className={`agd-month-list__day${key === today ? ' is-today' : ''}`}>
+                <h4>{longDate(key)}{key === today ? ' · hoje' : ''}</h4>
+                <div className="agd-list">{entries.map((entry) => <EntryRow key={entry.id} entry={entry} onOpen={() => openEntry(entry)} />)}</div>
+              </section>
+            ))}
+          {![...byDay.keys()].some((key) => key.slice(0, 7) === iso(month).slice(0, 7)) ? <p className="ben-hint">Nada neste mês.</p> : null}
+        </div>
       </SectionPanel>
 
       <div className="agd-side">

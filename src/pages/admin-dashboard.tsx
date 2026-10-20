@@ -197,9 +197,11 @@ export function AdminDashboard({ section, mode = 'product' }: { section: AdminSe
         getResponses(token),
       ]);
 
-      // No admin de Jornadas, empresas sem o produto Jornadas não aparecem como clientes.
-      setCompanies(mode === 'product' ? companyData.filter((c) => c.has_jornadas !== false) : companyData);
-      setProjects(sortByName(projectData.projects));
+      // No admin de Jornadas, empresas sem o produto Jornadas (e os projetos delas) não aparecem como clientes.
+      const visibleCompanies = mode === 'product' ? companyData.filter((c) => c.has_jornadas !== false) : companyData;
+      const visibleCompanyIds = new Set(visibleCompanies.map((c) => c.id));
+      setCompanies(visibleCompanies);
+      setProjects(sortByName(mode === 'product' ? projectData.projects.filter((p) => visibleCompanyIds.has(p.company_id)) : projectData.projects));
       setUsers(sortByName(userData));
       setForms(formData.forms);
       setResponses(responseData.responses);

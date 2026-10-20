@@ -102,9 +102,9 @@ export function CompanyDashboard() {
 
   return (
     <AppShell
-      eyebrow="Plataforma turi"
-      title="Área da empresa"
-      description="Dados da empresa, produtos contratados e acompanhamento da operação."
+      eyebrow="Plataforma de Jornadas"
+      title="Jornadas"
+      description="Projetos, formulários, apresentações e respostas da Plataforma de Jornadas."
       navigation={companyNavigation}
     >
       {loading ? (
@@ -113,7 +113,7 @@ export function CompanyDashboard() {
         <ErrorState message={error ?? undefined} onRetry={() => void load()} />
       ) : (
         <div className="cd-stack">
-          <section className="cd-header" aria-label="Dados institucionais">
+          <section className="panel cd-header" aria-label="Dados institucionais">
             <CompanyAvatar name={company.name} size="lg" />
             <div className="cd-header__main">
               <h2>{company.name}</h2>
@@ -143,7 +143,7 @@ export function CompanyDashboard() {
                 <span className="cd-stat"><strong>{data.responses.length}</strong> respostas</span>
               </div>
 
-              <section className="cd-panel">
+              <section className="panel cd-panel">
                 <SectionHeader title="Projetos" count={data.projects.length} />
                 <DataTable
                   dense
@@ -154,7 +154,7 @@ export function CompanyDashboard() {
                 />
               </section>
 
-              <section className="cd-panel">
+              <section className="panel cd-panel">
                 <SectionHeader
                   title="Formulários e pesquisas"
                   count={data.forms.length}
@@ -196,7 +196,7 @@ export function CompanyDashboard() {
               </section>
 
               <div className="cd-grid">
-                <section className="cd-panel">
+                <section className="panel cd-panel">
                   <SectionHeader title="Apresentações" count={data.presentations.length} />
                   {data.presentations.length ? (
                     <ul className="cd-list">
@@ -221,7 +221,7 @@ export function CompanyDashboard() {
                   )}
                 </section>
 
-                <section className="cd-panel">
+                <section className="panel cd-panel">
                   <SectionHeader title="Respostas recentes" count={data.responses.length} />
                   {data.responses.length ? (
                     <ul className="cd-list">

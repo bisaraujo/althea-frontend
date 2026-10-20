@@ -516,3 +516,233 @@
     grid-column: 2;
   }
 }
+
+/* Entregas do cronograma das Jornadas na agenda */
+.agd-chip--jornada { color: #8a5a00; border-left-style: dashed; }
+.agd-dot--jornada { background: transparent; border: 2px solid #c98a12; }
+
+/* --- Plano de acao: versao mais limpa --------------------------------------- */
+
+.agd-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.agd-toolbar__company {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.agd-toolbar__company select {
+  min-width: 240px;
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
+}
+
+.agd-toolbar__link {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--purple);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.agd-tabs {
+  display: inline-flex;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.agd-tabs button {
+  padding: 0.45rem 0.95rem;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.agd-tabs button.active {
+  background: #fffdfa;
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(47, 28, 79, 0.12);
+}
+
+.agd-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.agd-select select {
+  padding: 0.45rem 0.7rem;
+  border-radius: 10px;
+  font-size: 0.84rem;
+}
+
+/* Listas laterais: altura limitada com rolagem, linhas leves. */
+.agd-list--scroll {
+  max-height: 300px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin-right: -0.4rem;
+  padding-right: 0.4rem;
+  scrollbar-width: thin;
+}
+
+.agd-list {
+  gap: 0;
+}
+
+.agd-row {
+  padding: 0.5rem 0.4rem;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.agd-row:last-child {
+  border-bottom: 0;
+}
+
+.agd-row:hover {
+  background: var(--surface-soft);
+  border-color: var(--border);
+}
+
+.agd-row.is-overdue {
+  background: transparent;
+  border-color: var(--border);
+}
+
+.agd-row.is-overdue .agd-row__copy span {
+  color: var(--danger);
+}
+
+.agd-row__copy strong {
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+/* Calendario: dias de altura fixa, chips discretos. */
+.agd-day {
+  min-height: 0;
+  height: 104px;
+  overflow: hidden;
+}
+
+.agd-chip {
+  border-left-width: 2px;
+  background: transparent;
+  font-weight: 600;
+}
+
+.agd-chip:hover {
+  background: var(--surface-soft);
+}
+
+.agd-chip--overdue {
+  background: transparent;
+}
+
+.agd-chip--overdue span {
+  color: var(--danger);
+}
+
+/* Editor do plano: formulario a esquerda, lista com rolagem a direita. */
+.agd-editor {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: start;
+}
+
+.agd-plan-list--scroll {
+  max-height: 560px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin-right: -0.4rem;
+  padding-right: 0.4rem;
+  scrollbar-width: thin;
+}
+
+.agd-plan-list {
+  gap: 0;
+}
+
+.agd-plan-item {
+  padding: 0.65rem 0.3rem;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.agd-plan-item:last-child {
+  border-bottom: 0;
+}
+
+.agd-plan-item__copy strong {
+  font-size: 0.9rem;
+}
+
+.agd-plan-item__desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.agd-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.9rem 0.2rem;
+  color: var(--text-soft);
+  font-size: 0.88rem;
+}
+
+@media (max-width: 1100px) {
+  .agd-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .agd-day {
+    height: 64px;
+  }
+
+  .agd-toolbar__company select {
+    min-width: 0;
+    flex: 1;
+  }
+}
+
+.agd-toolbar__link {
+  white-space: nowrap;
+}
+
+.agd-editor input,
+.agd-editor select {
+  min-width: 0;
+  width: 100%;
+}

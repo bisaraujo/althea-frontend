@@ -1,13 +1,12 @@
-import { ClipboardList, Pencil, Plus, Send, X } from 'lucide-react';
+import { ClipboardList, Pencil, Plus, X } from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 
 import {
   ACTION_STATUS_LABEL, ACTION_TYPE_LABEL, type ActionItemType, type ActionStatus, createPlanItem, getPlan, type Plan, type PlanItem,
-  type PlanItemPayload, RECURRENCE_LABEL, type RecurrenceType, submitPlan, updatePlanItem,
+  type PlanItemPayload, RECURRENCE_LABEL, type RecurrenceType, updatePlanItem,
 } from '../api/action-plan';
 import { type Benefit, listBenefits } from '../api/benefits';
 import { ApiError } from '../api/client';
-import { EmptyState } from '../components/empty-state';
 import { SectionPanel } from '../components/section-panel';
 import { StatusPill } from '../components/status-pill';
 import { useToast } from '../components/toast';
@@ -75,8 +74,11 @@ function ItemForm({ draft, onChange, benefits }: { draft: PlanItemPayload; onCha
   );
 }
 
-/** Plano de acao do projeto (admin de Jornadas): acoes com tipo, recorrencia e datas. */
-export function ActionPlanEditor({ token, projectId, companyId }: { token: string; projectId: string; companyId: string | null }) {
+/**
+ * Plano de acao da empresa: acoes com tipo, recorrencia e datas.
+ * A Turi (admin) cria e reprograma; a empresa ve a mesma lista em modo leitura (readOnly).
+ */
+export function ActionPlanEditor({ token, companyId, readOnly = false }: { token: string; companyId: string; readOnly?: boolean }) {
   const toast = useToast();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [failed, setFailed] = useState(false);
@@ -85,9 +87,9 @@ export function ActionPlanEditor({ token, projectId, companyId }: { token: strin
   const [editing, setEditing] = useState<{ item: PlanItem; draft: PlanItemPayload } | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const load = useCallback(() => { setFailed(false); getPlan(token, projectId).then(setPlan).catch(() => setFailed(true)); }, [token, projectId]);
+  const load = useCallback(() => { setFailed(false); getPlan(token, companyId).then(setPlan).catch(() => setFailed(true)); }, [token, companyId]);
   useEffect(load, [load]);
-  useEffect(() => { if (companyId) listBenefits(token, companyId).then(setBenefits).catch(() => setBenefits([])); }, [token, companyId]);
+  useEffect(() => { if (!readOnly) listBenefits(token, companyId).then(setBenefits).catch(() => setBenefits([])); }, [token, companyId, readOnly]);
 
   async function run(action: () => Promise<unknown>, message: string) {
     if (saving) return false;
@@ -99,7 +101,7 @@ export function ActionPlanEditor({ token, projectId, companyId }: { token: strin
 
   async function add(event: FormEvent) {
     event.preventDefault();
-    if (await run(() => createPlanItem(token, projectId, { ...draft, title: draft.title.trim() }), 'Ação criada e datas adicionadas à agenda.')) setDraft(emptyDraft);
+    if (await run(() => createPlanItem(token, companyId, { ...draft, title: draft.title.trim() }), 'Ação criada e datas adicionadas à agenda.')) setDraft(emptyDraft);
   }
   async function saveEdit(event: FormEvent) {
     event.preventDefault();
@@ -113,17 +115,42 @@ export function ActionPlanEditor({ token, projectId, companyId }: { token: strin
   if (failed) return <ErrorState message="Não foi possível carregar o plano de ação." onRetry={load} />;
   if (!plan) return <LoadingState />;
 
+  const active = plan.items.filter((item) => item.status !== 'cancelled');
+
+  if (readOnly) {
+    return (
+      <SectionPanel title="Ações do plano" eyebrow={`${active.length} ativa(s)`}>
+        {plan.items.length ? (
+          <div className="agd-plan-list agd-plan-list--scroll">
+            {plan.items.map((item) => (
+              <article key={item.id} className={`agd-plan-item${item.status === 'cancelled' ? ' is-cancelled' : ''}`}>
+                <span className={`agd-dot agd-dot--${item.item_type}`} aria-hidden />
+                <div className="agd-plan-item__copy">
+                  <strong>{item.title}</strong>
+                  <span>{ACTION_TYPE_LABEL[item.item_type]} · {RECURRENCE_LABEL[item.recurrence_type]}{item.owner_name ? ` · ${item.owner_name}` : ''}{item.benefit_name ? ` · ${item.benefit_name}` : ''}</span>
+                  {item.description ? <span className="agd-plan-item__desc">{item.description}</span> : null}
+                  <span className="ben-hint">{item.occurrence_count ? `${item.occurrences_done} de ${item.occurrence_count} feita(s) · próxima: ${shortDate(item.next_occurrence)}` : 'Sem datas na agenda'}</span>
+                </div>
+                <div className="agd-plan-item__side"><StatusPill tone={item.status === 'completed' ? 'success' : item.status === 'cancelled' ? 'muted' : 'default'}>{ACTION_STATUS_LABEL[item.status]}</StatusPill></div>
+              </article>
+            ))}
+          </div>
+        ) : <p className="agd-empty"><ClipboardList size={16} aria-hidden />A Turi vai montar o plano de ação com vocês. As ações aparecem aqui e na agenda.</p>}
+      </SectionPanel>
+    );
+  }
+
   return (
-    <div className="content-grid">
+    <div className="agd-editor">
       <SectionPanel title="Nova ação" eyebrow="Programação">
         <form className="admin-form" onSubmit={(event) => void add(event)}>
           <fieldset disabled={saving} className="ben-fieldset"><ItemForm draft={draft} onChange={setDraft} benefits={benefits} /></fieldset>
           <button className="primary-button" disabled={saving || !draft.title.trim()}><Plus size={16} />Adicionar ação</button>
         </form>
       </SectionPanel>
-      <SectionPanel title="Plano de ação" eyebrow={plan.status === 'submitted' ? 'Enviado' : 'Rascunho'}>
+      <SectionPanel title="Plano de ação da empresa" eyebrow={`${active.length} ativa(s)`}>
         {plan.items.length ? (
-          <div className="agd-plan-list">
+          <div className="agd-plan-list agd-plan-list--scroll">
             {plan.items.map((item) => (
               <article key={item.id} className={`agd-plan-item${item.status === 'cancelled' ? ' is-cancelled' : ''}`}>
                 <span className={`agd-dot agd-dot--${item.item_type}`} aria-hidden />
@@ -141,10 +168,7 @@ export function ActionPlanEditor({ token, projectId, companyId }: { token: strin
               </article>
             ))}
           </div>
-        ) : <EmptyState icon={ClipboardList} title="Plano vazio" description="Adicione a primeira ação. Ações com data ou recorrência aparecem na agenda da empresa." />}
-        {plan.items.length && plan.status !== 'submitted' ? (
-          <button type="button" className="primary-button" style={{ marginTop: '0.8rem' }} disabled={saving} onClick={() => void run(() => submitPlan(token, projectId), 'Plano enviado.')}><Send size={16} />Enviar plano</button>
-        ) : plan.status === 'submitted' ? <p className="ben-hint" style={{ marginTop: '0.6rem' }}><StatusPill tone="success">Enviado</StatusPill></p> : null}
+        ) : <p className="agd-empty"><ClipboardList size={16} aria-hidden />Nenhuma ação ainda. Crie a primeira ao lado; as datas aparecem na agenda da empresa.</p>}
       </SectionPanel>
       {editing ? (
         <Drawer open onClose={saving ? () => undefined : () => setEditing(null)} title="Editar ação" description="Mudar a recorrência ou as datas refaz só as datas futuras ainda não feitas." size="md"

@@ -1,29 +1,49 @@
-import { CalendarDays } from 'lucide-react';
+import { useState } from 'react';
 
-import { JORNADAS_PRODUCT_ID, useMyProducts } from '../api/workspace-access';
+import { useMyPermissions } from '../api/workspace-access';
 import { useAuth } from '../auth/auth-context';
 import { AppShell } from '../components/app-shell';
 import { companyNavigation } from '../components/company-navigation';
-import { EmptyState } from '../components/empty-state';
-import { managerNavigation } from '../components/role-navigation';
+import { employeeNavigation, managerNavigation } from '../components/role-navigation';
 import { LoadingState, NoPermissionState } from '../components/ui';
 import { ActionPlanAgenda } from './action-plan-agenda';
+import { ActionPlanEditor } from './action-plan-editor';
+import './benefits-agenda.css';
 
-/** Agenda do plano de acao para a conta da empresa e para gestores (do proprio projeto). */
+type Tab = 'agenda' | 'actions';
+
+/**
+ * Plano de acao da empresa (qualquer empresa, com ou sem produto). A Turi monta e reprograma as acoes;
+ * aqui a empresa acompanha a agenda e marca o que foi feito. Gestores e colaboradores entram com a
+ * permissao plano_acao.view (e plano_acao.update para marcar como feito).
+ */
 export function AgendaPage() {
   const { token, user } = useAuth();
   const companyId = user?.company_id ?? '';
-  const products = useMyProducts(token);
-  const navigation = user?.role === 'company' ? companyNavigation : managerNavigation;
+  const permissions = useMyPermissions(token, companyId);
+  const [tab, setTab] = useState<Tab>('agenda');
+  const navigation = user?.role === 'company' ? companyNavigation : user?.role === 'manager' ? managerNavigation : employeeNavigation;
 
   let content;
   if (!token || !companyId) content = <NoPermissionState message="Esta conta não está vinculada a uma empresa." />;
-  else if (products === null) content = <LoadingState />;
-  else if (!products.has(JORNADAS_PRODUCT_ID)) content = <EmptyState icon={CalendarDays} title="Plano de ação não contratado" description="A agenda do plano de ação faz parte da Plataforma de Jornadas, que esta empresa ainda não contratou." />;
-  else content = <ActionPlanAgenda token={token} companyId={companyId} />;
+  else if (permissions === null) content = <LoadingState />;
+  else if (!permissions.has('plano_acao.view')) content = <NoPermissionState message="Você não tem acesso ao plano de ação da empresa. Peça a permissão a quem gerencia os acessos." />;
+  else content = (
+    <>
+      <div className="agd-toolbar">
+        <div className="agd-tabs" role="tablist" aria-label="Plano de ação">
+          <button type="button" role="tab" aria-selected={tab === 'agenda'} className={tab === 'agenda' ? 'active' : ''} onClick={() => setTab('agenda')}>Agenda</button>
+          <button type="button" role="tab" aria-selected={tab === 'actions'} className={tab === 'actions' ? 'active' : ''} onClick={() => setTab('actions')}>Ações do plano</button>
+        </div>
+      </div>
+      {tab === 'agenda'
+        ? <ActionPlanAgenda token={token} companyId={companyId} canMark={permissions.has('plano_acao.update')} />
+        : <ActionPlanEditor token={token} companyId={companyId} readOnly />}
+    </>
+  );
 
   return (
-    <AppShell eyebrow="Plano de ação" title="Agenda" description="As ações do plano de ação da empresa, dia a dia. Marque cada uma como feita quando acontecer." navigation={navigation}>
+    <AppShell eyebrow="Plano de ação" title="Plano de ação" description="As ações combinadas com a Turi, dia a dia." navigation={navigation}>
       {content}
     </AppShell>
   );

@@ -16,6 +16,8 @@ export type NavigationItem = {
   platformOnly?: boolean;
   /** Produto que a empresa precisa ter para o item aparecer (ex.: product-jornadas). */
   product?: string;
+  /** Permissao que o usuario precisa ter na empresa para o item aparecer (ex.: plano_acao.view). */
+  permission?: string;
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -67,7 +69,8 @@ export function AppShell({
     : [];
   const visibleNavigation = [...navigation, ...workspaceItem, ...integrityItem]
     .filter((item) => !item.platformOnly || user?.platform_admin)
-    .filter((item) => !item.product || !products || products.has(item.product));
+    .filter((item) => !item.product || !products || products.has(item.product))
+    .filter((item) => !item.permission || Boolean(permissions?.has(item.permission)));
   const showAdminWorkspaceSwitcher = user?.role === 'admin';
   const isPlatformWorkspace = location.pathname.startsWith('/platform-admin');
   const isFagulhaWorkspace = location.pathname.startsWith('/fagulha-admin');

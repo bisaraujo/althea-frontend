@@ -10,12 +10,13 @@ export const managerNavigation: NavigationItem[] = [
   { to: '/manager/company-journey', label: 'Jornada da empresa', icon: FileUp, product: JORNADAS },
   { to: '/manager/schedule', label: 'Cronograma', icon: CalendarClock, product: JORNADAS },
   { to: '/manager/meetings', label: 'Reuniões', icon: ClipboardCheck, product: JORNADAS },
-  { to: '/agenda', label: 'Agenda do plano de ação', icon: CalendarDays, product: JORNADAS },
+  { to: '/agenda', label: 'Plano de ação', icon: CalendarDays, permission: 'plano_acao.view' },
   { to: '/benefits', label: 'Benefícios', icon: Gift },
 ];
 
 export const employeeNavigation: NavigationItem[] = [
   { to: '/employee', label: 'Visão geral', icon: House },
   { to: '/employee/journey', label: 'Minha jornada', icon: RouteIcon, product: JORNADAS },
+  { to: '/agenda', label: 'Plano de ação', icon: CalendarDays, permission: 'plano_acao.view' },
   { to: '/benefits', label: 'Meus benefícios', icon: Gift },
 ];

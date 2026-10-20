@@ -1,10 +1,12 @@
-import { Building2, Flame, LogOut, Network, Route as RouteIcon, ShieldAlert } from 'lucide-react';
+import { Building2, Flame, KeyRound, LogOut, Network, Route as RouteIcon, ShieldAlert } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 
 import { hasWorkspaceAccess, INTEGRITY_PRODUCT_ID, useMyPermissions, useMyProducts } from '../api/workspace-access';
 import { useAuth } from '../auth/auth-context';
 import { BrandLockup } from './brand';
+import { ChangePasswordModal } from './change-password-modal';
 
 export type NavigationItem = {
   label: string;
@@ -55,6 +57,7 @@ export function AppShell({
 }: AppShellProps) {
   const { user, token, signOut } = useAuth();
   const location = useLocation();
+  const [passwordOpen, setPasswordOpen] = useState(false);
   // Gestores e colaboradores so veem "Gestao organizacional" quando receberam alguma permissao dela por perfil.
   const isTeamMember = user?.role === 'manager' || user?.role === 'employee';
   const isCompanySide = isTeamMember || user?.role === 'company';
@@ -109,20 +112,39 @@ export function AppShell({
           })}
         </nav>
 
-        <button type="button" className="shell__logout" onClick={signOut}>
-          <LogOut size={18} />
-          <span>Sair</span>
-        </button>
+        <div className="shell__account">
+          <button type="button" className="shell__account-link" onClick={() => setPasswordOpen(true)}>
+            <KeyRound size={16} />
+            <span>Trocar senha</span>
+          </button>
+          <button type="button" className="shell__logout" onClick={signOut}>
+            <LogOut size={18} />
+            <span>Sair</span>
+          </button>
+        </div>
       </aside>
 
       <main className="shell__main">
         <div className="shell__mobile-brand">
           <BrandLockup compact />
-          <button type="button" className="shell__logout shell__logout--mobile" onClick={signOut}>
-            <LogOut size={16} />
-            <span>Sair</span>
-          </button>
+          <span className="shell__mobile-actions">
+            <button type="button" className="shell__logout shell__logout--mobile" onClick={() => setPasswordOpen(true)} aria-label="Trocar senha" title="Trocar senha">
+              <KeyRound size={16} />
+            </button>
+            <button type="button" className="shell__logout shell__logout--mobile" onClick={signOut}>
+              <LogOut size={16} />
+              <span>Sair</span>
+            </button>
+          </span>
         </div>
+
+        {user?.must_change_password ? (
+          <div className="shell__password-notice" role="status">
+            <KeyRound size={18} aria-hidden />
+            <span><strong>Você está usando a senha provisória que recebeu por e-mail.</strong> Crie a sua própria senha para manter o acesso seguro.</span>
+            <button type="button" className="primary-button" onClick={() => setPasswordOpen(true)}>Criar minha senha</button>
+          </div>
+        ) : null}
 
         {showAdminWorkspaceSwitcher ? (
           <nav className="admin-workspace-switcher" aria-label="Ambiente administrativo">
@@ -191,6 +213,7 @@ export function AppShell({
 
         <section className="shell__content">{children}</section>
       </main>
+      <ChangePasswordModal open={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </div>
   );
 }

@@ -9,6 +9,8 @@ export type AuthenticatedUser = {
   project_id: string | null;
   platform_admin: boolean;
   admin_product_ids: string[];
+  /** Verdadeiro enquanto a pessoa usa a senha provisoria recebida por e-mail. */
+  must_change_password?: boolean;
 };
 
 export type LoginResponse = {

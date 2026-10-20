@@ -9,6 +9,8 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   signIn: (token: string, user: AuthenticatedUser) => void;
   signOut: () => void;
+  /** Atualiza dados do usuario logado (ex.: depois de trocar a senha provisoria). */
+  updateUser: (patch: Partial<AuthenticatedUser>) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -40,6 +42,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
       clearSession();
       setToken(null);
       setUser(null);
+    },
+    updateUser(patch) {
+      if (!token || !user) return;
+      const next = { ...user, ...patch };
+      saveSession(token, next);
+      setUser(next);
     },
   };
 

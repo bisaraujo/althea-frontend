@@ -101,8 +101,11 @@ export function MeetingsPage({ mode }: { mode: MeetingsMode }) {
         ];
         const [meetingData, projectData, companyData] = await Promise.all(requests);
         setMeetings(meetingData.meetings);
-        if (projectData) setProjects(projectData.projects);
-        if (companyData) setCompanies(companyData);
+        // No admin, reunioes de Jornadas so para empresas que contrataram o produto.
+        const jornadasCompanies = companyData?.filter((company) => company.has_jornadas !== false) ?? null;
+        const jornadasCompanyIds = new Set((jornadasCompanies ?? []).map((company) => company.id));
+        if (projectData) setProjects(projectData.projects.filter((project) => jornadasCompanyIds.has(project.company_id)));
+        if (jornadasCompanies) setCompanies(jornadasCompanies);
       } catch (err) {
         setError(parseError(err, 'Não foi possível carregar as reuniões.'));
       } finally {

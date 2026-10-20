@@ -102,7 +102,10 @@ export function ProjectSchedulePage({ mode }: { mode: ScheduleMode }) {
           getProjects(token),
           mode === 'admin' ? getCompanies(token) : Promise.resolve([]),
         ]);
-        const sortedProjects = [...projectData.projects].sort((a, b) =>
+        // No admin, so entram projetos de empresas que contrataram Jornadas.
+        const jornadasCompanyIds = new Set(companyData.filter((company) => company.has_jornadas !== false).map((company) => company.id));
+        const visibleProjects = mode === 'admin' ? projectData.projects.filter((project) => jornadasCompanyIds.has(project.company_id)) : projectData.projects;
+        const sortedProjects = [...visibleProjects].sort((a, b) =>
           projectLabel(a, companyData).localeCompare(projectLabel(b, companyData)),
         );
 

@@ -59,7 +59,7 @@ export function useMyProducts(token: string | null) {
     let active = true;
     let pending = productCache.get(token);
     if (!pending) {
-      // Empresas antigas com conteudo de Jornadas sem o produto cadastrado continuam com Jornadas.
+      // has_jornadas vem do backend: so e verdadeiro com o produto Jornadas contratado.
       pending = getMyCompanyProducts(token).then((data) => new Set([...data.product_ids, ...(data.has_jornadas ? [JORNADAS_PRODUCT_ID] : [])]));
       pending.catch(() => productCache.delete(token));
       productCache.set(token, pending);

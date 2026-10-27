@@ -18,6 +18,7 @@ import { getEmployeeForms, getEmployeeJourney, getEmployeePresentations } from '
 import type { FormSummary, Journey, JourneyItem, Presentation } from '../api/types';
 import { useAuth } from '../auth/auth-context';
 import { AppShell } from '../components/app-shell';
+import { TeamHomeWithoutJornadas } from './team-home-without-jornadas';
 import { EmptyState } from '../components/empty-state';
 import { useJornadasProduct } from '../api/company';
 import { SectionPanel } from '../components/section-panel';
@@ -147,15 +148,10 @@ export function EmployeeDashboard() {
     <AppShell
       eyebrow="Plataforma turi"
       title={`Olá, ${firstName}`}
-      description="Acompanhe sua jornada, retome de onde parou e responda às pesquisas no seu ritmo."
+      description={hasJornadas === false ? "Seus benefícios e o que a empresa liberou para você." : "Acompanhe sua jornada, retome de onde parou e responda às pesquisas no seu ritmo."}
       navigation={employeeNavigation}
     >
-      {hasJornadas === false ? (
-        <EmptyState
-          title="Nenhum produto liberado para você ainda"
-          description="Seu login está ativo, mas sua empresa ainda não contratou a Plataforma de Jornadas. O que estiver liberado para você (por exemplo, gestão organizacional ou Canal de Denúncias) aparece no menu."
-        />
-      ) : null}
+      {hasJornadas === false ? <TeamHomeWithoutJornadas /> : null}
       {hasJornadas !== false && error ? <div className="form-error">{error}</div> : null}
 
       {hasJornadas === false ? null : isLoading ? (

@@ -18,6 +18,7 @@ import { getManagerCompanyJourney, getManagerEmployees } from '../api/services';
 import type { EmployeeRecord, Journey, JourneyItem } from '../api/types';
 import { useAuth } from '../auth/auth-context';
 import { AppShell } from '../components/app-shell';
+import { TeamHomeWithoutJornadas } from './team-home-without-jornadas';
 import { EmptyState } from '../components/empty-state';
 import { useJornadasProduct } from '../api/company';
 import { SectionPanel } from '../components/section-panel';
@@ -173,15 +174,10 @@ export function ManagerDashboard() {
     <AppShell
       eyebrow="Gestor"
       title={`Olá, ${firstName}`}
-      description="Acompanhe o projeto, veja as próximas entregas e avance pela jornada documental."
+      description={hasJornadas === false ? "Seus benefícios e o que a empresa liberou para você." : "Acompanhe o projeto, veja as próximas entregas e avance pela jornada documental."}
       navigation={managerNavigation}
     >
-      {hasJornadas === false ? (
-        <EmptyState
-          title="Nenhum produto liberado para você ainda"
-          description="Seu login está ativo, mas sua empresa ainda não contratou a Plataforma de Jornadas. O que estiver liberado para você (por exemplo, gestão organizacional ou Canal de Denúncias) aparece no menu."
-        />
-      ) : null}
+      {hasJornadas === false ? <TeamHomeWithoutJornadas /> : null}
       {hasJornadas !== false && error ? <div className="form-error">{error}</div> : null}
 
       {hasJornadas === false ? null : isLoading ? (

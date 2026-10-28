@@ -19,7 +19,7 @@ env:
   AWS_REGION: sa-east-1
   AMPLIFY_APP_ID: d36h98ojtuciv7
   AMPLIFY_BRANCH: main
-  VITE_API_URL: https://dz31ieczcnppm.cloudfront.net
+  VITE_API_URL: https://app-api.turi.work
 
 jobs:
   deploy:

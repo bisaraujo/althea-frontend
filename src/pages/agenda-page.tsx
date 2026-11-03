@@ -37,8 +37,8 @@ export function AgendaPage() {
         </div>
       </div>
       {tab === 'agenda'
-        ? <ActionPlanAgenda token={token} companyId={companyId} canMark={permissions.has('plano_acao.update')} />
-        : <ActionPlanEditor token={token} companyId={companyId} readOnly />}
+        ? <ActionPlanAgenda token={token} companyId={companyId} canMark={permissions.has('plano_acao.update')} currentUserId={user?.id} />
+        : <ActionPlanEditor token={token} companyId={companyId} readOnly canUpdate={permissions.has('plano_acao.update')} currentUserId={user?.id} />}
     </>
   );
 

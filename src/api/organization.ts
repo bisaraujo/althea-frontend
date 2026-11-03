@@ -126,12 +126,12 @@ export function deleteDocument(token: string, documentId: string) {
 }
 
 /** Envio multipart com progresso real (XMLHttpRequest, pois fetch não expõe o upload). */
-function uploadWithProgress<T>(path: string, token: string, form: FormData, onProgress?: (percent: number) => void): Promise<T> {
+export function uploadWithProgress<T>(path: string, token: string, form: FormData, onProgress?: (percent: number) => void, timeoutMs = 120000): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API_URL}${path}`);
     xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    xhr.timeout = 120000;
+    xhr.timeout = timeoutMs;
     xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100)); };
     xhr.onload = () => {
       let data: unknown = null;

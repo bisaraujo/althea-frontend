@@ -1,9 +1,10 @@
-import { ClipboardList, Pencil, Plus, X } from 'lucide-react';
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { ChevronRight, ClipboardList, Download, FileSpreadsheet, Paperclip, Pencil, Plus, X } from 'lucide-react';
+import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from 'react';
 
 import {
-  ACTION_STATUS_LABEL, ACTION_TYPE_LABEL, type ActionItemType, type ActionStatus, createPlanItem, getPlan, type Plan, type PlanItem,
-  type PlanItemPayload, RECURRENCE_LABEL, type RecurrenceType, updatePlanItem,
+  ACTION_KIND_LABEL, ACTION_STATUS_LABEL, ACTION_TYPE_LABEL, type ActionItemType, type ActionKind, type ActionStatus, createPlanItem, exportPlanSheet,
+  getPlan, type Plan, type PlanItem, type PlanItemPayload, type Priority, PRIORITY_LABEL, RECURRENCE_LABEL, type RecurrenceType, SHEET_FIELD_LABEL,
+  type SheetFields, updatePlanItem,
 } from '../api/action-plan';
 import { type Benefit, listBenefits } from '../api/benefits';
 import { ApiError } from '../api/client';
@@ -11,9 +12,14 @@ import { SectionPanel } from '../components/section-panel';
 import { StatusPill } from '../components/status-pill';
 import { useToast } from '../components/toast';
 import { Drawer, ErrorState, LoadingState } from '../components/ui';
+import { ActionPlanImport } from './action-plan-import';
+import { ActionPlanItemDetail, priorityTone, statusTone } from './action-plan-item-detail';
 import './benefits-agenda.css';
 
-const emptyDraft: PlanItemPayload = { title: '', description: null, owner_name: null, item_type: 'acao', recurrence_type: 'once', start_date: null, custom_dates: [], benefit_id: null };
+const emptySheet: SheetFields = { risk_factor: null, exposure_group: null, objective: null, priority: null, indicator: null, initial_value: null, action_kind: null, monitoring_owner: null, resources: null };
+const emptyDraft: PlanItemPayload = { title: '', description: null, owner_name: null, item_type: 'acao', recurrence_type: 'once', start_date: null, custom_dates: [], benefit_id: null, due_at: null, ...emptySheet };
+const SHEET_TEXT_FIELDS: (keyof SheetFields)[] = ['risk_factor', 'exposure_group', 'objective', 'indicator', 'initial_value', 'monitoring_owner', 'resources'];
+const LONG_FIELDS = new Set<keyof SheetFields>(['objective', 'indicator', 'resources']);
 
 function errorText(reason: unknown, fallback: string) {
   return reason instanceof ApiError ? reason.message : fallback;
@@ -70,7 +76,51 @@ function ItemForm({ draft, onChange, benefits }: { draft: PlanItemPayload; onCha
       ) : null}
       {draft.recurrence_type !== 'once' && draft.recurrence_type !== 'custom_dates' ? <p className="ben-hint">As datas são geradas para os próximos 12 meses e aparecem na agenda da empresa.</p> : null}
       <label><span>Descrição <em className="ben-optional">(opcional)</em></span><textarea rows={2} value={draft.description ?? ''} onChange={(event) => set('description', event.target.value || null)} maxLength={2000} /></label>
+      <details className="apd-sheet-fields" open={SHEET_TEXT_FIELDS.some((key) => draft[key]) || Boolean(draft.priority || draft.action_kind || draft.due_at)}>
+        <summary>Detalhes da planilha NR-01 <em className="ben-optional">(fator de risco, objetivo, indicador…)</em></summary>
+        <div className="field-grid">
+          <label><span>{SHEET_FIELD_LABEL.priority}</span>
+            <select value={draft.priority ?? ''} onChange={(event) => set('priority', (event.target.value || null) as Priority | null)}>
+              <option value="">—</option>
+              {(Object.keys(PRIORITY_LABEL) as Priority[]).map((key) => <option key={key} value={key}>{PRIORITY_LABEL[key]}</option>)}
+            </select>
+          </label>
+          <label><span>{SHEET_FIELD_LABEL.action_kind}</span>
+            <select value={draft.action_kind ?? ''} onChange={(event) => set('action_kind', (event.target.value || null) as ActionKind | null)}>
+              <option value="">—</option>
+              {(Object.keys(ACTION_KIND_LABEL) as ActionKind[]).map((key) => <option key={key} value={key}>{ACTION_KIND_LABEL[key]}</option>)}
+            </select>
+          </label>
+        </div>
+        <label><span>Data limite / prazo de conclusão</span><input type="date" value={draft.due_at ?? ''} onChange={(event) => set('due_at', event.target.value || null)} /></label>
+        {SHEET_TEXT_FIELDS.map((key) => (
+          <label key={key}><span>{SHEET_FIELD_LABEL[key]}</span>
+            {LONG_FIELDS.has(key)
+              ? <textarea rows={2} value={draft[key] ?? ''} onChange={(event) => set(key, event.target.value || null)} maxLength={4000} />
+              : <input value={draft[key] ?? ''} onChange={(event) => set(key, event.target.value || null)} maxLength={key === 'risk_factor' ? 2000 : 255} />}
+          </label>
+        ))}
+      </details>
     </>
+  );
+}
+
+function PlanRow({ item, onOpen, side }: { item: PlanItem; onOpen: () => void; side: ReactNode }) {
+  return (
+    <article className={`agd-plan-item${item.status === 'cancelled' ? ' is-cancelled' : ''}`}>
+      <span className={`agd-dot agd-dot--${item.item_type}`} aria-hidden />
+      <button type="button" className="agd-plan-item__copy agd-plan-item__open" onClick={onOpen} title="Abrir a ação">
+        <strong>{item.title}</strong>
+        <span>{[ACTION_TYPE_LABEL[item.item_type], RECURRENCE_LABEL[item.recurrence_type], item.risk_factor, item.owner_name, item.benefit_name].filter(Boolean).join(' · ')}</span>
+        <span className="agd-plan-item__tags">
+          {item.priority ? <StatusPill tone={priorityTone(item.priority)}>{PRIORITY_LABEL[item.priority]}</StatusPill> : null}
+          {item.due_at ? <span className="ben-hint">Prazo {shortDate(item.due_at)}</span> : null}
+          <span className="ben-hint">{item.occurrence_count ? `${item.occurrences_done} de ${item.occurrence_count} data(s) feita(s)${item.next_occurrence ? ` · próxima: ${shortDate(item.next_occurrence)}` : ''}` : 'Sem datas na agenda'}</span>
+          {item.evidences.length ? <span className="ben-hint"><Paperclip size={12} aria-hidden /> {item.evidences.length}</span> : null}
+        </span>
+      </button>
+      <div className="agd-plan-item__side">{side}<ChevronRight size={16} className="agd-plan-item__chevron" aria-hidden /></div>
+    </article>
   );
 }
 
@@ -78,7 +128,13 @@ function ItemForm({ draft, onChange, benefits }: { draft: PlanItemPayload; onCha
  * Plano de acao da empresa: acoes com tipo, recorrencia e datas.
  * A Turi (admin) cria e reprograma; a empresa ve a mesma lista em modo leitura (readOnly).
  */
-export function ActionPlanEditor({ token, companyId, readOnly = false }: { token: string; companyId: string; readOnly?: boolean }) {
+type EditorProps = {
+  token: string; companyId: string;
+  /** Visao da empresa: so acompanha (preenche o acompanhamento e evidencias se tiver plano_acao.update). */
+  readOnly?: boolean; canUpdate?: boolean; currentUserId?: string | null;
+};
+
+export function ActionPlanEditor({ token, companyId, readOnly = false, canUpdate = false, currentUserId = null }: EditorProps) {
   const toast = useToast();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [failed, setFailed] = useState(false);
@@ -86,6 +142,8 @@ export function ActionPlanEditor({ token, companyId, readOnly = false }: { token
   const [draft, setDraft] = useState<PlanItemPayload>(emptyDraft);
   const [editing, setEditing] = useState<{ item: PlanItem; draft: PlanItemPayload } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const load = useCallback(() => { setFailed(false); getPlan(token, companyId).then(setPlan).catch(() => setFailed(true)); }, [token, companyId]);
   useEffect(load, [load]);
@@ -109,8 +167,14 @@ export function ActionPlanEditor({ token, companyId, readOnly = false }: { token
     if (await run(() => updatePlanItem(token, editing.item.id, { ...editing.draft, title: editing.draft.title.trim() }), 'Ação atualizada. As datas futuras foram reprogramadas.')) setEditing(null);
   }
   function startEdit(item: PlanItem) {
-    setEditing({ item, draft: { title: item.title, description: item.description, owner_name: item.owner_name, item_type: item.item_type, recurrence_type: item.recurrence_type, start_date: item.start_date, custom_dates: item.custom_dates, benefit_id: item.benefit_id } });
+    const sheet = Object.fromEntries((Object.keys(emptySheet) as (keyof SheetFields)[]).map((key) => [key, item[key]])) as SheetFields;
+    setEditing({ item, draft: { title: item.title, description: item.description, owner_name: item.owner_name, item_type: item.item_type, recurrence_type: item.recurrence_type, start_date: item.start_date, custom_dates: item.custom_dates, benefit_id: item.benefit_id, due_at: item.due_at, ...sheet } });
   }
+  function exportSheet() {
+    exportPlanSheet(token, companyId).catch((reason) => toast.error(errorText(reason, 'Não foi possível exportar.')));
+  }
+  const exportButton = <button type="button" className="secondary-button" onClick={exportSheet} disabled={!plan?.items.length}><Download size={15} />Exportar planilha</button>;
+  const detail = <ActionPlanItemDetail token={token} itemId={openId} onClose={() => setOpenId(null)} canUpdate={readOnly ? canUpdate : true} isAdmin={!readOnly} currentUserId={currentUserId} onChanged={load} />;
 
   if (failed) return <ErrorState message="Não foi possível carregar o plano de ação." onRetry={load} />;
   if (!plan) return <LoadingState />;
@@ -119,23 +183,18 @@ export function ActionPlanEditor({ token, companyId, readOnly = false }: { token
 
   if (readOnly) {
     return (
-      <SectionPanel title="Ações do plano" eyebrow={`${active.length} ativa(s)`}>
+      <SectionPanel title="Ações do plano" eyebrow={`${active.length} ativa(s)`} action={exportButton}>
         {plan.items.length ? (
-          <div className="agd-plan-list agd-plan-list--scroll">
-            {plan.items.map((item) => (
-              <article key={item.id} className={`agd-plan-item${item.status === 'cancelled' ? ' is-cancelled' : ''}`}>
-                <span className={`agd-dot agd-dot--${item.item_type}`} aria-hidden />
-                <div className="agd-plan-item__copy">
-                  <strong>{item.title}</strong>
-                  <span>{ACTION_TYPE_LABEL[item.item_type]} · {RECURRENCE_LABEL[item.recurrence_type]}{item.owner_name ? ` · ${item.owner_name}` : ''}{item.benefit_name ? ` · ${item.benefit_name}` : ''}</span>
-                  {item.description ? <span className="agd-plan-item__desc">{item.description}</span> : null}
-                  <span className="ben-hint">{item.occurrence_count ? `${item.occurrences_done} de ${item.occurrence_count} feita(s) · próxima: ${shortDate(item.next_occurrence)}` : 'Sem datas na agenda'}</span>
-                </div>
-                <div className="agd-plan-item__side"><StatusPill tone={item.status === 'completed' ? 'success' : item.status === 'cancelled' ? 'muted' : 'default'}>{ACTION_STATUS_LABEL[item.status]}</StatusPill></div>
-              </article>
-            ))}
-          </div>
+          <>
+            <p className="ben-hint agd-plan-hint">Toque numa ação para ver o planejamento{canUpdate ? ', atualizar o andamento e enviar evidências (memorial, fotos, vídeos)' : ' e as evidências'}.</p>
+            <div className="agd-plan-list agd-plan-list--scroll">
+              {plan.items.map((item) => (
+                <PlanRow key={item.id} item={item} onOpen={() => setOpenId(item.id)} side={<StatusPill tone={statusTone(item.status)}>{ACTION_STATUS_LABEL[item.status]}</StatusPill>} />
+              ))}
+            </div>
+          </>
         ) : <p className="agd-empty"><ClipboardList size={16} aria-hidden />A Turi vai montar o plano de ação com vocês. As ações aparecem aqui e na agenda.</p>}
+        {detail}
       </SectionPanel>
     );
   }
@@ -148,28 +207,27 @@ export function ActionPlanEditor({ token, companyId, readOnly = false }: { token
           <button className="primary-button" disabled={saving || !draft.title.trim()}><Plus size={16} />Adicionar ação</button>
         </form>
       </SectionPanel>
-      <SectionPanel title="Plano de ação da empresa" eyebrow={`${active.length} ativa(s)`}>
+      <SectionPanel title="Plano de ação da empresa" eyebrow={`${active.length} ativa(s)`} action={
+        <span className="agd-plan-actions">
+          <button type="button" className="secondary-button" onClick={() => setImporting(true)}><FileSpreadsheet size={15} />Importar planilha</button>
+          {exportButton}
+        </span>
+      }>
         {plan.items.length ? (
           <div className="agd-plan-list agd-plan-list--scroll">
             {plan.items.map((item) => (
-              <article key={item.id} className={`agd-plan-item${item.status === 'cancelled' ? ' is-cancelled' : ''}`}>
-                <span className={`agd-dot agd-dot--${item.item_type}`} aria-hidden />
-                <div className="agd-plan-item__copy">
-                  <strong>{item.title}</strong>
-                  <span>{ACTION_TYPE_LABEL[item.item_type]} · {RECURRENCE_LABEL[item.recurrence_type]}{item.owner_name ? ` · ${item.owner_name}` : ''}{item.benefit_name ? ` · ${item.benefit_name}` : ''}</span>
-                  <span className="ben-hint">{item.occurrence_count ? `${item.occurrences_done} de ${item.occurrence_count} feita(s) · próxima: ${shortDate(item.next_occurrence)}` : 'Sem datas na agenda'}</span>
-                </div>
-                <div className="agd-plan-item__side">
-                  <select className="action-status-select" aria-label={`Situação de ${item.title}`} value={item.status} disabled={saving} onChange={(event) => void run(() => updatePlanItem(token, item.id, { status: event.target.value as ActionStatus }), 'Situação atualizada.')}>
-                    {(Object.keys(ACTION_STATUS_LABEL) as ActionStatus[]).map((key) => <option key={key} value={key}>{ACTION_STATUS_LABEL[key]}</option>)}
-                  </select>
-                  <button type="button" className="org-icon-btn" aria-label={`Editar ${item.title}`} title="Editar" onClick={() => startEdit(item)}><Pencil size={14} /></button>
-                </div>
-              </article>
+              <PlanRow key={item.id} item={item} onOpen={() => setOpenId(item.id)} side={<>
+                <select className="action-status-select" aria-label={`Situação de ${item.title}`} value={item.status} disabled={saving} onChange={(event) => void run(() => updatePlanItem(token, item.id, { status: event.target.value as ActionStatus }), 'Situação atualizada.')}>
+                  {(Object.keys(ACTION_STATUS_LABEL) as ActionStatus[]).map((key) => <option key={key} value={key}>{ACTION_STATUS_LABEL[key]}</option>)}
+                </select>
+                <button type="button" className="org-icon-btn" aria-label={`Editar ${item.title}`} title="Editar" onClick={() => startEdit(item)}><Pencil size={14} /></button>
+              </>} />
             ))}
           </div>
-        ) : <p className="agd-empty"><ClipboardList size={16} aria-hidden />Nenhuma ação ainda. Crie a primeira ao lado; as datas aparecem na agenda da empresa.</p>}
+        ) : <p className="agd-empty"><ClipboardList size={16} aria-hidden />Nenhuma ação ainda. Crie a primeira ao lado ou importe a planilha do plano; as datas aparecem na agenda da empresa.</p>}
       </SectionPanel>
+      {detail}
+      <ActionPlanImport token={token} companyId={companyId} open={importing} onClose={() => setImporting(false)} onImported={load} />
       {editing ? (
         <Drawer open onClose={saving ? () => undefined : () => setEditing(null)} title="Editar ação" description="Mudar a recorrência ou as datas refaz só as datas futuras ainda não feitas." size="md"
           footer={<>

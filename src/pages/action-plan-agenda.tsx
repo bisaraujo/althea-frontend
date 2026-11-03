@@ -1,4 +1,4 @@
-import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, CircleAlert, Route as RouteIcon, RotateCcw } from 'lucide-react';
+import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Route as RouteIcon, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -10,6 +10,7 @@ import { EmptyState } from '../components/empty-state';
 import { SectionPanel } from '../components/section-panel';
 import { useToast } from '../components/toast';
 import { ErrorState, LoadingState, Modal, NoPermissionState, SegmentedFilter } from '../components/ui';
+import { ActionPlanItemDetail } from './action-plan-item-detail';
 import './benefits-agenda.css';
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -57,7 +58,9 @@ function EntryRow({ entry, onOpen }: { entry: AgendaEntry; onOpen: () => void })
  * Calendario do mes, atrasadas e proximos 30 dias, com filtro por origem e por tipo de acao.
  * So as acoes do plano podem ser marcadas como feitas; as entregas da jornada mudam quando sao entregues.
  */
-export function ActionPlanAgenda({ token, companyId, canMark = true }: { token: string; companyId: string; canMark?: boolean }) {
+export function ActionPlanAgenda({ token, companyId, canMark = true, isAdmin = false, currentUserId = null }: {
+  token: string; companyId: string; canMark?: boolean; isAdmin?: boolean; currentUserId?: string | null;
+}) {
   const toast = useToast();
   const today = iso(new Date());
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
@@ -69,6 +72,7 @@ export function ActionPlanAgenda({ token, companyId, canMark = true }: { token: 
   const [open, setOpen] = useState<AgendaEntry | null>(null);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const grid = useMemo(() => monthGrid(month), [month]);
   const load = useCallback(() => {
@@ -116,6 +120,12 @@ export function ActionPlanAgenda({ token, companyId, canMark = true }: { token: 
   const counts = (key: 'all' | ActionItemType) => (key === 'all' ? planEntries.length : planEntries.filter((entry) => entry.item_type === key).length);
   const sourceCount = (key: 'all' | AgendaSource) => (key === 'all' ? monthEntries.length : monthEntries.filter((entry) => entry.source === key).length);
   const isPlan = open?.source === 'plano';
+  // Abre a acao inteira (planejamento da planilha, acompanhamento e evidencias) a partir da data na agenda.
+  const openAction = (
+    <button type="button" className="secondary-button" onClick={() => { if (open) { setDetailId(open.item_id); setOpen(null); } }} disabled={saving}>
+      <ClipboardList size={15} />{canMark ? 'Acompanhar ação' : 'Ver ação'}
+    </button>
+  );
   const monthLabel = month.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
   return (
@@ -189,8 +199,9 @@ export function ActionPlanAgenda({ token, companyId, canMark = true }: { token: 
 
       <Modal open={Boolean(open)} onClose={saving ? () => undefined : () => setOpen(null)} title={open?.title ?? ''} description={open ? `${longDate(open.date)} · ${AGENDA_TYPE_LABEL[open.item_type]}${isPlan ? ` · ${RECURRENCE_LABEL[open.recurrence_type]}` : ''}` : undefined} size="sm"
         footer={open && isPlan && canMark ? (open.status === 'done'
-          ? <button type="button" className="secondary-button" onClick={() => void mark('scheduled')} disabled={saving}><RotateCcw size={15} />Reabrir</button>
-          : <button type="button" className="primary-button" onClick={() => void mark('done')} disabled={saving}><CheckCircle2 size={15} />Marcar como feita</button>) : undefined}>
+          ? <>{openAction}<button type="button" className="secondary-button" onClick={() => void mark('scheduled')} disabled={saving}><RotateCcw size={15} />Reabrir</button></>
+          : <>{openAction}<button type="button" className="primary-button" onClick={() => void mark('done')} disabled={saving}><CheckCircle2 size={15} />Marcar como feita</button></>)
+          : open && isPlan ? openAction : undefined}>
         {open ? (
           <div className="agd-detail">
             {open.overdue ? <p className="agd-alert"><CircleAlert size={15} aria-hidden />{isPlan ? 'Esta ação passou da data e ainda não foi marcada como feita.' : 'O prazo desta entrega passou e ela ainda não foi feita.'}</p> : null}
@@ -217,6 +228,7 @@ export function ActionPlanAgenda({ token, companyId, canMark = true }: { token: 
           </div>
         ) : null}
       </Modal>
+      <ActionPlanItemDetail token={token} itemId={detailId} onClose={() => setDetailId(null)} canUpdate={canMark} isAdmin={isAdmin} currentUserId={currentUserId} onChanged={load} />
     </div>
   );
 }

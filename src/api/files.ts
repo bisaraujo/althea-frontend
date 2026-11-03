@@ -30,6 +30,13 @@ async function failure(response: Response) {
   return new ApiError(message, response.status);
 }
 
+/** Busca um arquivo de um endpoint autenticado (para mostrar foto ou video na tela). */
+export async function fetchAuthenticatedBlob(token: string, path: string) {
+  const response = await fetchWithToken(token, path);
+  if (!response.ok) throw await failure(response);
+  return response.blob();
+}
+
 /** Baixa um arquivo de um endpoint autenticado e entrega ao navegador como download. */
 export async function downloadAuthenticated(token: string, path: string, fileName: string) {
   const response = await fetchWithToken(token, path);

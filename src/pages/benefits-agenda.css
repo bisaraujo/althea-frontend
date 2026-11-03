@@ -808,3 +808,329 @@
   min-width: 0;
   width: 100%;
 }
+
+/* --- Plano de acao: linha clicavel, campos da planilha e pop-up da acao ------- */
+
+.agd-plan-item__open {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agd-plan-item__open:hover strong,
+.agd-plan-item__open:focus-visible strong {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.agd-plan-item__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin-top: 0.2rem;
+}
+
+.agd-plan-item__tags .ben-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.agd-plan-item__chevron {
+  color: var(--text-soft);
+}
+
+.agd-plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.agd-plan-hint {
+  margin: 0 0 0.4rem;
+}
+
+.apd-sheet-fields {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+
+.apd-sheet-fields[open] {
+  padding-bottom: 0.9rem;
+}
+
+.apd-sheet-fields > summary {
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.apd-sheet-fields[open] > summary {
+  margin-bottom: 0.25rem;
+}
+
+.apd {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.apd-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.apd-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+}
+
+.apd-desc {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.apd-section {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.apd-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.apd-count {
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.apd-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem 1rem;
+  margin: 0;
+}
+
+.apd-facts div {
+  min-width: 0;
+}
+
+.apd-facts dt {
+  color: var(--text-soft);
+  font-size: 0.75rem;
+}
+
+.apd-facts dd {
+  margin: 0.1rem 0 0;
+  font-size: 0.88rem;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.apd-progress__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.apd-evidences {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.apd-evidence {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.apd-evidence__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.6rem;
+}
+
+.apd-evidence__kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.apd-evidence__actions {
+  display: inline-flex;
+  gap: 0.2rem;
+  margin-left: auto;
+}
+
+.apd-evidence__text {
+  margin: 0;
+  font-size: 0.88rem;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.apd-evidence__file {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.apd-media {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  object-fit: contain;
+}
+
+.apd-media--photo {
+  width: auto;
+  max-width: 100%;
+  max-height: 220px;
+}
+
+.apd-media--loading {
+  height: 120px;
+}
+
+.apd-play {
+  justify-self: start;
+}
+
+.apd-upload {
+  padding: 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+
+.apd-progressbar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-muted);
+}
+
+.apd-progressbar span {
+  display: block;
+  height: 100%;
+  background: var(--brand);
+  transition: width 0.2s ease;
+}
+
+/* Previa da importacao da planilha */
+.api-summary {
+  margin: 0 0 0.75rem;
+}
+
+.api-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.api-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.api-table th,
+.api-table td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.api-table th {
+  background: var(--surface-soft);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.api-table td .ben-hint {
+  display: block;
+}
+
+.api-table tr.is-skipped td {
+  color: var(--text-soft);
+  text-decoration: line-through;
+  text-decoration-color: rgba(0, 0, 0, 0.25);
+}
+
+.api-table tr.is-skipped td:last-child {
+  text-decoration: none;
+}
+
+.api-warnings {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #8a5a00;
+}
+
+.api-warnings li {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.api-warnings svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+@media (max-width: 760px) {
+  .apd-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.agd-plan-actions .secondary-button,
+.apd-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.agd-plan-actions .secondary-button {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.85rem;
+}

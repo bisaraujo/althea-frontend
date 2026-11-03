@@ -56,7 +56,7 @@ export function PlatformActionPlanPage() {
           </div>
           {token && companyId ? (tab === 'plan'
             ? <ActionPlanEditor key={companyId} token={token} companyId={companyId} />
-            : <ActionPlanAgenda key={companyId} token={token} companyId={companyId} />) : null}
+            : <ActionPlanAgenda key={companyId} token={token} companyId={companyId} isAdmin />) : null}
         </>
       ) : null}
     </AppShell>

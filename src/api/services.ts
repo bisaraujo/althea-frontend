@@ -258,6 +258,10 @@ export async function createAdministrator(token: string, payload: AdminCreatePay
   });
 }
 
+export async function deleteAdministrator(token: string, userId: string) {
+  return request<{ message: string }>(`/platform-admin/administrators/${userId}`, { token, method: 'DELETE' });
+}
+
 export async function updateAdministratorAccess(
   token: string,
   userId: string,

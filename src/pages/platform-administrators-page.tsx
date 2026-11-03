@@ -1,9 +1,10 @@
-import { Save, ShieldCheck, UserCog, UserPlus } from 'lucide-react';
+import { Save, ShieldCheck, Trash2, UserCog, UserPlus } from 'lucide-react';
 import { type FormEvent, useEffect, useState } from 'react';
 
 import { ApiError } from '../api/client';
 import {
   createAdministrator,
+  deleteAdministrator,
   getAdministrators,
   getProducts,
   updateAdministratorAccess,
@@ -90,6 +91,19 @@ export function PlatformAdministratorsPage() {
     finally { setSaving(false); }
   }
 
+  async function remove(admin: UserRecord) {
+    if (!token || saving) return;
+    if (!window.confirm(`Remover o acesso de administrador de ${admin.name} (${admin.email})? A pessoa deixa de entrar na plataforma.`)) return;
+    setSaving(true);
+    try {
+      await deleteAdministrator(token, admin.id);
+      toast.success('Administrador removido.');
+      if (editingId === admin.id) clear();
+      await reload();
+    } catch (reason) { toast.error(message(reason)); }
+    finally { setSaving(false); }
+  }
+
   return (
     <AppShell eyebrow="Administração geral" title="Responsabilidades administrativas" description="Separe quem governa a plataforma de quem opera cada produto." navigation={platformAdminNavigation}>
       {error ? <div className="form-error">{error}</div> : null}
@@ -127,6 +141,9 @@ export function PlatformAdministratorsPage() {
               <div className="admin-action-link-group">
                 <StatusPill tone={admin.platform_admin ? 'success' : 'muted'}>{admin.platform_admin ? 'Admin Geral' : 'Admin de Produto'}</StatusPill>
                 <button type="button" className="secondary-button" onClick={() => edit(admin)}><ShieldCheck size={15} />Responsabilidades</button>
+                {admin.id !== user?.id ? (
+                  <button type="button" className="secondary-button" disabled={saving} onClick={() => void remove(admin)} aria-label={`Remover ${admin.name}`}><Trash2 size={15} />Remover</button>
+                ) : null}
               </div>
             </article>
           ))}

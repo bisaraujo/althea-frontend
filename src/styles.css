@@ -3615,7 +3615,7 @@ select:disabled {
   display: block;
   font-size: 1.05rem;
   font-weight: 800;
-  text-transform: capitalize;
+  text-transform: none;
 }
 
 .project-calendar__top small {
@@ -3825,7 +3825,7 @@ select:disabled {
   color: var(--text-faint);
   font-size: 0.76rem;
   font-weight: 800;
-  text-transform: capitalize;
+  text-transform: none;
 }
 
 .project-calendar__day-panel-head strong {
@@ -5817,7 +5817,7 @@ select:focus {
   font-size: 1.3rem;
   font-weight: 800;
   color: var(--text);
-  text-transform: capitalize;
+  text-transform: none;
   line-height: 1.15;
 }
 
@@ -5990,7 +5990,7 @@ select:focus {
 
 .project-calendar__day-panel-head span {
   color: var(--text-faint);
-  text-transform: capitalize;
+  text-transform: none;
 }
 
 .project-calendar__day-panel-head strong {
@@ -7651,4 +7651,67 @@ select:disabled {
   .section-panel {
     padding: 0.95rem;
   }
+}
+
+/* Campo de arquivo: o botao nativo ("Escolher arquivo") com o visual da plataforma, em todos os formularios. */
+input[type='file'] {
+  max-width: 100%;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+input[type='file']::file-selector-button {
+  margin-right: 0.7rem;
+  padding: 0.42rem 0.8rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--purple);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+input[type='file']:hover::file-selector-button {
+  border-color: rgba(255, 122, 0, 0.45);
+  background: var(--brand-soft);
+}
+
+input[type='file']:disabled,
+input[type='file']:disabled::file-selector-button {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* No celular o cabecalho do painel empilha titulo e acao; quando a acao e so o "?" de ajuda,
+   ele fica na mesma linha do titulo em vez de cair sozinho embaixo. */
+.panel__header:has(> div:last-child > .info-tooltip:only-child) {
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+/* E-mail em tabela nao quebra no hifen ("colab-" / "123@..."): corta com reticencias e mostra inteiro no title. */
+.cell-email {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+/* Etiquetas curtas ("Sem colaborador", "Contratado") nao quebram em duas linhas. */
+.status-pill {
+  white-space: nowrap;
+}
+
+/* Botoes lado a lado no cabecalho do cliente de Jornadas ("Fluxo e plano" + "Adicionar usuarios"). */
+.admin-action-link-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
 }

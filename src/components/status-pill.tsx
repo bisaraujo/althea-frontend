@@ -21,7 +21,7 @@ export function StatusPill({ children, status, tone = 'default' }: StatusPillPro
     : ['draft', 'in_review', 'pending', 'pending_approval', 'planned', 'changes_requested'].includes(value)
       ? 'warning'
       : ['archived', 'inactive'].includes(value) ? 'muted' : tone;
-  // So a primeira letra em maiuscula: nomes como "Canal de Integridade" mantem a grafia certa.
+  // So a primeira letra em maiuscula: nomes como "Canal de Denúncias" mantem a grafia certa.
   const text = labels[value] ?? (value ? value.charAt(0).toUpperCase() + value.slice(1) : rawValue);
   return <span className={`status-pill status-pill--${inferredTone}`}>{text}</span>;
 }

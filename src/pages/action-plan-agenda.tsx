@@ -1,9 +1,9 @@
-import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Route as RouteIcon, RotateCcw } from 'lucide-react';
+import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Route as RouteIcon, RotateCcw, TrendingUp } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   ACTION_TYPE_LABEL, type ActionItemType, AGENDA_SOURCE_LABEL, AGENDA_TYPE_LABEL, type AgendaEntry, type AgendaSource, DELIVERY_STATUS_LABEL,
-  getAgenda, RECURRENCE_LABEL, updateOccurrence,
+  agendaEntryContext, getAgenda, getKpiPending, hasSeveralProjects, type KpiPending, RECURRENCE_LABEL, updateOccurrence,
 } from '../api/action-plan';
 import { ApiError } from '../api/client';
 import { EmptyState } from '../components/empty-state';
@@ -31,23 +31,23 @@ function monthGrid(month: Date) {
   return Array.from({ length: 42 }, (_, index) => addDays(start, index));
 }
 
-function EntryChip({ entry, onOpen }: { entry: AgendaEntry; onOpen: () => void }) {
+function EntryChip({ entry, onOpen, severalProjects }: { entry: AgendaEntry; onOpen: () => void; severalProjects: boolean }) {
   const state = entry.status === 'done' ? 'done' : entry.overdue ? 'overdue' : 'scheduled';
   return (
-    <button type="button" className={`agd-chip agd-chip--${entry.item_type} agd-chip--${state}`} onClick={onOpen} title={`${AGENDA_TYPE_LABEL[entry.item_type]}: ${entry.title}`}>
+    <button type="button" className={`agd-chip agd-chip--${entry.item_type} agd-chip--${state}`} onClick={onOpen} title={`${entry.title} · ${agendaEntryContext(entry, severalProjects)}`}>
       {entry.status === 'done' ? <CheckCircle2 size={11} aria-hidden /> : null}
       <span>{entry.title}</span>
     </button>
   );
 }
 
-function EntryRow({ entry, onOpen }: { entry: AgendaEntry; onOpen: () => void }) {
+function EntryRow({ entry, onOpen, severalProjects }: { entry: AgendaEntry; onOpen: () => void; severalProjects: boolean }) {
   return (
     <button type="button" className={`agd-row${entry.overdue ? ' is-overdue' : ''}`} onClick={onOpen} title={entry.title}>
       <span className={`agd-dot agd-dot--${entry.item_type}`} aria-hidden />
       <span className="agd-row__copy">
         <strong>{entry.title}</strong>
-        <span>{longDate(entry.date)} · {entry.source === 'jornada' ? (entry.section_title ?? 'Jornada') : AGENDA_TYPE_LABEL[entry.item_type]}</span>
+        <span>{longDate(entry.date)} · {agendaEntryContext(entry, severalProjects)}</span>
       </span>
     </button>
   );
@@ -73,6 +73,7 @@ export function ActionPlanAgenda({ token, companyId, canMark = true, isAdmin = f
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [kpiPending, setKpiPending] = useState<KpiPending[]>([]);
 
   const grid = useMemo(() => monthGrid(month), [month]);
   const load = useCallback(() => {
@@ -83,6 +84,8 @@ export function ActionPlanAgenda({ token, companyId, canMark = true, isAdmin = f
       getAgenda(token, companyId, iso(addDays(now, -90)), iso(addDays(now, 30))),
     ]).then(([forMonth, near]) => { setMonthEntries(forMonth.entries); setNearEntries(near.entries); })
       .catch((reason) => setFailure({ message: reason instanceof ApiError ? reason.message : 'Não foi possível carregar a agenda.', forbidden: reason instanceof ApiError && reason.status === 403 }));
+    // Lembrete dos KPIs: se falhar, a agenda continua funcionando sem o aviso.
+    getKpiPending(token, companyId).then(setKpiPending).catch(() => setKpiPending([]));
   }, [token, companyId, grid]);
   useEffect(load, [load]);
 
@@ -94,6 +97,8 @@ export function ActionPlanAgenda({ token, companyId, canMark = true, isAdmin = f
     return map;
   }, [monthEntries, sourceFilter, typeFilter]);
   const hasJourney = [...(monthEntries ?? []), ...nearEntries].some((entry) => entry.source === 'jornada');
+  // Com mais de um projeto de Jornadas as entregas se repetem (uma por projeto): cada uma mostra de qual projeto e.
+  const severalProjects = hasSeveralProjects([...(monthEntries ?? []), ...nearEntries]);
   const overdue = visible(nearEntries).filter((entry) => entry.overdue);
   const upcoming = visible(nearEntries).filter((entry) => entry.status === 'scheduled' && entry.date >= today);
 
@@ -165,7 +170,7 @@ export function ActionPlanAgenda({ token, companyId, canMark = true, isAdmin = f
             return (
               <div key={key} role="gridcell" className={`agd-day${outside ? ' is-outside' : ''}${key === today ? ' is-today' : ''}`}>
                 <span className="agd-day__number">{day.getDate()}</span>
-                {entries.slice(0, 3).map((entry) => <EntryChip key={entry.id} entry={entry} onOpen={() => openEntry(entry)} />)}
+                {entries.slice(0, 3).map((entry) => <EntryChip key={entry.id} entry={entry} onOpen={() => openEntry(entry)} severalProjects={severalProjects} />)}
                 {entries.length > 3 ? <span className="agd-more">+{entries.length - 3}</span> : null}
               </div>
             );
@@ -179,7 +184,7 @@ export function ActionPlanAgenda({ token, companyId, canMark = true, isAdmin = f
             .map(([key, entries]) => (
               <section key={key} className={`agd-month-list__day${key === today ? ' is-today' : ''}`}>
                 <h4>{longDate(key)}{key === today ? ' · hoje' : ''}</h4>
-                <div className="agd-list">{entries.map((entry) => <EntryRow key={entry.id} entry={entry} onOpen={() => openEntry(entry)} />)}</div>
+                <div className="agd-list">{entries.map((entry) => <EntryRow key={entry.id} entry={entry} onOpen={() => openEntry(entry)} severalProjects={severalProjects} />)}</div>
               </section>
             ))}
           {![...byDay.keys()].some((key) => key.slice(0, 7) === iso(month).slice(0, 7)) ? <p className="ben-hint">Nada neste mês.</p> : null}
@@ -187,12 +192,28 @@ export function ActionPlanAgenda({ token, companyId, canMark = true, isAdmin = f
       </SectionPanel>
 
       <div className="agd-side">
+        {kpiPending.length ? (
+          <SectionPanel title="KPIs para informar" eyebrow={`${kpiPending.length}`}>
+            <p className="ben-hint">O valor de cada indicador do plano é informado periodicamente.</p>
+            <div className="agd-list agd-list--scroll">
+              {kpiPending.map((entry) => (
+                <button key={entry.item_id} type="button" className={`agd-row${entry.kpi_status === 'overdue' ? ' is-overdue' : ''}`} onClick={() => setDetailId(entry.item_id)} title={entry.indicator ?? entry.title}>
+                  <TrendingUp size={15} className="agd-row__icon" aria-hidden />
+                  <span className="agd-row__copy">
+                    <strong>{entry.title}</strong>
+                    <span>{entry.kpi_status === 'overdue' ? 'Atrasado desde' : 'Até'} {longDate(entry.kpi_next_due)}{entry.last_value ? ` · último: ${entry.last_value}` : ' · nenhum valor ainda'}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </SectionPanel>
+        ) : null}
         <SectionPanel title="Atrasadas" eyebrow={`${overdue.length}`}>
-          {overdue.length ? <div className="agd-list agd-list--scroll">{overdue.map((entry) => <EntryRow key={entry.id} entry={entry} onOpen={() => openEntry(entry)} />)}</div>
+          {overdue.length ? <div className="agd-list agd-list--scroll">{overdue.map((entry) => <EntryRow key={entry.id} entry={entry} onOpen={() => openEntry(entry)} severalProjects={severalProjects} />)}</div>
             : <p className="ben-hint"><CheckCircle2 size={14} aria-hidden /> Nada atrasado.</p>}
         </SectionPanel>
         <SectionPanel title="Próximos 30 dias" eyebrow={`${upcoming.length}`}>
-          {upcoming.length ? <div className="agd-list agd-list--scroll">{upcoming.map((entry) => <EntryRow key={entry.id} entry={entry} onOpen={() => openEntry(entry)} />)}</div>
+          {upcoming.length ? <div className="agd-list agd-list--scroll">{upcoming.map((entry) => <EntryRow key={entry.id} entry={entry} onOpen={() => openEntry(entry)} severalProjects={severalProjects} />)}</div>
             : <p className="ben-hint">Nada previsto.</p>}
         </SectionPanel>
       </div>

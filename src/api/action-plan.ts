@@ -21,18 +21,31 @@ export type Evidence = {
   size: number | null; created_by: string | null; created_by_name: string | null; created_at: string;
 };
 
+/** Valor do indicador (KPI) informado pela empresa numa data. */
+export type KpiReading = {
+  id: string; action_plan_item_id: string; value: string; reference_date: string; note: string | null;
+  created_by: string | null; created_by_name: string | null; created_at: string;
+};
+/** ok = em dia; due_soon = vence em ate 14 dias; overdue = passou do prazo. */
+export type KpiStatus = 'ok' | 'due_soon' | 'overdue';
+export type KpiPending = {
+  item_id: string; title: string; indicator: string | null; kpi_next_due: string; kpi_status: KpiStatus;
+  last_value: string | null; last_reference_date: string | null;
+};
+
 export type PlanItem = {
   id: string; action_plan_id: string; title: string; description: string | null; owner_name: string | null; due_at: string | null;
   frequency: string | null; status: ActionStatus; item_type: ActionItemType; recurrence_type: RecurrenceType; start_date: string | null;
   custom_dates: string[]; benefit_id: string | null; benefit_name: string | null; occurrence_count: number; occurrences_done: number;
   next_occurrence: string | null; created_at: string; updated_at: string;
   progress_updated_at: string | null; progress_updated_by_name: string | null; evidences: Evidence[];
+  kpi_interval_months: number; kpi_readings: KpiReading[]; kpi_tracked: boolean; kpi_next_due: string | null; kpi_status: KpiStatus | null;
 } & SheetFields & ProgressFields;
 /** Plano de acao da empresa (um por empresa, existe com ou sem produto). */
 export type Plan = { id: string; company_id: string; status: string; items: PlanItem[] };
 export type PlanItemPayload = {
   title: string; description?: string | null; owner_name?: string | null; item_type: ActionItemType; recurrence_type: RecurrenceType;
-  start_date?: string | null; custom_dates?: string[]; benefit_id?: string | null; due_at?: string | null;
+  start_date?: string | null; custom_dates?: string[]; benefit_id?: string | null; due_at?: string | null; kpi_interval_months?: number;
 } & Partial<SheetFields>;
 /** "plano" = acao do plano de acao; "jornada" = entrega do cronograma das Jornadas (so leitura). */
 export type AgendaSource = 'plano' | 'jornada';
@@ -45,6 +58,17 @@ export type AgendaEntry = {
   journey_item_type: string | null; delivery_status: string | null;
 };
 export type Agenda = { company_id: string; date_from: string; date_to: string; entries: AgendaEntry[] };
+
+/** A empresa tem entregas de mais de um projeto de Jornadas? Entao cada entrega precisa dizer de qual projeto e. */
+export function hasSeveralProjects(entries: AgendaEntry[]) {
+  return new Set(entries.filter((entry) => entry.source === 'jornada').map((entry) => entry.project_id)).size > 1;
+}
+/** Linha de contexto da entrada: etapa da jornada (e o projeto, quando ha mais de um) ou o tipo da acao do plano. */
+export function agendaEntryContext(entry: AgendaEntry, severalProjects: boolean) {
+  if (entry.source !== 'jornada') return AGENDA_TYPE_LABEL[entry.item_type];
+  const section = entry.section_title ?? 'Jornada';
+  return severalProjects && entry.project_name ? `${section} · ${entry.project_name}` : section;
+}
 
 export const ACTION_TYPE_LABEL: Record<ActionItemType, string> = { acao: 'Ação', evento: 'Evento', pesquisa: 'Pesquisa', beneficio: 'Benefício' };
 export const AGENDA_TYPE_LABEL: Record<AgendaItemType, string> = { ...ACTION_TYPE_LABEL, jornada: 'Entrega da jornada' };
@@ -61,6 +85,11 @@ export const ACTION_STATUS_LABEL: Record<ActionStatus, string> = { pending: 'A i
 export const PRIORITY_LABEL: Record<Priority, string> = { alta: 'Alta', media: 'Média', baixa: 'Baixa', oportunidade: 'Oportunidade de melhoria' };
 export const ACTION_KIND_LABEL: Record<ActionKind, string> = { continua: 'Contínua', pontual: 'Pontual' };
 export const EVIDENCE_KIND_LABEL: Record<EvidenceKind, string> = { memorial: 'Memorial', photo: 'Foto', video: 'Vídeo', document: 'Documento' };
+export const KPI_STATUS_LABEL: Record<KpiStatus, string> = { ok: 'KPI em dia', due_soon: 'KPI vence em breve', overdue: 'KPI atrasado' };
+export const KPI_INTERVAL_OPTIONS = [1, 2, 3, 4, 6, 12];
+export function kpiIntervalLabel(months: number) {
+  return months === 1 ? 'Todo mês' : months === 12 ? 'Uma vez por ano' : `A cada ${months} meses`;
+}
 /** Rotulos dos campos, na ordem e com os nomes da planilha. */
 export const SHEET_FIELD_LABEL: Record<keyof SheetFields, string> = {
   risk_factor: 'Perigo / fator de risco psicossocial', exposure_group: 'GES (grupo de exposição similar)', objective: 'Objetivo',
@@ -96,6 +125,16 @@ export function getPlanItem(token: string, itemId: string) {
 }
 export function updateProgress(token: string, itemId: string, payload: Partial<ProgressFields> & { status?: ActionStatus }) {
   return request<PlanItem>(`/action-plan/items/${itemId}/progress`, { token, method: 'PATCH', body: JSON.stringify(payload), headers: json });
+}
+export function addKpiReading(token: string, itemId: string, payload: { value: string; reference_date?: string | null; note?: string | null }) {
+  return request<PlanItem>(`/action-plan/items/${itemId}/kpi-readings`, { token, method: 'POST', body: JSON.stringify(payload), headers: json });
+}
+export function deleteKpiReading(token: string, readingId: string) {
+  return request<PlanItem>(`/action-plan/kpi-readings/${readingId}`, { token, method: 'DELETE' });
+}
+/** KPIs que vencem em ate 14 dias ou ja passaram do prazo. */
+export function getKpiPending(token: string, companyId: string) {
+  return request<KpiPending[]>(`/companies/${companyId}/action-plan/kpi-pending`, { token });
 }
 /** Memorial (texto), arquivo, ou os dois juntos. Videos podem levar mais tempo para subir. */
 export function addEvidence(token: string, itemId: string, payload: { text?: string; file?: File | null }, onProgress?: (percent: number) => void) {

@@ -97,12 +97,17 @@ function formatDate(value?: string | null) {
   }).format(date);
 }
 
+/** So a primeira letra maiuscula ("Novembro de 2026", nao "Novembro De 2026"). */
+function capitalizeFirst(text: string) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function formatFullDate(date: Date) {
-  return new Intl.DateTimeFormat('pt-BR', {
+  return capitalizeFirst(new Intl.DateTimeFormat('pt-BR', {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
-  }).format(date);
+  }).format(date));
 }
 
 function formatDayNumber(date: Date) {
@@ -112,10 +117,10 @@ function formatDayNumber(date: Date) {
 }
 
 function formatMonth(date: Date) {
-  return new Intl.DateTimeFormat('pt-BR', {
+  return capitalizeFirst(new Intl.DateTimeFormat('pt-BR', {
     month: 'long',
     year: 'numeric',
-  }).format(date);
+  }).format(date));
 }
 
 function eventDate(event: ProjectCalendarEvent) {

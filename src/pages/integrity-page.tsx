@@ -22,11 +22,11 @@ export function IntegrityPage() {
   if (!companyId) content = <NoPermissionState message="Esta conta não está vinculada a uma empresa." />;
   else if (loading) content = <LoadingState label="Carregando…" />;
   else if (!permissions?.has('integrity.cases.view')) content = <NoPermissionState message="Você não faz parte do comitê do Canal de Denúncias. Fale com a empresa se precisar desse acesso." />;
-  else if (!products?.has(INTEGRITY_PRODUCT_ID)) content = <EmptyState icon={ShieldAlert} title="Canal de Denúncias não contratado" description="Esta empresa ainda não contratou o Canal de Integridade. Fale com a Turi para ativar." />;
+  else if (!products?.has(INTEGRITY_PRODUCT_ID)) content = <EmptyState icon={ShieldAlert} title="Canal de Denúncias não contratado" description="Esta empresa ainda não contratou o Canal de Denúncias. Fale com a Turi para ativar." />;
   else if (token) content = <IntegrityWorkspace token={token} companyId={companyId} canManage={permissions.has('integrity.cases.manage')} />;
 
   return (
-    <AppShell eyebrow="Canal de Integridade" title="Canal de Denúncias" description="Denúncias recebidas, apuração pelo comitê e divulgação do canal para os colaboradores." navigation={navigation}>
+    <AppShell eyebrow="Ética e integridade" title="Canal de Denúncias" description="Denúncias recebidas, apuração pelo comitê e divulgação do canal para os colaboradores." navigation={navigation}>
       {content}
     </AppShell>
   );

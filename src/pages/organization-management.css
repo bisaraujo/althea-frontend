@@ -94,7 +94,7 @@
 /* Pessoas e vínculos */
 .org-people, .org-documents, .org-governance, .org-import { display: grid; gap: 0.8rem; min-width: 0; }
 .org-people .admin-form label > span, .org-drawer-form label > span { display: inline-flex; align-items: center; gap: 0.3rem; }
-.org-filter-select { min-height: 38px; max-width: 220px; padding: 0.3rem 0.6rem; border-radius: 12px; }
+.org-filter-select { min-height: 38px; max-width: 220px; padding: 0.3rem 0.6rem; border-radius: 12px; font-size: 0.88rem; }
 
 .org-preview {
   display: grid; gap: 0.25rem; padding: 0.6rem 0.75rem; border: 1px dashed var(--border-strong);

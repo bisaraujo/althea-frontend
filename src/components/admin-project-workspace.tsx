@@ -20,6 +20,7 @@ import { EmptyState } from './empty-state';
 import { SectionPanel } from './section-panel';
 import { StatusPill } from './status-pill';
 import { StoredFileLink } from './stored-file-link';
+import { plural } from '../lib/plural';
 
 type ProjectView = 'overview' | 'manager-deliveries' | 'employee-deliveries' | 'team' | 'meetings';
 
@@ -76,7 +77,7 @@ export function AdminProjectWorkspace({ company, project, managers, employees, d
       <div className="admin-client-summary">
         <div className="admin-client-summary__identity">
           <span className="list-item__icon"><Building2 size={18} /></span>
-          <div><span className="admin-detail__label">Empresa cliente</span><h2>{company.name}</h2><p>{company.email}</p></div>
+          <div><span className="admin-detail__label">Empresa cliente</span><h2>{company.name}</h2><p><span className="cell-email" title={company.email}>{company.email}</span></p></div>
         </div>
         <div className="admin-client-summary__project">
           <span className="admin-detail__label">Projeto principal</span>
@@ -96,7 +97,7 @@ export function AdminProjectWorkspace({ company, project, managers, employees, d
         <div className="admin-project-overview">
           <button type="button" className="admin-overview-tile" onClick={() => setView('manager-deliveries')}><FileCheck2 size={20} /><span>Entregas do gestor</span><strong>{submitted}/{deliveryItems.length}</strong><small>documentos enviados</small></button>
           <button type="button" className="admin-overview-tile" onClick={() => setView('employee-deliveries')}><FileText size={20} /><span>Colaboradores</span><strong>{projectResponses.length}</strong><small>respostas registradas</small></button>
-          <button type="button" className="admin-overview-tile" onClick={() => setView('team')}><Users size={20} /><span>Equipe</span><strong>{managers.length + employees.length}</strong><small>{managers.length} gestores e {employees.length} funcionários</small></button>
+          <button type="button" className="admin-overview-tile" onClick={() => setView('team')}><Users size={20} /><span>Equipe</span><strong>{managers.length + employees.length}</strong><small>{plural(managers.length, 'gestor', 'gestores')} e {plural(employees.length, 'colaborador', 'colaboradores')}</small></button>
           <button type="button" className="admin-overview-tile" onClick={() => setView('meetings')}><CalendarCheck size={20} /><span>Reuniões</span><strong>{meetings.length}</strong><small>atas e pareceres</small></button>
         </div>
       ) : null}

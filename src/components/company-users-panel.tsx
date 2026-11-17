@@ -12,6 +12,7 @@ import { SectionPanel } from './section-panel';
 import { StatusPill } from './status-pill';
 import { useToast } from './toast';
 import { DataTable, ErrorState, Modal, NoPermissionState } from './ui';
+import { plural } from '../lib/plural';
 
 function errorText(reason: unknown, fallback: string) {
   return reason instanceof ApiError ? reason.message : fallback;
@@ -73,7 +74,7 @@ export function CompanyUsersPanel({ companyId, allowProjectChoice = false }: { c
   return (
     <SectionPanel
       title="Logins da empresa"
-      eyebrow={users ? `${users.length} login(s)` : undefined}
+      eyebrow={users ? plural(users.length, 'login', 'logins') : undefined}
       action={<button type="button" className="primary-button" onClick={openNew}><UserPlus size={16} />Novo login</button>}
     >
       <p className="panel-intro">
@@ -87,10 +88,10 @@ export function CompanyUsersPanel({ companyId, allowProjectChoice = false }: { c
         dense
         empty={<EmptyState icon={KeyRound} title="Nenhum login ainda" description="Crie o login de um gestor ou colaborador. A senha temporária vai por e-mail." />}
         columns={[
-          { key: 'name', header: 'Nome', render: (item) => <span><strong>{item.name}</strong><br /><span className="admin-form__hint">{item.email}</span></span> },
+          { key: 'name', header: 'Nome', render: (item) => <span><strong>{item.name}</strong><br /><span className="admin-form__hint cell-email" title={item.email}>{item.email}</span></span> },
           { key: 'role', header: 'Papel', width: '120px', render: (item) => PLATFORM_ROLE_LABEL[item.role] ?? item.role },
           { key: 'person', header: 'Colaborador ligado', render: (item) => item.linked_person_name ? item.linked_person_name : <StatusPill tone="warning">Sem colaborador</StatusPill> },
-          ...(allowProjectChoice ? [{ key: 'project', header: 'Projeto', hideOnMobile: true, render: (item: PlatformUser) => item.project_name ?? '—' }] : []),
+          ...(allowProjectChoice ? [{ key: 'project', header: 'Projeto', render: (item: PlatformUser) => item.project_name ?? '—' }] : []),
         ]}
       />
       <Modal

@@ -14,6 +14,7 @@ import { InfoTooltip } from '../components/info-tooltip';
 import { SectionPanel } from '../components/section-panel';
 import { StatCard } from '../components/stat-card';
 import './companies-admin.css';
+import { plural } from '../lib/plural';
 
 function normalize(value: string) {
   return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -106,7 +107,7 @@ export function PlatformCompaniesPage() {
           <StatCard
             label="Colaboradores"
             value={loading ? '—' : stats.collaborators}
-            meta={loading ? undefined : `${stats.managers} gestor(es) incluído(s)`}
+            meta={loading ? undefined : `${plural(stats.managers, 'gestor incluído', 'gestores incluídos')}`}
             icon={<Users size={18} />}
           />
           <StatCard
@@ -192,14 +193,14 @@ export function PlatformCompaniesPage() {
                         <div className="ca-chips">
                           {company.products.map((product) => <span className="ca-chip" key={product.id}>{product.name}</span>)}
                           {!company.products.length ? <span className="ca-chip ca-chip--muted">Nenhum produto</span> : null}
-                          {pendingCount ? <span className="ca-chip ca-chip--warn">{pendingCount} solicitação(ões)</span> : null}
+                          {pendingCount ? <span className="ca-chip ca-chip--warn">{plural(pendingCount, 'solicitação', 'solicitações')}</span> : null}
                         </div>
                         <span className="ca-num">{company.manager_count}</span>
                         <span className="ca-num">{company.employee_count}</span>
                         <ChevronRight className="ca-chevron" size={18} aria-hidden />
                         <div className="ca-counts-inline">
-                          <span>{company.manager_count} gestor(es)</span>
-                          <span>{company.employee_count} colaborador(es)</span>
+                          <span>{plural(company.manager_count, 'gestor', 'gestores')}</span>
+                          <span>{plural(company.employee_count, 'colaborador', 'colaboradores')}</span>
                         </div>
                       </Link>
                     );

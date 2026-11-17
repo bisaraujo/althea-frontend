@@ -6,6 +6,7 @@ import { ApiError } from '../api/client';
 import { useToast } from '../components/toast';
 import { Drawer } from '../components/ui';
 import './benefits-agenda.css';
+import { plural } from '../lib/plural';
 
 function shortDate(value: string | null | undefined) {
   return value ? new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR') : '—';
@@ -45,7 +46,7 @@ export function ActionPlanImport({ token, companyId, open, onClose, onImported }
     setBusy(true);
     try {
       const result = await importPlanSheet(token, companyId, file, false);
-      toast.success(`${result.created} ação(ões) importada(s).`);
+      toast.success(`${plural(result.created, 'ação importada', 'ações importadas')}.`);
       onImported(); reset(); onClose();
     } catch (reason) {
       toast.error(reason instanceof ApiError ? reason.message : 'Não foi possível importar.');
@@ -62,7 +63,7 @@ export function ActionPlanImport({ token, companyId, open, onClose, onImported }
       footer={preview ? (
         <>
           <button type="button" className="secondary-button" onClick={reset} disabled={busy}>Escolher outra</button>
-          <button type="button" className="primary-button" onClick={() => void confirm()} disabled={busy || !preview.to_create}><Upload size={15} />Importar {preview.to_create} ação(ões)</button>
+          <button type="button" className="primary-button" onClick={() => void confirm()} disabled={busy || !preview.to_create}><Upload size={15} />Importar {plural(preview.to_create, 'ação', 'ações')}</button>
         </>
       ) : undefined}>
       {!preview ? (

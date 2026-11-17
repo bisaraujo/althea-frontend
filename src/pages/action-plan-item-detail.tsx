@@ -1,9 +1,10 @@
-import { CalendarDays, Download, FileText, Image as ImageIcon, Paperclip, PlayCircle, Save, Trash2, Video } from 'lucide-react';
+import { CalendarDays, CheckCircle2, CircleAlert, Download, FileText, Image as ImageIcon, Paperclip, PlayCircle, Save, Trash2, TrendingUp, Video } from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 
 import {
-  ACTION_KIND_LABEL, ACTION_STATUS_LABEL, ACTION_TYPE_LABEL, type ActionStatus, addEvidence, deleteEvidence, downloadEvidence, type Evidence,
-  EVIDENCE_KIND_LABEL, evidenceBlob, getPlanItem, type PlanItem, PRIORITY_LABEL, RECURRENCE_LABEL, SHEET_FIELD_LABEL, updateProgress,
+  ACTION_KIND_LABEL, ACTION_STATUS_LABEL, ACTION_TYPE_LABEL, type ActionStatus, addEvidence, addKpiReading, deleteEvidence, deleteKpiReading,
+  downloadEvidence, type Evidence, EVIDENCE_KIND_LABEL, evidenceBlob, getPlanItem, type KpiReading, kpiIntervalLabel, type PlanItem, PRIORITY_LABEL,
+  RECURRENCE_LABEL, SHEET_FIELD_LABEL, updateProgress,
 } from '../api/action-plan';
 import { ApiError } from '../api/client';
 import { StatusPill } from '../components/status-pill';
@@ -19,6 +20,13 @@ function errorText(reason: unknown, fallback: string) {
 }
 function shortDate(value: string | null) {
   return value ? new Date(value.length === 10 ? `${value}T00:00:00` : value).toLocaleDateString('pt-BR') : '—';
+}
+function todayIso() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+function emptyKpi() {
+  return { value: '', reference_date: todayIso(), note: '' };
 }
 function fileSize(bytes: number | null) {
   if (!bytes) return '';
@@ -87,6 +95,7 @@ export function ActionPlanItemDetail({ token, itemId, onClose, canUpdate, isAdmi
   const [memorial, setMemorial] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploadPercent, setUploadPercent] = useState<number | null>(null);
+  const [kpi, setKpi] = useState(emptyKpi);
   const [busy, setBusy] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -100,7 +109,7 @@ export function ActionPlanItemDetail({ token, itemId, onClose, canUpdate, isAdmi
     getPlanItem(token, itemId).then(apply).catch(() => setFailed(true));
   }, [token, itemId, apply]);
   useEffect(load, [load]);
-  useEffect(() => { setMemorial(''); setFile(null); setUploadPercent(null); }, [itemId]);
+  useEffect(() => { setMemorial(''); setFile(null); setUploadPercent(null); setKpi(emptyKpi()); }, [itemId]);
 
   async function saveProgress(event: FormEvent) {
     event.preventDefault();
@@ -131,6 +140,36 @@ export function ActionPlanItemDetail({ token, itemId, onClose, canUpdate, isAdmi
       toast.error(errorText(reason, 'Não foi possível enviar a evidência.'));
     } finally {
       setBusy(false); setUploadPercent(null);
+    }
+  }
+
+  async function sendReading(event: FormEvent) {
+    event.preventDefault();
+    if (!item || busy || !kpi.value.trim()) return;
+    setBusy(true);
+    try {
+      apply(await addKpiReading(token, item.id, { value: kpi.value.trim(), reference_date: kpi.reference_date || null, note: kpi.note.trim() || null }));
+      setKpi(emptyKpi());
+      toast.success('Valor do KPI registrado.');
+      onChanged?.();
+    } catch (reason) {
+      toast.error(errorText(reason, 'Não foi possível registrar o valor.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeReading(reading: KpiReading) {
+    if (!item || busy || !window.confirm(`Apagar o valor ${reading.value}?`)) return;
+    setBusy(true);
+    try {
+      apply(await deleteKpiReading(token, reading.id));
+      toast.success('Valor apagado.');
+      onChanged?.();
+    } catch (reason) {
+      toast.error(errorText(reason, 'Não foi possível apagar.'));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -185,6 +224,50 @@ export function ActionPlanItemDetail({ token, itemId, onClose, canUpdate, isAdmi
             ) : <p className="ben-hint">A Turi ainda não detalhou o planejamento desta ação.</p>}
           </section>
 
+          {item.indicator ? (
+            <section className="apd-section">
+              <h3>Indicador (KPI) <span className="apd-count">{item.kpi_readings.length}</span></h3>
+              <p className="ben-hint">{item.indicator} · {kpiIntervalLabel(item.kpi_interval_months).toLowerCase()}{item.initial_value ? ` · valor inicial: ${item.initial_value}` : ''}</p>
+              {item.kpi_tracked && item.kpi_status && item.kpi_next_due ? (
+                <p className={item.kpi_status === 'ok' ? 'agd-ok' : 'agd-alert'}>
+                  {item.kpi_status === 'ok' ? <CheckCircle2 size={15} aria-hidden /> : <CircleAlert size={15} aria-hidden />}
+                  {item.kpi_status === 'overdue' ? `O valor do KPI está atrasado: o prazo era ${shortDate(item.kpi_next_due)}.`
+                    : item.kpi_status === 'due_soon' ? `Informe o valor do KPI até ${shortDate(item.kpi_next_due)}.`
+                      : `KPI em dia. Próximo valor até ${shortDate(item.kpi_next_due)}.`}
+                </p>
+              ) : null}
+              {item.kpi_readings.length ? (
+                <ul className="apd-evidences">
+                  {item.kpi_readings.map((reading) => {
+                    const canDelete = canUpdate && (isAdmin || reading.created_by === currentUserId);
+                    return (
+                      <li key={reading.id} className="apd-evidence">
+                        <div className="apd-evidence__head">
+                          <span className="apd-evidence__kind"><TrendingUp size={15} aria-hidden /><strong>{reading.value}</strong></span>
+                          <span className="ben-hint">em {shortDate(reading.reference_date)} · {reading.created_by_name ?? '—'}</span>
+                          <span className="apd-evidence__actions">
+                            {canDelete ? <button type="button" className="org-icon-btn" title="Apagar" aria-label={`Apagar o valor ${reading.value}`} disabled={busy} onClick={() => void removeReading(reading)}><Trash2 size={14} /></button> : null}
+                          </span>
+                        </div>
+                        {reading.note ? <p className="apd-evidence__text">{reading.note}</p> : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : <p className="ben-hint">Nenhum valor informado ainda.</p>}
+              {editable ? (
+                <form className="admin-form apd-upload" onSubmit={(event) => void sendReading(event)}>
+                  <div className="field-grid">
+                    <label><span>Valor atual do indicador</span><input value={kpi.value} onChange={(event) => setKpi({ ...kpi, value: event.target.value })} maxLength={255} disabled={busy} required placeholder={item.kpi_readings[0] ? `Último: ${item.kpi_readings[0].value}` : item.initial_value ? `Inicial: ${item.initial_value}` : 'Ex.: 35%'} /></label>
+                    <label><span>Medido em</span><input type="date" value={kpi.reference_date} max={todayIso()} onChange={(event) => setKpi({ ...kpi, reference_date: event.target.value })} disabled={busy} /></label>
+                  </div>
+                  <label><span>Observação <em className="ben-optional">(opcional)</em></span><textarea rows={2} value={kpi.note} onChange={(event) => setKpi({ ...kpi, note: event.target.value })} maxLength={2000} disabled={busy} /></label>
+                  <button className="primary-button" disabled={busy || !kpi.value.trim()}><TrendingUp size={15} />Informar valor</button>
+                </form>
+              ) : null}
+            </section>
+          ) : null}
+
           <section className="apd-section">
             <h3>Acompanhamento</h3>
             {editable ? (
@@ -195,7 +278,8 @@ export function ActionPlanItemDetail({ token, itemId, onClose, canUpdate, isAdmi
                       {PROGRESS_STATUSES.map((key) => <option key={key} value={key}>{ACTION_STATUS_LABEL[key]}</option>)}
                     </select>
                   </label>
-                  <label><span>Valor final (após a ação)</span><input value={progress.final_value} onChange={(event) => setProgress({ ...progress, final_value: event.target.value })} maxLength={255} disabled={busy} placeholder={item.initial_value ? `Antes: ${item.initial_value}` : 'Ex.: 35% de expostos'} /></label>
+                  {/* Com indicador, o valor final e sempre o ultimo valor do KPI informado acima. */}
+                  {item.indicator ? null : <label><span>Valor final (após a ação)</span><input value={progress.final_value} onChange={(event) => setProgress({ ...progress, final_value: event.target.value })} maxLength={255} disabled={busy} placeholder={item.initial_value ? `Antes: ${item.initial_value}` : 'Ex.: 35% de expostos'} /></label>}
                 </div>
                 <label><span>Resultado da ação</span><textarea rows={2} value={progress.result} onChange={(event) => setProgress({ ...progress, result: event.target.value })} maxLength={4000} disabled={busy} /></label>
                 <label><span>Comentários / observações</span><textarea rows={2} value={progress.comments} onChange={(event) => setProgress({ ...progress, comments: event.target.value })} maxLength={4000} disabled={busy} /></label>

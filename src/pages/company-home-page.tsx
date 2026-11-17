@@ -4,7 +4,7 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { AGENDA_TYPE_LABEL, type AgendaEntry, getAgenda } from '../api/action-plan';
+import { agendaEntryContext, type AgendaEntry, getAgenda, hasSeveralProjects } from '../api/action-plan';
 import { type Benefit, formatMoney, listBenefits } from '../api/benefits';
 import { getMyCompanyProducts, type MyCompanyProducts } from '../api/company';
 import { type IntegrityCase, listIntegrityCases } from '../api/integrity';
@@ -21,6 +21,7 @@ import { StatusPill } from '../components/status-pill';
 import { ErrorState, LoadingState } from '../components/ui';
 import './benefits-agenda.css';
 import './company-home.css';
+import { plural } from '../lib/plural';
 
 type Overview = {
   company: Company;
@@ -102,6 +103,7 @@ function OverviewContent({ data }: { data: Overview }) {
   const upcoming = agenda.filter((entry) => entry.status === 'scheduled' && entry.date >= today && entry.date <= in15).slice(0, 7);
   const planThisMonth = agenda.filter((entry) => entry.source === 'plano' && entry.date.startsWith(monthPrefix));
   const planDone = planThisMonth.filter((entry) => entry.status === 'done').length;
+  const severalProjects = hasSeveralProjects(agenda);
 
   const activeBenefits = (data.benefits ?? []).filter((benefit) => benefit.active);
   const monthlyCost = activeBenefits.reduce((sum, benefit) => sum + (benefit.monthly_estimate ?? 0), 0);
@@ -117,12 +119,12 @@ function OverviewContent({ data }: { data: Overview }) {
   const pendingRequests = (data.requests ?? []).filter((request) => request.status === 'pending');
 
   const attention: Attention[] = [
-    overduePlan.length ? { key: 'plan', icon: AlertTriangle, text: `${overduePlan.length} ação(ões) do plano atrasada(s)`, to: '/agenda' } : null,
-    overdueJourney.length ? { key: 'journey', icon: RouteIcon, text: `${overdueJourney.length} entrega(s) da jornada atrasada(s)`, to: '/agenda' } : null,
-    newCases.length ? { key: 'cases', icon: ShieldAlert, text: `${newCases.length} denúncia(s) nova(s) aguardando análise`, to: '/integrity' } : null,
-    pendingRequests.length ? { key: 'requests', icon: ShieldCheck, text: `${pendingRequests.length} pedido(s) de permissão aguardando a Turi`, to: '/company/access' } : null,
+    overduePlan.length ? { key: 'plan', icon: AlertTriangle, text: `${plural(overduePlan.length, 'ação do plano atrasada', 'ações do plano atrasadas')}`, to: '/agenda' } : null,
+    overdueJourney.length ? { key: 'journey', icon: RouteIcon, text: `${plural(overdueJourney.length, 'entrega da jornada atrasada', 'entregas da jornada atrasadas')}`, to: '/agenda' } : null,
+    newCases.length ? { key: 'cases', icon: ShieldAlert, text: `${plural(newCases.length, 'denúncia nova aguardando análise', 'denúncias novas aguardando análise')}`, to: '/integrity' } : null,
+    pendingRequests.length ? { key: 'requests', icon: ShieldCheck, text: `${plural(pendingRequests.length, 'pedido de permissão aguardando a Turi', 'pedidos de permissão aguardando a Turi')}`, to: '/company/access' } : null,
     data.structure && units === 0 ? { key: 'structure', icon: Network, text: 'A estrutura da empresa ainda não foi cadastrada', to: '/organization' } : null,
-    benefitsWithoutPeople.length ? { key: 'benefits', icon: Gift, text: `${benefitsWithoutPeople.length} benefício(s) ativo(s) sem ninguém com direito`, to: '/benefits' } : null,
+    benefitsWithoutPeople.length ? { key: 'benefits', icon: Gift, text: `${plural(benefitsWithoutPeople.length, 'benefício ativo sem ninguém com direito', 'benefícios ativos sem ninguém com direito')}`, to: '/benefits' } : null,
   ].filter((item): item is Attention => item !== null);
 
   const contracted = data.products.products;
@@ -140,7 +142,7 @@ function OverviewContent({ data }: { data: Overview }) {
         </div>
       </section>
 
-      <SectionPanel title="Precisa de atenção" eyebrow={attention.length ? `${attention.length} item(ns)` : 'Tudo em dia'}>
+      <SectionPanel title="Precisa de atenção" eyebrow={attention.length ? plural(attention.length, 'item', 'itens') : 'Tudo em dia'}>
         {attention.length ? (
           <div className="ch-attention">
             {attention.map(({ key, icon: Icon, text, to }) => (
@@ -170,7 +172,7 @@ function OverviewContent({ data }: { data: Overview }) {
                   <span className={`agd-dot agd-dot--${entry.item_type}`} aria-hidden />
                   <span className="ch-list__copy">
                     <strong>{entry.title}</strong>
-                    <span>{shortDate(entry.date)} · {entry.source === 'jornada' ? (entry.section_title ?? 'Jornada') : AGENDA_TYPE_LABEL[entry.item_type]}</span>
+                    <span>{shortDate(entry.date)} · {agendaEntryContext(entry, severalProjects)}</span>
                   </span>
                 </li>
               ))}
@@ -196,7 +198,7 @@ function OverviewContent({ data }: { data: Overview }) {
         </SectionPanel>
       </div>
 
-      <SectionPanel title="Produtos" eyebrow={`${contracted.length} contratado(s)`}>
+      <SectionPanel title="Produtos" eyebrow={plural(contracted.length, 'contratado', 'contratados')}>
         {contracted.length ? (
           <div className="ch-products">
             {contracted.map((product) => {

@@ -54,7 +54,7 @@
 
 .ui-search { position: relative; display: flex; align-items: center; flex: 1 1 200px; max-width: 340px; min-width: 0; }
 .ui-search > svg { position: absolute; left: 0.7rem; color: var(--text-faint); pointer-events: none; }
-.ui-search input { padding: 0.5rem 2rem 0.5rem 2.1rem; font-size: 0.88rem; border-radius: 10px; }
+.ui-search input { min-height: 38px; padding: 0.5rem 2rem 0.5rem 2.1rem; font-size: 0.88rem; border-radius: 12px; }
 .ui-search__clear {
   position: absolute; right: 0.35rem; display: grid; place-items: center; width: 24px; height: 24px;
   border: 0; border-radius: 6px; background: transparent; color: var(--text-faint); cursor: pointer;

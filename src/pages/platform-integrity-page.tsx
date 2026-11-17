@@ -42,11 +42,11 @@ export function PlatformIntegrityPage() {
   }
 
   return (
-    <AppShell eyebrow="Administração geral" title="Canal de Denúncias" description="Denúncias das empresas que contrataram o Canal de Integridade." navigation={platformAdminNavigation}>
+    <AppShell eyebrow="Administração geral" title="Canal de Denúncias" description="Denúncias das empresas que contrataram o Canal de Denúncias." navigation={platformAdminNavigation}>
       {error ? <ErrorState message={error} onRetry={load} /> : null}
       {!error && companies === null ? <LoadingState /> : null}
       {companies && !contracted.length ? (
-        <EmptyState icon={ShieldAlert} title="Nenhuma empresa com o Canal de Integridade" description="Ative o produto na página da empresa para ela começar a receber denúncias." />
+        <EmptyState icon={ShieldAlert} title="Nenhuma empresa com o Canal de Denúncias" description="Ative o produto na página da empresa para ela começar a receber denúncias." />
       ) : null}
       {companies && contracted.length ? (
         <>

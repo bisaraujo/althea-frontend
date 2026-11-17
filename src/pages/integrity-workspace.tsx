@@ -216,10 +216,10 @@ function CasesTab({ token, companyId, canManage }: { token: string; companyId: s
   return (
     <div className="int-workspace">
       <div className="int-status-strip">
-        <StatCard label="Denúncias" value={counts.all} icon={<Inbox size={18} />} />
+        <StatCard label="Denúncias" value={counts.all} meta="Recebidas desde o início" icon={<Inbox size={18} />} />
         <StatCard label="Aguardando análise" value={counts.recebido} meta="Recebidas e ainda não abertas" icon={<ShieldAlert size={18} />} />
-        <StatCard label="Em análise" value={counts.em_analise} icon={<Clock3 size={18} />} />
-        <StatCard label="Concluídas" value={counts.concluido} icon={<CheckCircle2 size={18} />} />
+        <StatCard label="Em análise" value={counts.em_analise} meta="Com o comitê agora" icon={<Clock3 size={18} />} />
+        <StatCard label="Concluídas" value={counts.concluido} meta="Apuração encerrada" icon={<CheckCircle2 size={18} />} />
       </div>
       <SectionPanel title="Denúncias recebidas" eyebrow={cases ? `${filtered.length} de ${cases.length}` : undefined}>
         <FilterBar>

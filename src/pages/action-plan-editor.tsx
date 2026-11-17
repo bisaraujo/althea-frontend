@@ -3,8 +3,8 @@ import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from
 
 import {
   ACTION_KIND_LABEL, ACTION_STATUS_LABEL, ACTION_TYPE_LABEL, type ActionItemType, type ActionKind, type ActionStatus, createPlanItem, exportPlanSheet,
-  getPlan, type Plan, type PlanItem, type PlanItemPayload, type Priority, PRIORITY_LABEL, RECURRENCE_LABEL, type RecurrenceType, SHEET_FIELD_LABEL,
-  type SheetFields, updatePlanItem,
+  getPlan, KPI_INTERVAL_OPTIONS, KPI_STATUS_LABEL, kpiIntervalLabel, type Plan, type PlanItem, type PlanItemPayload, type Priority, PRIORITY_LABEL,
+  RECURRENCE_LABEL, type RecurrenceType, SHEET_FIELD_LABEL, type SheetFields, updatePlanItem,
 } from '../api/action-plan';
 import { type Benefit, listBenefits } from '../api/benefits';
 import { ApiError } from '../api/client';
@@ -100,6 +100,13 @@ function ItemForm({ draft, onChange, benefits }: { draft: PlanItemPayload; onCha
               : <input value={draft[key] ?? ''} onChange={(event) => set(key, event.target.value || null)} maxLength={key === 'risk_factor' ? 2000 : 255} />}
           </label>
         ))}
+        {draft.indicator ? (
+          <label><span>Empresa informa o valor do indicador</span>
+            <select value={draft.kpi_interval_months ?? 2} onChange={(event) => set('kpi_interval_months', Number(event.target.value))}>
+              {KPI_INTERVAL_OPTIONS.map((months) => <option key={months} value={months}>{kpiIntervalLabel(months)}</option>)}
+            </select>
+          </label>
+        ) : null}
       </details>
     </>
   );
@@ -117,6 +124,7 @@ function PlanRow({ item, onOpen, side }: { item: PlanItem; onOpen: () => void; s
           {item.due_at ? <span className="ben-hint">Prazo {shortDate(item.due_at)}</span> : null}
           <span className="ben-hint">{item.occurrence_count ? `${item.occurrences_done} de ${item.occurrence_count} data(s) feita(s)${item.next_occurrence ? ` · próxima: ${shortDate(item.next_occurrence)}` : ''}` : 'Sem datas na agenda'}</span>
           {item.evidences.length ? <span className="ben-hint"><Paperclip size={12} aria-hidden /> {item.evidences.length}</span> : null}
+          {item.kpi_status && item.kpi_status !== 'ok' ? <StatusPill tone="warning">{KPI_STATUS_LABEL[item.kpi_status]}</StatusPill> : null}
         </span>
       </button>
       <div className="agd-plan-item__side">{side}<ChevronRight size={16} className="agd-plan-item__chevron" aria-hidden /></div>
@@ -168,7 +176,7 @@ export function ActionPlanEditor({ token, companyId, readOnly = false, canUpdate
   }
   function startEdit(item: PlanItem) {
     const sheet = Object.fromEntries((Object.keys(emptySheet) as (keyof SheetFields)[]).map((key) => [key, item[key]])) as SheetFields;
-    setEditing({ item, draft: { title: item.title, description: item.description, owner_name: item.owner_name, item_type: item.item_type, recurrence_type: item.recurrence_type, start_date: item.start_date, custom_dates: item.custom_dates, benefit_id: item.benefit_id, due_at: item.due_at, ...sheet } });
+    setEditing({ item, draft: { title: item.title, description: item.description, owner_name: item.owner_name, item_type: item.item_type, recurrence_type: item.recurrence_type, start_date: item.start_date, custom_dates: item.custom_dates, benefit_id: item.benefit_id, due_at: item.due_at, kpi_interval_months: item.kpi_interval_months, ...sheet } });
   }
   function exportSheet() {
     exportPlanSheet(token, companyId).catch((reason) => toast.error(errorText(reason, 'Não foi possível exportar.')));

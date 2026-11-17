@@ -1134,3 +1134,44 @@
   padding: 0.45rem 0.8rem;
   font-size: 0.85rem;
 }
+
+/* Icone na frente da linha (ex.: KPIs para informar): nao encolhe quando o texto quebra em duas linhas. */
+.agd-row__icon {
+  flex-shrink: 0;
+  color: var(--brand-deep);
+}
+.agd-row.is-overdue .agd-row__icon {
+  color: var(--danger, #c94848);
+}
+
+/* Chips do calendario: a barra da esquerda fica reta (com o canto arredondado ela virava um "(").
+   As entregas da jornada se distinguem pelo fundo dourado claro, nao por borda tracejada (que parecia um "{"). */
+.agd-chip {
+  border-radius: 0 6px 6px 0;
+}
+.agd-chip--jornada {
+  border-left-style: solid;
+  background: rgba(201, 138, 18, 0.08);
+}
+.agd-chip--jornada:hover {
+  background: rgba(201, 138, 18, 0.16);
+}
+
+/* Cabecalho da evidencia / do valor do KPI: tipo e autor a esquerda (um embaixo do outro quando
+   nao cabem), botoes sempre no canto direito. Antes o botao de apagar caia sozinho numa linha no celular. */
+.apd-evidence__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.2rem 0.6rem;
+}
+.apd-evidence__actions {
+  grid-column: 3;
+  grid-row: 1;
+  margin-left: 0;
+}
+@media (max-width: 640px) {
+  .apd-evidence__head { grid-template-columns: minmax(0, 1fr) auto; }
+  .apd-evidence__head > .ben-hint { grid-column: 1; grid-row: 2; }
+  .apd-evidence__actions { grid-column: 2; grid-row: 1 / span 2; }
+}

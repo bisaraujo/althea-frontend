@@ -18,6 +18,7 @@ import { StatCard } from '../components/stat-card';
 import { useToast } from '../components/toast';
 import { CompanyUsersPanel } from '../components/company-users-panel';
 import './companies-admin.css';
+import { plural } from '../lib/plural';
 
 function errorText(error: unknown, fallback: string) {
   return error instanceof ApiError ? error.message : fallback;
@@ -139,7 +140,7 @@ export function PlatformCompanyDetailPage() {
         </header>
 
         <div className="stats-grid stats-grid--three">
-          <StatCard label="Colaboradores vinculados" value={people} meta={`${company.employee_count} colaborador(es) · ${company.manager_count} gestor(es)`} icon={<Users size={18} />} />
+          <StatCard label="Colaboradores vinculados" value={people} meta={`${plural(company.employee_count, 'colaborador', 'colaboradores')} · ${plural(company.manager_count, 'gestor', 'gestores')}`} icon={<Users size={18} />} />
           <StatCard label="Produtos contratados" value={company.products.length} meta={`de ${catalog.length} no catálogo`} icon={<PackageCheck size={18} />} />
           <StatCard
             label="Solicitações pendentes"

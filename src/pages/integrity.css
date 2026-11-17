@@ -112,13 +112,47 @@
   font-weight: 800;
 }
 
+/* Rotulo em bloco: o texto e o "*" ou "(opcional)" ficam na mesma linha, o campo logo abaixo.
+   (Com display: grid cada pedaco do rotulo virava uma linha.) */
 .int-form label,
 .int-field {
-  display: grid;
-  gap: 0.35rem;
+  display: block;
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--text);
+}
+
+.int-form label > input:not([type='checkbox']):not([type='radio']):not([type='file']),
+.int-form label > select,
+.int-form label > textarea,
+.int-field > .int-file {
+  display: block;
+  width: 100%;
+  margin-top: 0.4rem;
+  font-weight: 400;
+}
+
+.int-field > .int-file {
+  display: flex;
+}
+
+.int-field > .int-hint {
+  margin-top: 0.4rem;
+}
+
+/* Botao de anexo (um label) e caixa "Quero me identificar": icone/caixinha ao lado do texto. */
+.int-form .int-file label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.int-form label.int-identify {
+  display: flex;
+}
+
+.int-form .int-choices label {
+  display: flex;
 }
 
 .int-form textarea {
@@ -508,4 +542,17 @@
   .int-public__card {
     padding: 1.15rem;
   }
+}
+
+.int-form label > select,
+.int-form label > input:not([type='checkbox']):not([type='radio']):not([type='file']) {
+  height: 44px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Select: texto centralizado na altura (com display: block o texto ia para o topo). */
+.int-form label > select {
+  display: flex;
+  align-items: center;
 }

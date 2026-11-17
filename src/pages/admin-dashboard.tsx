@@ -54,6 +54,7 @@ import { InfoTooltip } from '../components/info-tooltip';
 import { StatusPill } from '../components/status-pill';
 import { useToast } from '../components/toast';
 import { platformAdminNavigation, productAdminNavigation } from '../components/admin-navigation';
+import { plural } from '../lib/plural';
 
 type AdminSection = 'home' | 'companies' | 'projects' | 'project-detail' | 'project-users';
 type SavingTarget = 'company' | 'context-user' | null;
@@ -523,8 +524,7 @@ export function AdminDashboard({ section, mode = 'product' }: { section: AdminSe
                       <strong>{company.name}</strong>
                       <p>{company.email}</p>
                       <span className="entity-meta">
-                        {project ? project.name : 'Projeto automático pendente'} | {rowManagers.length} gestores |{' '}
-                        {rowEmployees.length} colaboradores
+                        {project ? project.name : 'Projeto automático pendente'} · {plural(rowManagers.length, 'gestor', 'gestores')} · {plural(rowEmployees.length, 'colaborador', 'colaboradores')}
                       </span>
                     </div>
                     <StatusPill tone={project ? 'success' : 'warning'}>{project ? 'Projeto criado' : 'Pendente'}</StatusPill>
@@ -775,8 +775,8 @@ export function AdminDashboard({ section, mode = 'product' }: { section: AdminSe
                     <span>{project.description || company?.email || 'Sem descrição cadastrada.'}</span>
                   </div>
                   <div className="admin-client-card__footer">
-                    <span>{projectManagers.length} gestores</span>
-                    <span>{projectEmployees.length} colaboradores</span>
+                    <span>{plural(projectManagers.length, 'gestor', 'gestores')}</span>
+                    <span>{plural(projectEmployees.length, 'colaborador', 'colaboradores')}</span>
                     <ArrowRight size={16} />
                   </div>
                 </Link>

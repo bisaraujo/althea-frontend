@@ -1,12 +1,13 @@
 import { Building2, Flame, KeyRound, LogOut, Menu, Network, Route as RouteIcon, ShieldAlert, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 
 import { hasWorkspaceAccess, INTEGRITY_PRODUCT_ID, useMyPermissions, useMyProducts } from '../api/workspace-access';
 import { useAuth } from '../auth/auth-context';
 import { BrandLockup } from './brand';
 import { ChangePasswordModal } from './change-password-modal';
+import { PageHeader } from './page-header';
 
 export type NavigationItem = {
   label: string;
@@ -20,6 +21,8 @@ export type NavigationItem = {
   product?: string;
   /** Permissao que o usuario precisa ter na empresa para o item aparecer (ex.: plano_acao.view). */
   permission?: string;
+  /** Grupo do menu (ex.: "Clientes"). Itens sem grupo ficam no topo, sem titulo. */
+  section?: string;
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -36,25 +39,32 @@ function roleLabel(role: string) {
 function userInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
-  const initials = parts.slice(0, 2).map((word) => word[0]).join('');
-  return initials.toUpperCase();
+  return parts.slice(0, 2).map((word) => word[0]).join('').toUpperCase();
+}
+
+/** Agrupa os itens do menu pela secao, mantendo a ordem em que aparecem. */
+function groupBySection(items: NavigationItem[]) {
+  const groups: { section: string | null; items: NavigationItem[] }[] = [];
+  for (const item of items) {
+    const section = item.section ?? null;
+    const last = groups[groups.length - 1];
+    if (last && last.section === section) last.items.push(item);
+    else groups.push({ section, items: [item] });
+  }
+  return groups;
 }
 
 type AppShellProps = {
   eyebrow?: string;
   title: string;
   description?: string;
+  /** Botoes no canto direito do cabecalho da pagina. */
+  actions?: ReactNode;
   navigation: NavigationItem[];
   children: React.ReactNode;
 };
 
-export function AppShell({
-  eyebrow,
-  title,
-  description,
-  navigation,
-  children,
-}: AppShellProps) {
+export function AppShell({ eyebrow, title, description, actions, navigation, children }: AppShellProps) {
   const { user, token, signOut } = useAuth();
   const location = useLocation();
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -86,134 +96,108 @@ export function AppShell({
     .filter((item) => !item.platformOnly || user?.platform_admin)
     .filter((item) => !item.product || !products || products.has(item.product))
     .filter((item) => !item.permission || Boolean(permissions?.has(item.permission)));
-  const showAdminWorkspaceSwitcher = user?.role === 'admin';
+
+  const isAdmin = user?.role === 'admin';
   const isPlatformWorkspace = location.pathname.startsWith('/platform-admin');
   const isFagulhaWorkspace = location.pathname.startsWith('/fagulha-admin');
-  const canUseJornadas = Boolean(user?.platform_admin || user?.admin_product_ids?.includes('product-jornadas'));
-  const canUseFagulha = Boolean(user?.platform_admin || user?.admin_product_ids?.includes('product-fagulha'));
+  const workspaces = isAdmin ? [
+    user?.platform_admin ? { to: '/platform-admin/companies', label: 'Geral', title: 'Administração geral', icon: Building2, active: isPlatformWorkspace } : null,
+    user?.platform_admin || user?.admin_product_ids?.includes('product-jornadas')
+      ? { to: '/admin', label: 'Jornadas', title: 'Administração de Jornadas', icon: RouteIcon, active: !isPlatformWorkspace && !isFagulhaWorkspace } : null,
+    user?.platform_admin || user?.admin_product_ids?.includes('product-fagulha')
+      ? { to: '/fagulha-admin', label: 'Fagulha', title: 'Administração do Fagulha', icon: Flame, active: isFagulhaWorkspace } : null,
+  ].filter((item): item is NonNullable<typeof item> => item !== null) : [];
 
   return (
-    <div className={`shell${menuOpen ? ' shell--menu-open' : ''}`}>
+    <div className={`tr-shell${menuOpen ? ' is-menu-open' : ''}`}>
       {/* No computador e a barra lateral; no celular vira a gaveta aberta pelo botao de menu. */}
-      <aside id="shell-menu" className={`shell__sidebar${menuOpen ? ' is-open' : ''}`} aria-label="Menu">
-        <div className="shell__brand">
-          <BrandLockup tone="light" />
-          <button type="button" className="shell__menu-close" onClick={() => setMenuOpen(false)} aria-label="Fechar menu">
-            <X size={20} />
+      <aside id="shell-menu" className={`tr-sidebar${menuOpen ? ' is-open' : ''}`} aria-label="Menu">
+        <div className="tr-sidebar__brand">
+          <BrandLockup tone="light" subtitle="Jornada psicossocial" />
+          <button type="button" className="tr-sidebar__close" onClick={() => setMenuOpen(false)} aria-label="Fechar menu">
+            <X size={18} />
           </button>
         </div>
 
-        {user ? (
-          <div className="shell__drawer-user">
-            <span className="shell__user-avatar" aria-hidden>{userInitials(user.name)}</span>
-            <span className="shell__drawer-user-copy">
-              <strong>{user.name}</strong>
-              <span>{roleLabel(user.role)}</span>
-            </span>
-          </div>
+        {workspaces.length > 1 ? (
+          <nav className="tr-workspaces" aria-label="Ambiente administrativo">
+            {workspaces.map(({ to, label, title: workspaceTitle, icon: Icon, active }) => (
+              <Link key={to} to={to} title={workspaceTitle} className={`tr-workspaces__item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}>
+                <Icon size={14} aria-hidden />
+                <span>{label}</span>
+              </Link>
+            ))}
+          </nav>
         ) : null}
 
-        <div className="shell__sidebar-note">
-          <span className="shell__sidebar-note-label">hub de cuidado</span>
-          <p>Dados, jornadas e evidências em um painel vivo para transformar cuidado em decisão.</p>
-        </div>
-
-        <nav className="shell__nav" aria-label="Navegação principal">
-          {visibleNavigation.map((item) => {
-            const Icon = item.icon;
-
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `shell__nav-link ${(item.activeFor ? item.activeFor(location.pathname) : isActive) ? 'active' : ''}`
-                }
-                end={item.exact ?? ['/admin', '/company', '/manager', '/employee'].includes(item.to)}
-              >
-                <Icon size={18} />
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          })}
+        <nav className="tr-nav" aria-label="Navegação principal">
+          {groupBySection(visibleNavigation).map((group) => (
+            <div key={group.section ?? 'main'} className="tr-nav__group">
+              {group.section ? <span className="tr-nav__section">{group.section}</span> : null}
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) => `tr-nav__link${(item.activeFor ? item.activeFor(location.pathname) : isActive) ? ' is-active' : ''}`}
+                    end={item.exact ?? ['/admin', '/company', '/manager', '/employee'].includes(item.to)}
+                  >
+                    <Icon size={17} aria-hidden />
+                    <span>{item.label}</span>
+                  </NavLink>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
-        <div className="shell__account">
-          <button type="button" className="shell__account-link" onClick={() => { setMenuOpen(false); setPasswordOpen(true); }}>
-            <KeyRound size={16} />
-            <span>Trocar senha</span>
-          </button>
-          <button type="button" className="shell__logout" onClick={signOut}>
-            <LogOut size={18} />
-            <span>Sair</span>
-          </button>
-        </div>
+        {user ? (
+          <div className="tr-account">
+            <div className="tr-account__user">
+              <span className="tr-avatar" aria-hidden>{userInitials(user.name)}</span>
+              <span className="tr-account__copy">
+                <strong title={user.name}>{user.name}</strong>
+                <span>{roleLabel(user.role)}</span>
+              </span>
+            </div>
+            <div className="tr-account__actions">
+              <button type="button" className="tr-account__button" onClick={() => { setMenuOpen(false); setPasswordOpen(true); }}>
+                <KeyRound size={15} aria-hidden />
+                <span>Trocar senha</span>
+              </button>
+              <button type="button" className="tr-account__button" onClick={signOut}>
+                <LogOut size={15} aria-hidden />
+                <span>Sair</span>
+              </button>
+            </div>
+          </div>
+        ) : null}
       </aside>
-      {menuOpen ? <div className="shell__backdrop" onClick={() => setMenuOpen(false)} aria-hidden /> : null}
+      {menuOpen ? <div className="tr-backdrop" onClick={() => setMenuOpen(false)} aria-hidden /> : null}
 
-      <main className="shell__main">
-        <div className="shell__mobile-brand">
+      <main className="tr-main">
+        <div className="tr-topbar">
           <BrandLockup compact />
-          <button type="button" className="shell__menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu" aria-expanded={menuOpen} aria-controls="shell-menu">
-            <Menu size={20} />
+          <button type="button" className="tr-topbar__menu" onClick={() => setMenuOpen(true)} aria-label="Abrir menu" aria-expanded={menuOpen} aria-controls="shell-menu">
+            <Menu size={18} aria-hidden />
             <span>Menu</span>
           </button>
         </div>
 
-        {user?.must_change_password ? (
-          <div className="shell__password-notice" role="status">
-            <KeyRound size={18} aria-hidden />
-            <span><strong>Você está usando a senha provisória que recebeu por e-mail.</strong> Crie a sua própria senha para manter o acesso seguro.</span>
-            <button type="button" className="primary-button" onClick={() => setPasswordOpen(true)}>Criar minha senha</button>
-          </div>
-        ) : null}
-
-        {showAdminWorkspaceSwitcher ? (
-          <nav className="admin-workspace-switcher" aria-label="Ambiente administrativo">
-            <span className="admin-workspace-switcher__label">Ambiente</span>
-            <div className="admin-workspace-switcher__options">
-              {user?.platform_admin ? <Link
-                to="/platform-admin/companies"
-                className={`admin-workspace-switcher__link ${isPlatformWorkspace ? 'active' : ''}`}
-                aria-current={isPlatformWorkspace ? 'page' : undefined}
-              >
-                <Building2 size={16} />
-                <span>Admin Geral</span>
-              </Link> : null}
-              {canUseJornadas ? <Link
-                to="/admin"
-                className={`admin-workspace-switcher__link ${!isPlatformWorkspace && !isFagulhaWorkspace ? 'active' : ''}`}
-                aria-current={!isPlatformWorkspace && !isFagulhaWorkspace ? 'page' : undefined}
-              >
-                <RouteIcon size={16} />
-                <span>Admin Jornadas</span>
-              </Link> : null}
-              {canUseFagulha ? <Link to="/fagulha-admin" className={`admin-workspace-switcher__link ${isFagulhaWorkspace ? 'active' : ''}`} aria-current={isFagulhaWorkspace ? 'page' : undefined}><Flame size={16}/><span>Admin Fagulha</span></Link> : null}
-            </div>
-          </nav>
-        ) : null}
-
-        <header className="shell__header">
-          <div className="shell__headline">
-            {eyebrow ? <span className="shell__eyebrow">{eyebrow}</span> : null}
-            <h1>{title}</h1>
-            {description ? <p>{description}</p> : null}
-          </div>
-
-          {user ? (
-            <div className="shell__user">
-              <span className="shell__user-copy">
-                <span>{roleLabel(user.role)}</span>
-                <strong>{user.name}</strong>
-              </span>
-              <span className="shell__user-avatar" aria-hidden>
-                {userInitials(user.name)}
-              </span>
+        <div className="tr-page">
+          {user?.must_change_password ? (
+            <div className="tr-notice" role="status">
+              <KeyRound size={18} aria-hidden />
+              <span><strong>Você está usando a senha provisória que recebeu por e-mail.</strong> Crie a sua própria senha para manter o acesso seguro.</span>
+              <button type="button" className="primary-button" onClick={() => setPasswordOpen(true)}>Criar minha senha</button>
             </div>
           ) : null}
-        </header>
 
-        <section className="shell__content">{children}</section>
+          <PageHeader eyebrow={eyebrow} title={title} description={description} actions={actions} />
+
+          <section className="tr-content shell__content">{children}</section>
+        </div>
       </main>
       <ChangePasswordModal open={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </div>

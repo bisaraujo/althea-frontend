@@ -139,7 +139,7 @@ export function IntegrityReportPage() {
   }
 
   return (
-    <main className="int-public">
+    <main className="int-public tr-public">
       <header className="int-public__header">
         <BrandLockup />
         <nav><Link to="/denuncia/acompanhar">Já fez uma denúncia? Acompanhe</Link></nav>

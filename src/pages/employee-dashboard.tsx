@@ -273,7 +273,7 @@ export function EmployeeDashboard() {
             eyebrow="Continuar a jornada"
             action={
               <Link to="/employee/journey" className="secondary-link">
-                ver jornada completa
+                Ver jornada completa
               </Link>
             }
           >
@@ -315,7 +315,7 @@ export function EmployeeDashboard() {
               eyebrow="Formulários"
               action={
                 <Link to={getJourneyItemLink(firstSurveyItem)} className="secondary-link">
-                  ver na jornada
+                  Ver na jornada
                 </Link>
               }
             >
@@ -347,7 +347,7 @@ export function EmployeeDashboard() {
               eyebrow="Apresentações"
               action={
                 <Link to={getJourneyItemLink(firstContentItem)} className="secondary-link">
-                  ver na jornada
+                  Ver na jornada
                 </Link>
               }
             >

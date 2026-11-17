@@ -1,0 +1,1184 @@
+/* ==========================================================================
+   Turi — camada visual (renovacao)
+
+   Importada por ultimo (src/main.tsx). Mantem as cores e as fontes da marca e
+   reorganiza a aparencia: superficies mais limpas, menos bordas e brilhos,
+   espacamento consistente e um so estilo para botoes, campos, abas e paineis.
+
+   As regras ficam dentro de :is(.tr-shell, .ui-overlay) (telas logadas) ou .tr-public (telas
+   publicas) para vencer as camadas antigas do styles.css sem !important.
+   ========================================================================== */
+
+:root {
+  --tr-bg: #f7f2ec;
+  --tr-surface: #fffdfa;
+  --tr-surface-2: #f8f3ed;
+  --tr-surface-3: #f1e9e0;
+  --tr-line: rgba(47, 28, 79, 0.1);
+  --tr-line-strong: rgba(47, 28, 79, 0.18);
+  --tr-ink: #21172d;
+  --tr-ink-soft: #625670;
+  --tr-ink-faint: #8a7f94;
+  --tr-radius-sm: 8px;
+  --tr-radius: 12px;
+  --tr-radius-lg: 16px;
+  --tr-shadow: 0 1px 2px rgba(31, 23, 51, 0.04), 0 4px 14px rgba(31, 23, 51, 0.04);
+  --tr-shadow-pop: 0 10px 30px rgba(31, 23, 51, 0.12);
+  --tr-focus: 0 0 0 3px rgba(255, 122, 0, 0.22);
+  --tr-sidebar-w: 264px;
+  --tr-content-max: 1240px;
+}
+
+body {
+  background: var(--tr-bg);
+}
+
+/* ---------- Casca: barra lateral + area principal ------------------------ */
+
+.tr-shell {
+  display: grid;
+  grid-template-columns: var(--tr-sidebar-w) minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--tr-bg);
+  color: var(--tr-ink);
+}
+
+.tr-sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100vh;
+  padding: 1.1rem 0.85rem 0.9rem;
+  overflow-y: auto;
+  background: radial-gradient(120% 40% at 0% 0%, rgba(255, 122, 0, 0.12), transparent 60%), #18102d;
+  color: var(--text-on-dark);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.tr-sidebar__brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 0.35rem;
+}
+
+.tr-sidebar__close {
+  display: none;
+}
+
+/* Seletor de ambiente (admins): Geral / Jornadas / Fagulha. */
+.tr-workspaces {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tr-workspaces__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.38rem 0.3rem;
+  border-radius: 8px;
+  color: var(--text-on-dark-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tr-workspaces__item:hover {
+  color: var(--text-on-dark);
+}
+
+.tr-workspaces__item.is-active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.tr-workspaces__item.is-active svg {
+  color: var(--brand);
+}
+
+.tr-nav {
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+  flex: 1;
+}
+
+.tr-nav__group {
+  display: grid;
+  gap: 2px;
+}
+
+.tr-nav__section {
+  padding: 0 0.7rem 0.3rem;
+  color: rgba(255, 250, 246, 0.42);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tr-nav__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 9px;
+  color: var(--text-on-dark-soft);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tr-nav__link svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.tr-nav__link:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-on-dark);
+}
+
+.tr-nav__link.is-active {
+  background: rgba(255, 122, 0, 0.14);
+  color: #fff;
+}
+
+.tr-nav__link.is-active svg {
+  color: var(--brand);
+  opacity: 1;
+}
+
+.tr-nav__link.is-active::before {
+  content: '';
+  position: absolute;
+  left: -0.85rem;
+  top: 0.45rem;
+  bottom: 0.45rem;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--brand);
+}
+
+.tr-account {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tr-account__user {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.tr-avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 122, 0, 0.18);
+  color: #ffb066;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.tr-account__copy {
+  display: grid;
+  min-width: 0;
+}
+
+.tr-account__copy strong {
+  overflow: hidden;
+  color: #fff;
+  font-size: 0.86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tr-account__copy span {
+  color: var(--text-on-dark-soft);
+  font-size: 0.74rem;
+}
+
+.tr-account__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+
+.tr-account__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 32px;
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-on-dark-soft);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tr-account__button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.tr-main {
+  min-width: 0;
+}
+
+.tr-topbar,
+.tr-backdrop {
+  display: none;
+}
+
+.tr-page {
+  width: 100%;
+  max-width: var(--tr-content-max);
+  margin: 0 auto;
+  padding: 2rem 2.25rem 3rem;
+}
+
+.tr-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid rgba(255, 122, 0, 0.3);
+  border-radius: var(--tr-radius);
+  background: #fff6ec;
+  color: var(--tr-ink);
+  font-size: 0.88rem;
+}
+
+.tr-notice > svg {
+  color: var(--brand-deep);
+}
+
+.tr-notice > span {
+  flex: 1 1 320px;
+}
+
+/* ---------- Cabecalho da pagina ----------------------------------------- */
+
+.tr-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  margin-bottom: 1.6rem;
+}
+
+.tr-page-header__copy {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  max-width: 760px;
+}
+
+.tr-page-header__eyebrow {
+  color: var(--brand-deep);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tr-page-header h1 {
+  margin: 0;
+  color: var(--tr-ink);
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 2.4vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.tr-page-header p {
+  margin: 0;
+  color: var(--tr-ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.tr-page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tr-content {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+/* ---------- Paineis ------------------------------------------------------ */
+
+:is(.tr-shell, .ui-overlay) .panel,
+:is(.tr-shell, .ui-overlay) .stat-card,
+:is(.tr-shell, .ui-overlay) .content-block {
+  border: 1px solid var(--tr-line);
+  border-radius: var(--tr-radius-lg);
+  background: var(--tr-surface);
+  box-shadow: var(--tr-shadow);
+  backdrop-filter: none;
+}
+
+:is(.tr-shell, .ui-overlay) .panel {
+  padding: 1.25rem 1.35rem 1.35rem;
+}
+
+:is(.tr-shell, .ui-overlay) .panel__header {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: 0;
+}
+
+:is(.tr-shell, .ui-overlay) .panel__header > div:first-child {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+:is(.tr-shell, .ui-overlay) .panel__header h2 {
+  margin: 0;
+  color: var(--tr-ink);
+  font-family: var(--font-display);
+  font-size: 1.06rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* O rotulo do painel (ex.: "3 ITENS", "CONTRATACAO") vira uma linha discreta abaixo do titulo. */
+:is(.tr-shell, .ui-overlay) .panel__eyebrow {
+  color: var(--tr-ink-faint);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:is(.tr-shell, .ui-overlay) .panel__eyebrow::first-letter {
+  text-transform: uppercase;
+}
+
+:is(.tr-shell, .ui-overlay) .panel__content {
+  min-width: 0;
+}
+
+/* ---------- Cartoes de numeros ------------------------------------------- */
+
+:is(.tr-shell, .ui-overlay) .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+:is(.tr-shell, .ui-overlay) .stat-card {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  min-height: 0;
+  padding: 1.05rem 1.15rem;
+  overflow: hidden;
+}
+
+:is(.tr-shell, .ui-overlay) .stat-card::before,
+:is(.tr-shell, .ui-overlay) .stat-card::after {
+  display: none;
+}
+
+:is(.tr-shell, .ui-overlay) .stat-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+:is(.tr-shell, .ui-overlay) .stat-card__label {
+  color: var(--tr-ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:is(.tr-shell, .ui-overlay) .stat-card__icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--brand-soft);
+  color: var(--brand-deep);
+}
+
+:is(.tr-shell, .ui-overlay) .stat-card__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+:is(.tr-shell, .ui-overlay) .stat-card__value {
+  color: var(--tr-ink);
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+:is(.tr-shell, .ui-overlay) .stat-card__meta {
+  margin: 0;
+  color: var(--tr-ink-faint);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+/* ---------- Botoes ------------------------------------------------------- */
+
+:is(.tr-shell, .ui-overlay) .primary-button,
+:is(.tr-shell, .ui-overlay) .secondary-button,
+:is(.tr-shell, .ui-overlay) .ghost-button,
+:is(.tr-shell, .ui-overlay) .secondary-link,
+.tr-public .primary-button,
+.tr-public .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 38px;
+  padding: 0 0.95rem;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 0.87rem;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: 0;
+  text-decoration: none;
+  white-space: nowrap;
+  transform: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+:is(.tr-shell, .ui-overlay) .primary-button svg,
+:is(.tr-shell, .ui-overlay) .secondary-button svg,
+:is(.tr-shell, .ui-overlay) .ghost-button svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+:is(.tr-shell, .ui-overlay) .primary-button,
+.tr-public .primary-button {
+  border: 1px solid var(--brand);
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(210, 97, 31, 0.25);
+}
+
+:is(.tr-shell, .ui-overlay) .primary-button:hover:not(:disabled),
+.tr-public .primary-button:hover:not(:disabled) {
+  border-color: var(--brand-deep);
+  background: var(--brand-deep);
+  transform: none;
+}
+
+:is(.tr-shell, .ui-overlay) .secondary-button,
+:is(.tr-shell, .ui-overlay) .secondary-link,
+.tr-public .secondary-button {
+  border: 1px solid var(--tr-line-strong);
+  background: #fff;
+  color: var(--purple);
+  box-shadow: none;
+}
+
+:is(.tr-shell, .ui-overlay) .secondary-button:hover:not(:disabled),
+:is(.tr-shell, .ui-overlay) .secondary-link:hover {
+  border-color: rgba(75, 46, 131, 0.35);
+  background: #faf7ff;
+  transform: none;
+}
+
+:is(.tr-shell, .ui-overlay) .ghost-button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--purple);
+  box-shadow: none;
+}
+
+:is(.tr-shell, .ui-overlay) .ghost-button:hover:not(:disabled) {
+  background: var(--purple-soft);
+}
+
+:is(.tr-shell, .ui-overlay) .primary-button:disabled,
+:is(.tr-shell, .ui-overlay) .secondary-button:disabled,
+:is(.tr-shell, .ui-overlay) .ghost-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+:is(.tr-shell, .ui-overlay) .primary-button:focus-visible,
+:is(.tr-shell, .ui-overlay) .secondary-button:focus-visible,
+:is(.tr-shell, .ui-overlay) .ghost-button:focus-visible,
+.tr-public .primary-button:focus-visible {
+  outline: none;
+  box-shadow: var(--tr-focus);
+}
+
+/* Botao de largura total dentro de formularios fica com a mesma altura dos demais. */
+:is(.tr-shell, .ui-overlay) form > .primary-button,
+:is(.tr-shell, .ui-overlay) form > .secondary-button {
+  min-height: 40px;
+}
+
+:is(.tr-shell, .ui-overlay) .text-button {
+  color: var(--purple);
+  font-weight: 650;
+}
+
+:is(.tr-shell, .ui-overlay) .icon-button,
+:is(.tr-shell, .ui-overlay) .org-icon-btn,
+:is(.tr-shell, .ui-overlay) .ui-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--tr-ink-soft);
+  box-shadow: none;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+:is(.tr-shell, .ui-overlay) .icon-button:hover,
+:is(.tr-shell, .ui-overlay) .org-icon-btn:hover,
+:is(.tr-shell, .ui-overlay) .ui-icon-button:hover {
+  border-color: var(--tr-line);
+  background: var(--tr-surface-2);
+  color: var(--tr-ink);
+}
+
+/* ---------- Campos ------------------------------------------------------- */
+
+:is(.tr-shell, .ui-overlay) input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']),
+:is(.tr-shell, .ui-overlay) select,
+:is(.tr-shell, .ui-overlay) textarea {
+  min-height: 40px;
+  border: 1px solid var(--tr-line-strong);
+  border-radius: 10px;
+  background-color: #fff;
+  color: var(--tr-ink);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+:is(.tr-shell, .ui-overlay) textarea {
+  min-height: 84px;
+  line-height: 1.5;
+}
+
+:is(.tr-shell, .ui-overlay) input:not([type='checkbox']):not([type='radio']):not([type='file']):hover,
+:is(.tr-shell, .ui-overlay) select:hover,
+:is(.tr-shell, .ui-overlay) textarea:hover {
+  border-color: rgba(47, 28, 79, 0.28);
+}
+
+:is(.tr-shell, .ui-overlay) input:not([type='checkbox']):not([type='radio']):not([type='file']):focus,
+:is(.tr-shell, .ui-overlay) select:focus,
+:is(.tr-shell, .ui-overlay) textarea:focus {
+  border-color: rgba(255, 122, 0, 0.7);
+  outline: none;
+  box-shadow: var(--tr-focus);
+}
+
+:is(.tr-shell, .ui-overlay) input::placeholder,
+:is(.tr-shell, .ui-overlay) textarea::placeholder {
+  color: #a59bab;
+}
+
+:is(.tr-shell, .ui-overlay) input:disabled,
+:is(.tr-shell, .ui-overlay) select:disabled,
+:is(.tr-shell, .ui-overlay) textarea:disabled {
+  background-color: var(--tr-surface-2);
+  color: var(--tr-ink-faint);
+}
+
+:is(.tr-shell, .ui-overlay) label > span:first-child,
+:is(.tr-shell, .ui-overlay) .ben-field > span {
+  color: var(--tr-ink);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+/* ---------- Abas (qualquer role="tablist") -------------------------------- */
+
+:is(.tr-shell, .ui-overlay) [role='tablist'] {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  border: 0;
+  border-bottom: 1px solid var(--tr-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  scrollbar-width: none;
+}
+
+:is(.tr-shell, .ui-overlay) [role='tablist']::-webkit-scrollbar {
+  display: none;
+}
+
+:is(.tr-shell, .ui-overlay) [role='tab'] {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  margin: 0 0 -1px;
+  padding: 0 0.85rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--tr-ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: none;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+:is(.tr-shell, .ui-overlay) [role='tab'] svg {
+  width: 16px;
+  height: 16px;
+}
+
+:is(.tr-shell, .ui-overlay) [role='tab']:hover {
+  background: transparent;
+  color: var(--tr-ink);
+}
+
+:is(.tr-shell, .ui-overlay) [role='tab'][aria-selected='true'] {
+  border-bottom-color: var(--brand);
+  background: transparent;
+  color: var(--tr-ink);
+  box-shadow: none;
+}
+
+:is(.tr-shell, .ui-overlay) [role='tab'][aria-selected='true'] svg {
+  color: var(--brand-deep);
+}
+
+/* Barras que embrulhavam as abas num cartao ficam so com as abas. */
+:is(.tr-shell, .ui-overlay) .organization-toolbar--tabs-only,
+:is(.tr-shell, .ui-overlay) .project-operations-head {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ---------- Filtros em pilula (filtros, nao abas) ------------------------- */
+
+:is(.tr-shell, .ui-overlay) .ui-segmented button {
+  min-height: 32px;
+  border: 1px solid var(--tr-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--tr-ink-soft);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+:is(.tr-shell, .ui-overlay) .ui-segmented button.is-active {
+  border-color: rgba(255, 122, 0, 0.4);
+  background: var(--brand-soft);
+  color: var(--brand-deep);
+}
+
+/* ---------- Etiquetas ---------------------------------------------------- */
+
+:is(.tr-shell, .ui-overlay) .status-pill,
+.tr-public .status-pill {
+  min-height: 24px;
+  padding: 0.15rem 0.6rem;
+  border: 0;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+/* ---------- Tabelas ------------------------------------------------------ */
+
+:is(.tr-shell, .ui-overlay) .ui-table-wrap {
+  border: 1px solid var(--tr-line);
+  border-radius: var(--tr-radius);
+  background: #fff;
+}
+
+:is(.tr-shell, .ui-overlay) .ui-table th {
+  background: var(--tr-surface-2);
+  color: var(--tr-ink-faint);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+:is(.tr-shell, .ui-overlay) .ui-table td {
+  border-color: var(--tr-line);
+  font-size: 0.88rem;
+}
+
+:is(.tr-shell, .ui-overlay) .ui-table tbody tr:hover td {
+  background: #fffaf4;
+}
+
+/* ---------- Estados vazios ----------------------------------------------- */
+
+:is(.tr-shell, .ui-overlay) .empty-state,
+:is(.tr-shell, .ui-overlay) .ui-empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 2rem 1.25rem;
+  border: 1px dashed var(--tr-line-strong);
+  border-radius: var(--tr-radius);
+  background: var(--tr-surface-2);
+  text-align: center;
+}
+
+:is(.tr-shell, .ui-overlay) .empty-state svg {
+  width: 26px;
+  height: 26px;
+  margin-bottom: 0.2rem;
+  color: var(--brand);
+}
+
+:is(.tr-shell, .ui-overlay) .empty-state h3 {
+  margin: 0;
+  color: var(--tr-ink);
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+:is(.tr-shell, .ui-overlay) .empty-state p {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--tr-ink-soft);
+  font-size: 0.87rem;
+  line-height: 1.5;
+}
+
+/* ---------- Celular e tablet: barra no topo + menu em gaveta -------------- */
+
+@media (max-width: 1120px) {
+  .tr-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tr-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 300;
+    width: min(300px, 86vw);
+    transform: translateX(-102%);
+    transition: transform 0.22s ease;
+    box-shadow: var(--tr-shadow-pop);
+  }
+
+  .tr-sidebar.is-open {
+    transform: none;
+  }
+
+  .tr-sidebar__close {
+    display: inline-grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .tr-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 250;
+    display: block;
+    background: rgba(19, 11, 39, 0.45);
+  }
+
+  .tr-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--tr-line);
+    background: rgba(247, 242, 236, 0.92);
+    backdrop-filter: blur(10px);
+  }
+
+  .tr-topbar__menu {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 36px;
+    padding: 0 0.8rem;
+    border: 1px solid var(--tr-line-strong);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--purple);
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .tr-page {
+    padding: 1.4rem 1.25rem 2.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .tr-page {
+    padding: 1.1rem 1rem 2rem;
+  }
+
+  .tr-page-header {
+    margin-bottom: 1.2rem;
+  }
+
+  :is(.tr-shell, .ui-overlay) .panel {
+    padding: 1rem;
+    border-radius: 14px;
+  }
+
+  :is(.tr-shell, .ui-overlay) .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  :is(.tr-shell, .ui-overlay) .stat-card {
+    padding: 0.85rem 0.9rem;
+  }
+
+  :is(.tr-shell, .ui-overlay) .stat-card__value {
+    font-size: 1.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tr-sidebar {
+    transition: none;
+  }
+}
+
+/* Marca na barra lateral: subtitulo numa linha so. */
+.tr-sidebar .brand-lockup__copy small {
+  overflow: hidden;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tr-sidebar .brand-lockup {
+  min-width: 0;
+}
+
+.tr-account__button span {
+  white-space: nowrap;
+}
+
+.tr-workspaces__item svg {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------- Linhas de lista dentro dos paineis --------------------------- */
+/* Um so visual para os itens listados (etapas, itens, empresas, cartoes de entidade):
+   fundo branco, borda fina, sem sombra. Antes cada tela tinha o seu. */
+
+:is(.tr-shell, .ui-overlay) .list-item,
+:is(.tr-shell, .ui-overlay) .entity-card,
+:is(.tr-shell, .ui-overlay) .journey-editor-section,
+:is(.tr-shell, .ui-overlay) .company-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.75rem 0.95rem;
+  border: 1px solid var(--tr-line);
+  border-radius: var(--tr-radius);
+  background: #fff;
+  box-shadow: none;
+  color: var(--tr-ink);
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+:is(.tr-shell, .ui-overlay) .entity-card {
+  display: grid;
+  align-items: start;
+}
+
+:is(.tr-shell, .ui-overlay) .journey-editor-section {
+  font: inherit;
+  cursor: pointer;
+}
+
+:is(.tr-shell, .ui-overlay) .journey-editor-section:hover,
+:is(.tr-shell, .ui-overlay) .list-item:hover,
+:is(.tr-shell, .ui-overlay) .entity-card:hover {
+  border-color: var(--tr-line-strong);
+}
+
+:is(.tr-shell, .ui-overlay) .journey-editor-section.active {
+  border-color: rgba(255, 122, 0, 0.45);
+  background: #fff7ef;
+}
+
+:is(.tr-shell, .ui-overlay) .journey-editor-section strong,
+:is(.tr-shell, .ui-overlay) .list-item strong,
+:is(.tr-shell, .ui-overlay) .entity-card strong,
+:is(.tr-shell, .ui-overlay) .list-item__copy strong {
+  color: var(--tr-ink);
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+:is(.tr-shell, .ui-overlay) .journey-editor-section.active strong {
+  color: var(--brand-deep);
+}
+
+:is(.tr-shell, .ui-overlay) .journey-editor-section span,
+:is(.tr-shell, .ui-overlay) .list-item p,
+:is(.tr-shell, .ui-overlay) .list-item__copy p,
+:is(.tr-shell, .ui-overlay) .entity-card p,
+:is(.tr-shell, .ui-overlay) .entity-card span:not(.status-pill) {
+  margin: 0;
+  color: var(--tr-ink-faint);
+  font-size: 0.82rem;
+}
+
+:is(.tr-shell, .ui-overlay) .admin-list,
+:is(.tr-shell, .ui-overlay) .entity-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* Seletor Gestores / Colaboradores (editor da jornada): controle segmentado. */
+:is(.tr-shell, .ui-overlay) .journey-role-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--tr-surface-3);
+}
+
+:is(.tr-shell, .ui-overlay) .journey-role-switch button {
+  min-height: 34px;
+  padding: 0 0.95rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--tr-ink-soft);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 650;
+  box-shadow: none;
+}
+
+:is(.tr-shell, .ui-overlay) .journey-role-switch button.active {
+  background: #fff;
+  color: var(--tr-ink);
+  box-shadow: 0 1px 2px rgba(31, 23, 51, 0.1);
+}
+
+/* Busca com icone dentro de um invólucro que ja tem a borda: o campo nao ganha outra. */
+:is(.tr-shell, .ui-overlay) .admin-search {
+  min-height: 42px;
+  border: 1px solid var(--tr-line-strong);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: none;
+}
+
+:is(.tr-shell, .ui-overlay) .admin-search:focus-within {
+  border-color: rgba(255, 122, 0, 0.7);
+  box-shadow: var(--tr-focus);
+}
+
+:is(.tr-shell, .ui-overlay) .admin-search input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']),
+:is(.tr-shell, .ui-overlay) .admin-search input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']):hover,
+:is(.tr-shell, .ui-overlay) .admin-search input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']):focus {
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Acoes pequenas da estrutura ("+ Área", "+ Subunidade", "Nova unidade"): botao secundario pequeno,
+   sem borda tracejada laranja. */
+:is(.tr-shell, .ui-overlay) .org-action {
+  min-height: 30px;
+  padding: 0 0.65rem;
+  border: 1px solid var(--tr-line-strong);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--purple);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+:is(.tr-shell, .ui-overlay) .org-action:hover,
+:is(.tr-shell, .ui-overlay) .org-action:focus-visible {
+  border-style: solid;
+  border-color: rgba(75, 46, 131, 0.35);
+  background: #faf7ff;
+}
+
+/* Galeria de clientes de Jornadas: cartoes mais leves. */
+:is(.tr-shell, .ui-overlay) .admin-client-card {
+  border: 1px solid var(--tr-line);
+  border-radius: var(--tr-radius-lg);
+  background: var(--tr-surface);
+  box-shadow: var(--tr-shadow);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+:is(.tr-shell, .ui-overlay) .admin-client-card:hover {
+  border-color: rgba(255, 122, 0, 0.35);
+  box-shadow: 0 6px 20px rgba(31, 23, 51, 0.07);
+  transform: none;
+}
+
+:is(.tr-shell, .ui-overlay) .admin-client-card__copy strong {
+  font-size: 1rem;
+}
+
+:is(.tr-shell, .ui-overlay) .admin-client-card__copy p {
+  font-size: 0.88rem;
+}
+
+/* Busca da carteira de empresas: mesmo tratamento (borda so no invólucro). */
+:is(.tr-shell, .ui-overlay) .ca-search {
+  min-height: 42px;
+  border-radius: 10px;
+}
+
+:is(.tr-shell, .ui-overlay) .ca-search input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']),
+:is(.tr-shell, .ui-overlay) .ca-search input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']):hover,
+:is(.tr-shell, .ui-overlay) .ca-search input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']):focus {
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:is(.tr-shell, .ui-overlay) .ca-select {
+  min-height: 42px;
+  border-radius: 10px;
+}
+
+/* Seletor de empresa no topo das telas do Admin Geral: botao alinhado ao campo. */
+:is(.tr-shell, .ui-overlay) .int-company-picker {
+  align-items: flex-end;
+}
+
+:is(.tr-shell, .ui-overlay) .int-company-picker .secondary-link {
+  min-height: 40px;
+}
+
+/* Listas com opcoes em formulario: sem a calha da barra de rolagem (os cartoes ficavam desalinhados). */
+:is(.tr-shell, .ui-overlay) .admin-form .admin-list {
+  max-height: none;
+  overflow: visible;
+}
+
+/* Tabelas de dados ocupam a largura do painel. */
+:is(.tr-shell, .ui-overlay) .ui-table-wrap > .ui-table {
+  width: 100%;
+  min-width: 100%;
+}
+
+@media (min-width: 761px) {
+  :is(.tr-shell, .ui-overlay) .cd-panel .ui-table {
+    display: table;
+  }
+}
+
+/* Paginas de jornada (colaborador e gestor) tem layout proprio: mesmo fundo liso das demais. */
+.journey-workspace {
+  background: var(--tr-bg);
+}

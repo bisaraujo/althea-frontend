@@ -18,16 +18,16 @@ import {
 import type { NavigationItem } from './app-shell';
 
 export const platformAdminNavigation: NavigationItem[] = [
-  { to: '/platform-admin/companies', label: 'Empresas', icon: Building2, exact: true, activeFor: (pathname) => pathname.startsWith('/platform-admin/companies') && pathname !== '/platform-admin/companies/new' },
-  { to: '/platform-admin/companies/new', label: 'Cadastrar empresa', icon: UserPlus },
-  { to: '/platform-admin/organization', label: 'Gestão organizacional', icon: Network },
-  { to: '/platform-admin/access-packages', label: 'Pacotes de acesso', icon: ShieldCheck },
-  { to: '/platform-admin/requests', label: 'Central de solicitações', icon: Inbox },
-  { to: '/platform-admin/products', label: 'Catálogo de produtos', icon: PackageCheck },
-  { to: '/platform-admin/integrity', label: 'Canal de Denúncias', icon: ShieldAlert },
-  { to: '/platform-admin/action-plans', label: 'Plano de ação', icon: CalendarDays },
-  { to: '/platform-admin/benefits', label: 'Benefícios', icon: Gift },
-  { to: '/platform-admin/administrators', label: 'Administradores', icon: UserCog },
+  { to: '/platform-admin/companies', label: 'Empresas', icon: Building2, exact: true, section: 'Clientes', activeFor: (pathname) => pathname.startsWith('/platform-admin/companies') && pathname !== '/platform-admin/companies/new' },
+  { to: '/platform-admin/companies/new', label: 'Cadastrar empresa', icon: UserPlus, section: 'Clientes' },
+  { to: '/platform-admin/action-plans', label: 'Plano de ação', icon: CalendarDays, section: 'Operação' },
+  { to: '/platform-admin/benefits', label: 'Benefícios', icon: Gift, section: 'Operação' },
+  { to: '/platform-admin/integrity', label: 'Canal de Denúncias', icon: ShieldAlert, section: 'Operação' },
+  { to: '/platform-admin/organization', label: 'Gestão organizacional', icon: Network, section: 'Operação' },
+  { to: '/platform-admin/access-packages', label: 'Pacotes de acesso', icon: ShieldCheck, section: 'Acessos' },
+  { to: '/platform-admin/requests', label: 'Central de solicitações', icon: Inbox, section: 'Acessos' },
+  { to: '/platform-admin/administrators', label: 'Administradores', icon: UserCog, section: 'Acessos' },
+  { to: '/platform-admin/products', label: 'Catálogo de produtos', icon: PackageCheck, section: 'Plataforma' },
 ];
 
 export const productAdminNavigation: NavigationItem[] = [

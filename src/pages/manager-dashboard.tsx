@@ -25,6 +25,7 @@ import { SectionPanel } from '../components/section-panel';
 import { StatCard } from '../components/stat-card';
 import { StatusPill } from '../components/status-pill';
 import { managerNavigation } from '../components/role-navigation';
+import { plural } from '../lib/plural';
 
 type JourneyItemWithSection = JourneyItem & {
   sectionTitle: string;
@@ -305,7 +306,7 @@ export function ManagerDashboard() {
             eyebrow="Continuar a jornada"
             action={
               <Link to="/manager/company-journey" className="secondary-link">
-                ver jornada completa
+                Ver jornada completa
               </Link>
             }
           >
@@ -346,7 +347,7 @@ export function ManagerDashboard() {
               eyebrow="Início do projeto"
               action={
                 <Link to={itemLink(firstGuidance)} className="secondary-link">
-                  abrir na jornada
+                  Abrir na jornada
                 </Link>
               }
             >
@@ -374,7 +375,7 @@ export function ManagerDashboard() {
             <SectionPanel
               title="Equipe do projeto"
               eyebrow="Colaboradores"
-              action={<StatusPill>{employees.length} colaboradores</StatusPill>}
+              action={<StatusPill>{plural(employees.length, 'colaborador', 'colaboradores')}</StatusPill>}
             >
               {employees.length ? (
                 <div className="list">

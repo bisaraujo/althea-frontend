@@ -113,12 +113,11 @@
   animation: info-tooltip-in 0.12s ease;
 }
 
-/* Celular: icone maior e com fundo, facil de ver e de tocar. */
+/* Celular: icone um pouco maior; a area de toque ja e ampliada pelo ::after (sem fundo, que pesava na tela). */
 @media (max-width: 760px) {
   .info-tooltip__trigger {
-    width: 32px;
-    height: 32px;
-    background: var(--brand-soft);
+    width: 26px;
+    height: 26px;
     color: var(--brand-deep);
   }
 

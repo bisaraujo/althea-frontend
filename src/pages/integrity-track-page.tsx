@@ -30,7 +30,7 @@ export function IntegrityTrackPage() {
   }
 
   return (
-    <main className="int-public">
+    <main className="int-public tr-public">
       <header className="int-public__header"><BrandLockup /></header>
       <section className="int-public__card">
         <span className="int-public__eyebrow"><FileSearch size={15} aria-hidden />Canal de Denúncias</span>

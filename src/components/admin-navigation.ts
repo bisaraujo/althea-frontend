@@ -34,7 +34,7 @@ export const productAdminNavigation: NavigationItem[] = [
   { to: '/admin', label: 'Clientes de Jornadas', icon: FolderKanban },
   { to: '/admin/schedule', label: 'Cronograma', icon: CalendarClock },
   { to: '/admin/meetings', label: 'Reuniões', icon: ClipboardCheck },
-  { to: '/admin/research', label: 'Pesquisas', icon: ClipboardList },
+  { to: '/admin/research', label: 'Pesquisas', icon: ClipboardList, activeFor: (pathname) => pathname.startsWith('/admin/research') },
 ];
 
 export const fagulhaAdminNavigation: NavigationItem[] = [

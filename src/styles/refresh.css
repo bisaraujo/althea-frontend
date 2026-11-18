@@ -1182,3 +1182,9 @@ body {
 .journey-workspace {
   background: var(--tr-bg);
 }
+
+/* Etiqueta amarela ("Rascunho", "Em revisão", "Pendente"): texto legivel (o laranja claro sumia no fundo). */
+:is(.tr-shell, .ui-overlay) .status-pill--warning {
+  background: rgba(255, 176, 102, 0.18);
+  color: #a14f0e;
+}

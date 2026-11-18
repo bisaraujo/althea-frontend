@@ -2,10 +2,13 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 export class ApiError extends Error {
   status: number;
+  /** Corpo de "detail" quando o servidor manda um objeto (ex.: erros por pergunta). */
+  detail?: unknown;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, detail?: unknown) {
     super(message);
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -60,14 +63,16 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
 
   if (!response.ok) {
-    const message =
-      typeof data === 'object' && data !== null && 'detail' in data
-        ? String((data as { detail: unknown }).detail)
-        : 'Não foi possível completar a requisição.';
+    const detail = typeof data === 'object' && data !== null && 'detail' in data ? (data as { detail: unknown }).detail : undefined;
+    const message = detail === undefined
+      ? 'Não foi possível completar a requisição.'
+      : typeof detail === 'object' && detail !== null && 'message' in detail
+        ? String((detail as { message: unknown }).message)
+        : typeof detail === 'string' ? detail : 'Alguns dados precisam de ajuste.';
     if (response.status === 401 && options.token) {
       window.dispatchEvent(new Event('auth:unauthorized'));
     }
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, detail);
   }
 
   return data as T;

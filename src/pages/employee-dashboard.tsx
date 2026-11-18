@@ -18,6 +18,7 @@ import { getEmployeeForms, getEmployeeJourney, getEmployeePresentations } from '
 import type { FormSummary, Journey, JourneyItem, Presentation } from '../api/types';
 import { useAuth } from '../auth/auth-context';
 import { AppShell } from '../components/app-shell';
+import { PendingSurveysCallout } from '../components/survey/pending-surveys-callout';
 import { TeamHomeWithoutJornadas } from './team-home-without-jornadas';
 import { EmptyState } from '../components/empty-state';
 import { useJornadasProduct } from '../api/company';
@@ -151,6 +152,7 @@ export function EmployeeDashboard() {
       description={hasJornadas === false ? "Seus benefícios e o que a empresa liberou para você." : "Acompanhe sua jornada, retome de onde parou e responda às pesquisas no seu ritmo."}
       navigation={employeeNavigation}
     >
+      <PendingSurveysCallout />
       {hasJornadas === false ? <TeamHomeWithoutJornadas /> : null}
       {hasJornadas !== false && error ? <div className="form-error">{error}</div> : null}
 
@@ -311,7 +313,7 @@ export function EmployeeDashboard() {
 
           <div className="content-grid">
             <SectionPanel
-              title="Pesquisas disponíveis"
+              title="Pesquisas da jornada"
               eyebrow="Formulários"
               action={
                 <Link to={getJourneyItemLink(firstSurveyItem)} className="secondary-link">

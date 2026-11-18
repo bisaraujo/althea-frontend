@@ -34,6 +34,8 @@ import { PlatformCompanyDetailPage } from './pages/platform-company-detail-page'
 import { OrganizationManagementPage } from './pages/organization-management-page';
 import { ProjectOperationsPage } from './pages/project-operations-page';
 import { ResearchOperationsPage } from './pages/research-operations-page';
+import { SurveyBuilderPage } from './pages/survey-builder-page';
+import { SurveyRespondPage, SurveysPage } from './pages/surveys-respond-page';
 import { FagulhaAdminPage } from './pages/fagulha-admin-page';
 import { FagulhaPublicPage } from './pages/fagulha-public-page';
 import { FagulhaActivationPage } from './pages/fagulha-activation-page';
@@ -73,6 +75,7 @@ export function App() {
             <Route path="/admin/schedule" element={<ProjectSchedulePage mode="admin" />} />
             <Route path="/admin/meetings" element={<MeetingsPage mode="admin" />} />
             <Route path="/admin/research" element={<ResearchOperationsPage />} />
+            <Route path="/admin/research/:surveyId" element={<SurveyBuilderPage />} />
             <Route path="/admin/products-modules" element={<ProductsModulesPage />} />
             <Route path="/admin/projects/:projectId/users/new" element={<AdminDashboard section="project-users" />} />
             <Route path="/admin/projects/:projectId/operations" element={<ProjectOperationsPage />} />
@@ -107,6 +110,11 @@ export function App() {
             <Route path="/integrity" element={<IntegrityPage />} />
             <Route path="/benefits" element={<BenefitsPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute roles={['manager', 'employee']} />}>
+            <Route path="/surveys" element={<SurveysPage />} />
+            <Route path="/surveys/:surveyId" element={<SurveyRespondPage />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={['manager']} />}>

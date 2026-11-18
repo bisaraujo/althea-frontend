@@ -18,6 +18,7 @@ import { getManagerCompanyJourney, getManagerEmployees } from '../api/services';
 import type { EmployeeRecord, Journey, JourneyItem } from '../api/types';
 import { useAuth } from '../auth/auth-context';
 import { AppShell } from '../components/app-shell';
+import { PendingSurveysCallout } from '../components/survey/pending-surveys-callout';
 import { TeamHomeWithoutJornadas } from './team-home-without-jornadas';
 import { EmptyState } from '../components/empty-state';
 import { useJornadasProduct } from '../api/company';
@@ -178,6 +179,7 @@ export function ManagerDashboard() {
       description={hasJornadas === false ? "Seus benefícios e o que a empresa liberou para você." : "Acompanhe o projeto, veja as próximas entregas e avance pela jornada documental."}
       navigation={managerNavigation}
     >
+      <PendingSurveysCallout />
       {hasJornadas === false ? <TeamHomeWithoutJornadas /> : null}
       {hasJornadas !== false && error ? <div className="form-error">{error}</div> : null}
 

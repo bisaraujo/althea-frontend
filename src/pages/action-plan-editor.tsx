@@ -1,5 +1,5 @@
 import { ChevronRight, ClipboardList, Download, FileSpreadsheet, Paperclip, Pencil, Plus, X } from 'lucide-react';
-import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, Fragment, type ReactNode, useCallback, useEffect, useState } from 'react';
 
 import {
   ACTION_KIND_LABEL, ACTION_STATUS_LABEL, ACTION_TYPE_LABEL, type ActionItemType, type ActionKind, type ActionStatus, createPlanItem, exportPlanSheet,
@@ -78,6 +78,8 @@ function ItemForm({ draft, onChange, benefits }: { draft: PlanItemPayload; onCha
       <label><span>Descrição <em className="ben-optional">(opcional)</em></span><textarea rows={2} value={draft.description ?? ''} onChange={(event) => set('description', event.target.value || null)} maxLength={2000} /></label>
       <details className="apd-sheet-fields" open={SHEET_TEXT_FIELDS.some((key) => draft[key]) || Boolean(draft.priority || draft.action_kind || draft.due_at)}>
         <summary>Detalhes da planilha NR-01 <em className="ben-optional">(fator de risco, objetivo, indicador…)</em></summary>
+        {/* <details> nao aplica grid nos filhos: o espacamento entre os campos vem deste bloco. */}
+        <div className="apd-sheet-fields__body">
         <div className="field-grid">
           <label><span>{SHEET_FIELD_LABEL.priority}</span>
             <select value={draft.priority ?? ''} onChange={(event) => set('priority', (event.target.value || null) as Priority | null)}>
@@ -94,19 +96,24 @@ function ItemForm({ draft, onChange, benefits }: { draft: PlanItemPayload; onCha
         </div>
         <label><span>Data limite / prazo de conclusão</span><input type="date" value={draft.due_at ?? ''} onChange={(event) => set('due_at', event.target.value || null)} /></label>
         {SHEET_TEXT_FIELDS.map((key) => (
-          <label key={key}><span>{SHEET_FIELD_LABEL[key]}</span>
-            {LONG_FIELDS.has(key)
-              ? <textarea rows={2} value={draft[key] ?? ''} onChange={(event) => set(key, event.target.value || null)} maxLength={4000} />
-              : <input value={draft[key] ?? ''} onChange={(event) => set(key, event.target.value || null)} maxLength={key === 'risk_factor' ? 2000 : 255} />}
-          </label>
+          <Fragment key={key}>
+            <label><span>{SHEET_FIELD_LABEL[key]}</span>
+              {LONG_FIELDS.has(key)
+                ? <textarea rows={2} value={draft[key] ?? ''} onChange={(event) => set(key, event.target.value || null)} maxLength={4000} />
+                : <input value={draft[key] ?? ''} onChange={(event) => set(key, event.target.value || null)} maxLength={key === 'risk_factor' ? 2000 : 255} />}
+              {key === 'indicator' && !draft.indicator ? <em className="ben-optional">Com um indicador, a empresa passa a informar o valor (KPI) periodicamente.</em> : null}
+            </label>
+            {/* Frequencia do KPI logo abaixo do indicador (so existe KPI quando ha indicador). */}
+            {key === 'indicator' && draft.indicator ? (
+              <label><span>Empresa informa o valor do indicador (KPI)</span>
+                <select value={draft.kpi_interval_months ?? 2} onChange={(event) => set('kpi_interval_months', Number(event.target.value))}>
+                  {KPI_INTERVAL_OPTIONS.map((months) => <option key={months} value={months}>{kpiIntervalLabel(months)}</option>)}
+                </select>
+              </label>
+            ) : null}
+          </Fragment>
         ))}
-        {draft.indicator ? (
-          <label><span>Empresa informa o valor do indicador</span>
-            <select value={draft.kpi_interval_months ?? 2} onChange={(event) => set('kpi_interval_months', Number(event.target.value))}>
-              {KPI_INTERVAL_OPTIONS.map((months) => <option key={months} value={months}>{kpiIntervalLabel(months)}</option>)}
-            </select>
-          </label>
-        ) : null}
+        </div>
       </details>
     </>
   );

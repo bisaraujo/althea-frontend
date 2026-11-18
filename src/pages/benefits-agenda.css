@@ -1175,3 +1175,10 @@
   .apd-evidence__head > .ben-hint { grid-column: 1; grid-row: 2; }
   .apd-evidence__actions { grid-column: 2; grid-row: 1 / span 2; }
 }
+
+/* Campos dentro de "Detalhes da planilha NR-01": mesmo espacamento do resto do formulario. */
+.apd-sheet-fields__body {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}

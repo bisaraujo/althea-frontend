@@ -34,7 +34,7 @@ export function SurveyCatalog({ token, companies }: { token: string; companies: 
   const [status, setStatus] = useState<StatusFilter>('all');
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [draft, setDraft] = useState({ title: '', company_id: '', audience: 'all' as SurveyAudience });
+  const [draft, setDraft] = useState({ title: '', company_id: '', audience: 'all' as SurveyAudience, closes_at: '' });
 
   const load = useCallback(() => {
     setFailed(false);
@@ -51,7 +51,7 @@ export function SurveyCatalog({ token, companies }: { token: string; companies: 
     if (saving || !draft.title.trim()) return;
     setSaving(true);
     try {
-      const created = await createSurvey(token, { title: draft.title.trim(), company_id: draft.company_id || null, audience: draft.audience });
+      const created = await createSurvey(token, { title: draft.title.trim(), company_id: draft.company_id || null, audience: draft.audience, closes_at: draft.closes_at || null });
       navigate(`/admin/research/${created.id}`);
     } catch (reason) {
       toast.error(reason instanceof ApiError ? reason.message : 'Não foi possível criar a pesquisa.');
@@ -107,11 +107,15 @@ export function SurveyCatalog({ token, companies }: { token: string; companies: 
               <option value="">Modelo (sem empresa)</option>
               {companies.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}
             </select>
+            <em className="sv-optional">Vai para várias empresas? Deixe como modelo e, depois de montar, use “Enviar para empresas”.</em>
           </label>
           <label><span>Quem responde</span>
             <select value={draft.audience} onChange={(e) => setDraft({ ...draft, audience: e.target.value as SurveyAudience })}>
               {(Object.keys(AUDIENCE_LABEL) as SurveyAudience[]).map((key) => <option key={key} value={key}>{AUDIENCE_LABEL[key]}</option>)}
             </select>
+          </label>
+          <label><span>Encerrar em <em className="sv-optional">(opcional · dá para definir depois)</em></span>
+            <input type="date" value={draft.closes_at} onChange={(e) => setDraft({ ...draft, closes_at: e.target.value })} />
           </label>
         </form>
       </Modal>

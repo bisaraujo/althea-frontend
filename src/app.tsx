@@ -34,6 +34,7 @@ import { PlatformCompanyDetailPage } from './pages/platform-company-detail-page'
 import { OrganizationManagementPage } from './pages/organization-management-page';
 import { ProjectOperationsPage } from './pages/project-operations-page';
 import { ResearchOperationsPage } from './pages/research-operations-page';
+import { CompanySurveyDashboardPage, CompanySurveysPage } from './pages/company-surveys-page';
 import { SurveyBuilderPage } from './pages/survey-builder-page';
 import { SurveyRespondPage, SurveysPage } from './pages/surveys-respond-page';
 import { FagulhaAdminPage } from './pages/fagulha-admin-page';
@@ -103,6 +104,8 @@ export function App() {
             <Route path="/company" element={<CompanyHomePage />} />
             <Route path="/company/jornadas" element={<CompanyDashboard />} />
             <Route path="/company/access" element={<CompanyAccessPage />} />
+            <Route path="/company/surveys" element={<CompanySurveysPage />} />
+            <Route path="/company/surveys/:surveyId" element={<CompanySurveyDashboardPage />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={['company', 'manager', 'employee']} />}>

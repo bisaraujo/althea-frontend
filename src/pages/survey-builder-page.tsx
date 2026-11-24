@@ -1,14 +1,14 @@
 import {
-  Archive, ArrowDown, ArrowLeft, ArrowUp, Building2, CheckCircle2, Copy, Eye, GitBranch, Lock, Pencil, Plus, Send, Settings2, Trash2, Undo2,
+  Archive, ArrowDown, ArrowLeft, ArrowUp, BarChart3, BellRing, Building2, CalendarClock, Mail, Target, CheckCircle2, Copy, Eye, GitBranch, Lock, Pencil, Plus, Send, Settings2, Trash2, Undo2,
 } from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import {
-  addQuestion, type Answers, AUDIENCE_LABEL, canonicalType, copySurvey, defaultsFor, deleteQuestion, getSurvey, getSurveyResults, newSurveyVersion,
+  addQuestion, type Answers, AUDIENCE_LABEL, canonicalType, copySurvey, defaultsFor, getReminderStatus, type ReminderStatus, sendReminder, sendSurveyToCompanies, deleteQuestion, getSurvey, newSurveyVersion,
   type QuestionPayload, QUESTION_TYPE_INFO, QUESTION_TYPE_LABEL, type QuestionType, reorderQuestions, type Survey, type SurveyAudience,
-  type SurveyQuestion, type SurveyResults, type TargetCompany, transitionSurvey, updateQuestion, updateSurvey, listTargetCompanies,
+  type SurveyQuestion, type TargetCompany, transitionSurvey, updateQuestion, updateSurvey, listTargetCompanies,
 } from '../api/surveys';
 import { useAuth } from '../auth/auth-context';
 import { productAdminNavigation } from '../components/admin-navigation';
@@ -17,8 +17,9 @@ import { EmptyState } from '../components/empty-state';
 import { SurveyStatusPill } from '../components/survey/survey-status-pill';
 import { QuestionEditor } from '../components/survey/question-editor';
 import { QuestionTypeIcon } from '../components/survey/question-type-icon';
+import { SendToCompaniesModal } from '../components/survey/send-to-companies-modal';
 import { SurveyForm } from '../components/survey/survey-form';
-import { SurveyResultsView } from '../components/survey/survey-results';
+import { SurveyDashboardView } from '../components/survey/dashboard/survey-dashboard-view';
 import { useToast } from '../components/toast';
 import { ErrorState, LoadingState, Modal, useConfirm } from '../components/ui';
 import { plural } from '../lib/plural';
@@ -26,6 +27,13 @@ import { plural } from '../lib/plural';
 type Tab = 'questions' | 'preview' | 'results' | 'settings';
 const EDITABLE = new Set(['draft', 'changes_requested']);
 
+function shortDay(value: string) {
+  return new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString('pt-BR');
+}
+function todayIso() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 function errorText(reason: unknown, fallback: string) {
   return reason instanceof ApiError ? reason.message : fallback;
 }
@@ -40,8 +48,8 @@ const FLOW: Record<string, { note: string; actions: { action: 'submit' | 'approv
   archived: { note: 'Encerrada: não recebe mais respostas.', actions: [{ action: 'version', label: 'Nova versão' }] },
 };
 
-function QuestionRow({ question, number, index, total, editable, busy, editing, onEdit, onMove, onDuplicate, onDelete }: {
-  question: SurveyQuestion; number: number | null; index: number; total: number; editable: boolean; busy: boolean; editing: boolean;
+function QuestionRow({ question, number, index, total, editable, canFixText = false, busy, editing, onEdit, onMove, onDuplicate, onDelete }: {
+  question: SurveyQuestion; number: number | null; index: number; total: number; editable: boolean; canFixText?: boolean; busy: boolean; editing: boolean;
   onEdit: () => void; onMove: (delta: number) => void; onDuplicate: () => void; onDelete: () => void;
 }) {
   const kind = canonicalType(question.question_type);
@@ -71,6 +79,10 @@ function QuestionRow({ question, number, index, total, editable, busy, editing, 
           <button type="button" className="icon-button" aria-label="Duplicar" title="Duplicar" disabled={busy} onClick={onDuplicate}><Copy size={15} /></button>
           <button type="button" className="icon-button sv-danger" aria-label="Excluir" title="Excluir" disabled={busy} onClick={onDelete}><Trash2 size={15} /></button>
         </div>
+      ) : canFixText ? (
+        <div className="sv-qrow__actions">
+          <button type="button" className="icon-button" aria-label="Corrigir texto" title="Corrigir texto" disabled={busy} onClick={onEdit}><Pencil size={15} /></button>
+        </div>
       ) : null}
     </div>
   );
@@ -85,17 +97,21 @@ export function SurveyBuilderPage() {
   const confirm = useConfirm();
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [failed, setFailed] = useState(false);
-  const [tab, setTab] = useState<Tab>('questions');
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState<Tab>(searchParams.get('aba') === 'dashboard' ? 'results' : 'questions');
   const [editingId, setEditingId] = useState<string | null>(null);
   // Pergunta recem-adicionada e ainda nao salva: se a pessoa cancelar, ela sai da pesquisa.
   const [freshId, setFreshId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [previewAnswers, setPreviewAnswers] = useState<Answers>({});
-  const [results, setResults] = useState<SurveyResults | null>(null);
   const [companies, setCompanies] = useState<TargetCompany[]>([]);
   const [settings, setSettings] = useState({ title: '', description: '', company_id: '', audience: 'all' as SurveyAudience });
-  // "Usar com uma empresa" (modelo) e "Duplicar": copia as perguntas para um novo rascunho.
-  const [copying, setCopying] = useState<null | { mode: 'template' | 'duplicate'; title: string; company_id: string }>(null);
+  // "Duplicar": copia as perguntas para um novo rascunho.
+  const [copying, setCopying] = useState<null | { title: string; company_id: string }>(null);
+  // "Enviar para empresas": uma pesquisa por empresa escolhida.
+  const [sending, setSending] = useState(false);
+  const [application, setApplication] = useState({ closes_at: '', participation_target: 70 });
+  const [reminder, setReminder] = useState<ReminderStatus | null>(null);
 
   const load = useCallback(() => {
     if (!token) return;
@@ -103,15 +119,16 @@ export function SurveyBuilderPage() {
     getSurvey(token, surveyId).then((data) => {
       setSurvey(data);
       setSettings({ title: data.title, description: data.description ?? '', company_id: data.company_id ?? '', audience: data.audience });
+      setApplication({ closes_at: data.closes_at ?? '', participation_target: data.participation_target ?? 70 });
     }).catch(() => setFailed(true));
   }, [token, surveyId]);
   useEffect(load, [load]);
   useEffect(() => { if (token) listTargetCompanies(token).then(setCompanies).catch(() => setCompanies([])); }, [token]);
+  const publishedId = survey && survey.status === 'published' && survey.company_id ? survey.id : null;
   useEffect(() => {
-    if (tab !== 'results' || !token) return;
-    setResults(null);
-    getSurveyResults(token, surveyId).then(setResults).catch((reason) => toast.error(errorText(reason, 'Não foi possível carregar os resultados.')));
-  }, [tab, token, surveyId, toast]);
+    if (!token || !publishedId) { setReminder(null); return; }
+    getReminderStatus(token, publishedId).then(setReminder).catch(() => setReminder(null));
+  }, [token, publishedId, survey?.response_count]);
 
   async function run<T>(action: () => Promise<T>, ok?: string): Promise<T | null> {
     if (!token || busy) return null;
@@ -138,7 +155,7 @@ export function SurveyBuilderPage() {
   const answerable = counter;
   const isTemplate = !survey.company_id;
   const flow = isTemplate && survey.status !== 'published' && survey.status !== 'archived'
-    ? { note: 'Modelo: não é publicado. Use com uma empresa para criar uma pesquisa pronta para revisar e publicar (o modelo continua aqui para outras empresas).', actions: [] }
+    ? { note: 'Modelo: não é publicado. Use "Enviar para empresas" para criar a pesquisa em uma ou várias empresas de uma vez (o modelo continua aqui).', actions: [] }
     : FLOW[survey.status] ?? { note: '', actions: [] };
 
   async function addOfType(type: QuestionType) {
@@ -202,28 +219,52 @@ export function SurveyBuilderPage() {
   }
   async function saveSettings(event: FormEvent) {
     event.preventDefault();
-    const updated = await run(() => updateSurvey(token!, survey!.id, {
-      title: settings.title.trim(), description: settings.description.trim() || null, company_id: settings.company_id || null, audience: settings.audience,
-    }), 'Configurações salvas.');
+    const content = { title: settings.title.trim(), description: settings.description.trim() || null };
+    // Depois do envio para revisao, so o texto pode mudar (empresa e publico ficam).
+    const updated = await run(() => updateSurvey(token!, survey!.id, editable ? { ...content, company_id: settings.company_id || null, audience: settings.audience } : content),
+      editable ? 'Configurações salvas.' : 'Texto corrigido.');
     if (updated) setSurvey(updated);
+  }
+  async function saveApplication(event: FormEvent) {
+    event.preventDefault();
+    const updated = await run(() => updateSurvey(token!, survey!.id, { closes_at: application.closes_at || null, participation_target: Number(application.participation_target) }), 'Prazo e meta salvos.');
+    if (updated) setSurvey(updated);
+  }
+  async function remind() {
+    if (!reminder) return;
+    const ok = await confirm({ title: `Lembrar ${plural(reminder.pending, 'pessoa', 'pessoas')}?`, description: 'Quem ainda não respondeu recebe um e-mail com o link. Quem já respondeu não recebe nada (o lembrete não revela quem respondeu o quê).', confirmLabel: 'Enviar lembrete' });
+    if (!ok) return;
+    const result = await run(() => sendReminder(token!, survey!.id));
+    if (result) { toast.success(result.sent ? `Lembrete enviado para ${plural(result.sent, 'pessoa', 'pessoas')}.` : 'Todo mundo já respondeu.'); setReminder({ ...reminder, reminder_sent_at: new Date().toISOString() }); }
   }
 
   async function copy(event: FormEvent) {
     event.preventDefault();
     if (!copying) return;
-    const created = await run(() => copySurvey(token!, survey!.id, { company_id: copying.company_id || null, title: copying.title.trim() || null }),
-      copying.mode === 'template' ? 'Pesquisa criada a partir do modelo.' : 'Cópia criada como rascunho.');
+    const created = await run(() => copySurvey(token!, survey!.id, { company_id: copying.company_id || null, title: copying.title.trim() || null }), 'Cópia criada como rascunho.');
     if (created) { setCopying(null); setTab('questions'); navigate(`/admin/research/${created.id}`); }
+  }
+  async function send(payload: { company_ids: string[]; title: string; publish: boolean }) {
+    const result = await run(() => sendSurveyToCompanies(token!, survey!.id, payload));
+    if (!result) return;
+    const count = result.created.length;
+    toast.success(payload.publish
+      ? `${count === 1 ? 'Pesquisa publicada para 1 empresa' : `Pesquisa publicada para ${count} empresas`}. Já pode ser respondida.`
+      : `${count === 1 ? '1 rascunho criado' : `${count} rascunhos criados`}. Revise e publique cada um.`);
+    setSending(false);
+    navigate('/admin/research');
   }
 
   const flowIcon = { submit: Send, approve: CheckCircle2, 'request-changes': Undo2, publish: Send, archive: Archive, version: GitBranch };
   const actions = (
     <>
       <SurveyStatusPill survey={survey} />
-      <button type="button" className="secondary-button" disabled={busy} onClick={() => setCopying({ mode: 'duplicate', title: `${survey.title} (cópia)`, company_id: survey.company_id ?? '' })}><Copy size={15} />Duplicar</button>
-      {isTemplate ? (
-        <button type="button" className="primary-button" disabled={busy || !answerable} title={answerable ? undefined : 'Adicione ao menos uma pergunta'}
-          onClick={() => setCopying({ mode: 'template', title: survey.title, company_id: companies[0]?.id ?? '' })}><Building2 size={15} />Usar com uma empresa</button>
+      <button type="button" className="secondary-button" disabled={busy} onClick={() => setCopying({ title: `${survey.title} (cópia)`, company_id: survey.company_id ?? '' })}><Copy size={15} />Duplicar</button>
+      <button type="button" className={isTemplate ? 'primary-button' : 'secondary-button'} disabled={busy || !answerable} title={answerable ? 'Mandar estas perguntas para uma ou várias empresas' : 'Adicione ao menos uma pergunta'}
+        onClick={() => setSending(true)}><Building2 size={15} />Enviar para empresas</button>
+      {reminder && reminder.pending > 0 ? (
+        <button type="button" className="secondary-button" disabled={busy || !reminder.email_configured} onClick={() => void remind()}
+          title={reminder.email_configured ? 'E-mail para quem ainda não respondeu' : 'O envio de e-mail não está configurado neste ambiente'}><BellRing size={15} />Lembrar quem falta ({reminder.pending})</button>
       ) : null}
       {flow.actions.map(({ action, label, primary }) => {
         const Icon = flowIcon[action];
@@ -239,11 +280,19 @@ export function SurveyBuilderPage() {
       <Link to="/admin/research" className="sv-back"><ArrowLeft size={15} />Todas as pesquisas</Link>
       <p className={`sv-flow-note sv-flow-note--${survey.status}`}>{editable ? null : <Lock size={14} aria-hidden />}{flow.note}
         {survey.version > 1 && !['published', 'archived'].includes(survey.status) && !isTemplate ? ` Ao publicar, a versão ${survey.version - 1} é encerrada e esta passa a valer.` : ''}</p>
+      {survey.status === 'published' && !isTemplate ? (
+        <p className="sv-application">
+          <span><CalendarClock size={14} aria-hidden />{survey.closes_at ? `Encerra em ${shortDay(survey.closes_at)}` : 'Sem data para encerrar'}</span>
+          <span><Mail size={14} aria-hidden />{survey.invitations_sent_at ? `Convites enviados em ${shortDay(survey.invitations_sent_at)}` : reminder && !reminder.email_configured ? 'E-mail não configurado: convites não foram enviados' : 'Convites ainda não enviados'}</span>
+          {survey.reminder_sent_at || reminder?.reminder_sent_at ? <span><BellRing size={14} aria-hidden />Último lembrete em {shortDay((reminder?.reminder_sent_at ?? survey.reminder_sent_at)!)}</span> : null}
+          <span><Target size={14} aria-hidden />Meta de participação: {survey.participation_target}%</span>
+        </p>
+      ) : null}
 
       <div role="tablist" aria-label="Construtor da pesquisa">
         <button type="button" role="tab" aria-selected={tab === 'questions'} onClick={() => setTab('questions')}><Pencil size={15} />Perguntas</button>
         <button type="button" role="tab" aria-selected={tab === 'preview'} onClick={() => setTab('preview')}><Eye size={15} />Pré-visualização</button>
-        <button type="button" role="tab" aria-selected={tab === 'results'} onClick={() => setTab('results')}><CheckCircle2 size={15} />Resultados{survey.response_count ? ` (${survey.response_count})` : ''}</button>
+        <button type="button" role="tab" aria-selected={tab === 'results'} onClick={() => setTab('results')}><BarChart3 size={15} />Dashboard{survey.response_count ? ` (${survey.response_count})` : ''}</button>
         <button type="button" role="tab" aria-selected={tab === 'settings'} onClick={() => setTab('settings')}><Settings2 size={15} />Configurações</button>
       </div>
 
@@ -253,11 +302,11 @@ export function SurveyBuilderPage() {
             <div className="sv-qlist">
               {questions.map((question, index) => (
                 <div key={question.id} className="sv-qitem">
-                  <QuestionRow question={question} number={numbers[index]} index={index} total={questions.length} editable={editable} busy={busy} editing={editingId === question.id}
+                  <QuestionRow question={question} number={numbers[index]} index={index} total={questions.length} editable={editable} canFixText={!editable && survey.status !== 'archived'} busy={busy} editing={editingId === question.id}
                     onEdit={() => setEditingId(editingId === question.id ? null : question.id)} onMove={(delta) => void move(index, delta)}
                     onDuplicate={() => void duplicate(question)} onDelete={() => void remove(question)} />
-                  {editingId === question.id && editable ? (
-                    <QuestionEditor question={question} saving={busy} onCancel={() => void cancelEdit(question)} onSave={(payload) => void saveQuestion(question, payload)} />
+                  {editingId === question.id && (editable || survey.status !== 'archived') ? (
+                    <QuestionEditor question={question} textOnly={!editable} saving={busy} onCancel={() => void cancelEdit(question)} onSave={(payload) => void saveQuestion(question, payload)} />
                   ) : null}
                 </div>
               ))}
@@ -299,54 +348,79 @@ export function SurveyBuilderPage() {
         </div>
       ) : null}
 
-      {tab === 'results' ? (results ? <SurveyResultsView results={results} /> : <LoadingState />) : null}
+      {tab === 'results' ? <SurveyDashboardView token={token} surveyId={survey.id} title={survey.title} companyId={survey.company_id} canCreateActions linkToSurvey={(id) => `/admin/research/${id}?aba=dashboard`} /> : null}
 
       {tab === 'settings' ? (
         <section className="panel sv-settings">
           <form className="admin-form" onSubmit={(event) => void saveSettings(event)}>
-            <fieldset disabled={!editable || busy} className="ben-fieldset">
+            <fieldset disabled={busy || survey.status === 'archived'} className="ben-fieldset">
               <label><span>Título</span><input value={settings.title} onChange={(e) => setSettings({ ...settings, title: e.target.value })} required maxLength={255} /></label>
               <label><span>Descrição <em className="sv-optional">(aparece no topo da pesquisa)</em></span><textarea rows={3} value={settings.description} onChange={(e) => setSettings({ ...settings, description: e.target.value })} maxLength={2000} /></label>
               <div className="field-grid">
                 <label><span>Empresa</span>
-                  <select value={settings.company_id} onChange={(e) => setSettings({ ...settings, company_id: e.target.value })}>
+                  <select value={settings.company_id} onChange={(e) => setSettings({ ...settings, company_id: e.target.value })} disabled={!editable}>
                     <option value="">Modelo (sem empresa)</option>
                     {companies.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}
                   </select>
                 </label>
                 <label><span>Quem responde</span>
-                  <select value={settings.audience} onChange={(e) => setSettings({ ...settings, audience: e.target.value as SurveyAudience })}>
+                  <select value={settings.audience} onChange={(e) => setSettings({ ...settings, audience: e.target.value as SurveyAudience })} disabled={!editable}>
                     {(Object.keys(AUDIENCE_LABEL) as SurveyAudience[]).map((key) => <option key={key} value={key}>{AUDIENCE_LABEL[key]}</option>)}
                   </select>
                 </label>
               </div>
               {!settings.company_id ? <p className="sv-muted">Sem empresa, a pesquisa é só um modelo: dá para montar e revisar, mas ninguém responde. Escolha a empresa para publicar.</p> : null}
             </fieldset>
-            {editable ? <div className="sv-settings__footer"><button type="submit" className="primary-button" disabled={busy || !settings.title.trim()}>Salvar configurações</button></div>
-              : <p className="sv-muted"><Lock size={13} aria-hidden /> Configurações travadas depois do envio para revisão. Para mudar, crie uma nova versão.</p>}
+            {!editable ? <p className="sv-muted"><Lock size={13} aria-hidden /> Depois do envio para revisão, empresa e público ficam travados. Título e descrição podem ser corrigidos.</p> : null}
+            {survey.status !== 'archived' ? <div className="sv-settings__footer"><button type="submit" className="primary-button" disabled={busy || !settings.title.trim()}>{editable ? 'Salvar configurações' : 'Salvar correção'}</button></div> : null}
+          </form>
+        </section>
+      ) : null}
+      {tab === 'settings' && !isTemplate ? (
+        <section className="panel sv-settings">
+          <header className="sd-panel__head"><h3>Aplicação</h3><span className="sd-panel__meta">dá para mudar mesmo com a pesquisa publicada</span></header>
+          <form className="admin-form" onSubmit={(event) => void saveApplication(event)}>
+            <fieldset disabled={busy || survey.status === 'archived'} className="ben-fieldset">
+              <div className="field-grid">
+                <label><span>Encerrar em <em className="sv-optional">(opcional)</em></span>
+                  <input type="date" value={application.closes_at} min={todayIso()} onChange={(e) => setApplication({ ...application, closes_at: e.target.value })} />
+                </label>
+                <label><span>Meta de participação</span>
+                  <select value={application.participation_target} onChange={(e) => setApplication({ ...application, participation_target: Number(e.target.value) })}>
+                    {[50, 60, 70, 80, 90, 100].map((n) => <option key={n} value={n}>{n}% do público</option>)}
+                  </select>
+                </label>
+              </div>
+              <p className="sv-muted">Na data de encerramento a pesquisa fecha sozinha. Dois dias antes, quem ainda não respondeu recebe um lembrete por e-mail (uma vez). Ao publicar, todo o público recebe o convite.</p>
+            </fieldset>
+            {survey.status !== 'archived' ? <div className="sv-settings__footer"><button type="submit" className="primary-button" disabled={busy}>Salvar prazo e meta</button></div> : null}
           </form>
         </section>
       ) : null}
 
       <Modal open={Boolean(copying)} onClose={busy ? () => undefined : () => setCopying(null)} size="sm"
-        title={copying?.mode === 'template' ? 'Usar o modelo com uma empresa' : 'Duplicar pesquisa'}
-        description={copying?.mode === 'template' ? 'Cria uma pesquisa em rascunho com estas perguntas para a empresa escolhida. O modelo continua disponível.' : 'Cria um rascunho novo (versão 1) com as mesmas perguntas. A pesquisa original não muda.'}
+        title="Duplicar pesquisa"
+        description="Cria um rascunho novo (versão 1) com as mesmas perguntas. A pesquisa original não muda. Para mandar a várias empresas, use “Enviar para empresas”." 
         footer={<>
           <button type="button" className="secondary-button" onClick={() => setCopying(null)} disabled={busy}>Cancelar</button>
-          <button type="submit" form="survey-copy" className="primary-button" disabled={busy || (copying?.mode === 'template' && !copying.company_id)}>{copying?.mode === 'template' ? 'Criar pesquisa' : 'Duplicar'}</button>
+          <button type="submit" form="survey-copy" className="primary-button" disabled={busy}>Duplicar</button>
         </>}>
         {copying ? (
           <form id="survey-copy" className="admin-form" onSubmit={(event) => void copy(event)}>
             <label><span>Título</span><input value={copying.title} onChange={(e) => setCopying({ ...copying, title: e.target.value })} maxLength={255} required /></label>
             <label><span>Empresa</span>
               <select value={copying.company_id} onChange={(e) => setCopying({ ...copying, company_id: e.target.value })}>
-                {copying.mode === 'duplicate' ? <option value="">Modelo (sem empresa)</option> : null}
+                <option value="">Modelo (sem empresa)</option>
                 {companies.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}
               </select>
             </label>
           </form>
         ) : null}
       </Modal>
+      {sending ? (
+        <SendToCompaniesModal open defaultTitle={survey.title} companies={companies} excludeCompanyId={survey.company_id} busy={busy}
+          onClose={() => setSending(false)} onSend={(payload) => void send(payload)} />
+      ) : null}
     </AppShell>
   );
 }

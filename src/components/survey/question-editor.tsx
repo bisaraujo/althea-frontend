@@ -7,6 +7,8 @@ import {
 
 type QuestionEditorProps = {
   question: SurveyQuestion;
+  /** Pesquisa ja aplicada: so corrige o texto (pergunta e ajuda), sem mexer em tipo e opcoes. */
+  textOnly?: boolean;
   saving: boolean;
   onSave: (payload: QuestionPayload) => void;
   onCancel: () => void;
@@ -16,7 +18,7 @@ const SCALE_STARTS = [0, 1];
 const SCALE_ENDS = [2, 3, 4, 5, 6, 7, 10];
 
 /** Edicao de uma pergunta: texto, ajuda, tipo, obrigatoria, opcoes (escolha) e escala. */
-export function QuestionEditor({ question, saving, onSave, onCancel }: QuestionEditorProps) {
+export function QuestionEditor({ question, textOnly = false, saving, onSave, onCancel }: QuestionEditorProps) {
   const [draft, setDraft] = useState<QuestionPayload>({
     title: question.title, description: question.description, question_type: canonicalType(question.question_type),
     required: question.required, options: question.options, settings: question.settings,
@@ -41,6 +43,7 @@ export function QuestionEditor({ question, saving, onSave, onCancel }: QuestionE
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    if (textOnly) { onSave({ title: draft.title.trim(), description: draft.description?.trim() || null } as QuestionPayload); return; }
     const cleanOptions = options.map((item) => item.trim()).filter(Boolean);
     onSave({ ...draft, title: draft.title.trim(), options: isChoiceType(kind) ? cleanOptions : [], description: draft.description?.trim() || null });
   }
@@ -55,11 +58,11 @@ export function QuestionEditor({ question, saving, onSave, onCancel }: QuestionE
           <textarea rows={2} value={draft.title} onChange={(e) => set({ title: e.target.value })} required maxLength={500} autoFocus onFocus={(e) => { if (['Nova pergunta', 'Nova seção'].includes(e.target.value)) e.target.select(); }}
             placeholder={isSection ? 'Ex.: Sobre o seu dia a dia' : 'Ex.: Como você avalia a sua carga de trabalho?'} />
         </label>
-        <label className="sv-editor__type"><span>Tipo</span>
+        {textOnly ? null : <label className="sv-editor__type"><span>Tipo</span>
           <select value={kind} onChange={(e) => changeType(e.target.value as QuestionType)}>
             {QUESTION_TYPE_INFO.map((item) => <option key={item.type} value={item.type}>{item.label}</option>)}
           </select>
-        </label>
+        </label>}
       </div>
 
       <label><span>{isSection ? 'Texto de apoio' : 'Texto de ajuda'} <em className="sv-optional">(opcional)</em></span>
@@ -67,7 +70,8 @@ export function QuestionEditor({ question, saving, onSave, onCancel }: QuestionE
           placeholder={isSection ? 'Uma frase que apresenta esta parte' : 'Ex.: Considere as últimas duas semanas.'} />
       </label>
 
-      {isChoiceType(kind) ? (
+      {textOnly ? <p className="sv-editor__hint">Pesquisa já aplicada: dá para corrigir o texto. Tipo, opções e escala ficam como estão para não misturar respostas.</p> : null}
+      {!textOnly && isChoiceType(kind) ? (
         <div className="sv-editor__options">
           <span className="sv-editor__label">Opções de resposta</span>
           {options.map((option, index) => (
@@ -84,7 +88,7 @@ export function QuestionEditor({ question, saving, onSave, onCancel }: QuestionE
         </div>
       ) : null}
 
-      {kind === 'scale' ? (
+      {!textOnly && kind === 'scale' ? (
         <div className="sv-editor__scale">
           <label><span>De</span>
             <select value={settings.min ?? 1} onChange={(e) => set({ settings: { ...settings, min: Number(e.target.value) } })}>
@@ -101,7 +105,7 @@ export function QuestionEditor({ question, saving, onSave, onCancel }: QuestionE
         </div>
       ) : null}
 
-      {kind === 'number' ? (
+      {!textOnly && kind === 'number' ? (
         <div className="sv-editor__scale">
           <label><span>Mínimo <em className="sv-optional">(opcional)</em></span><input type="number" value={settings.min ?? ''} onChange={(e) => set({ settings: { ...settings, min: e.target.value === '' ? undefined : Number(e.target.value) } })} /></label>
           <label><span>Máximo <em className="sv-optional">(opcional)</em></span><input type="number" value={settings.max ?? ''} onChange={(e) => set({ settings: { ...settings, max: e.target.value === '' ? undefined : Number(e.target.value) } })} /></label>
@@ -111,7 +115,7 @@ export function QuestionEditor({ question, saving, onSave, onCancel }: QuestionE
       {kind === 'nps' ? <p className="sv-editor__hint">Escala de 0 a 10. No resultado: promotores (9–10), neutros (7–8) e detratores (0–6).</p> : null}
 
       <div className="sv-editor__footer">
-        {!isSection ? (
+        {!isSection && !textOnly ? (
           <label className="sv-switch">
             <input type="checkbox" checked={draft.required ?? true} onChange={(e) => set({ required: e.target.checked })} />
             <span>Resposta obrigatória</span>
@@ -119,7 +123,7 @@ export function QuestionEditor({ question, saving, onSave, onCancel }: QuestionE
         ) : <span />}
         <div className="sv-editor__actions">
           <button type="button" className="secondary-button" onClick={onCancel} disabled={saving}>Cancelar</button>
-          <button type="submit" className="primary-button" disabled={saving || !draft.title.trim() || choiceProblem}>{saving ? 'Salvando…' : 'Salvar pergunta'}</button>
+          <button type="submit" className="primary-button" disabled={saving || !draft.title.trim() || (!textOnly && choiceProblem)}>{saving ? 'Salvando…' : textOnly ? 'Salvar correção' : 'Salvar pergunta'}</button>
         </div>
       </div>
     </form>

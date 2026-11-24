@@ -1,5 +1,5 @@
 import { ArrowLeft, CheckCircle2, ChevronRight, ClipboardList, Send } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
@@ -14,6 +14,21 @@ import { useToast } from '../components/toast';
 import { ErrorState, LoadingState } from '../components/ui';
 import { plural } from '../lib/plural';
 import '../components/survey/survey.css';
+
+const DRAFT_PREFIX = 'turi.survey-draft.';
+/** Rascunho da resposta guardado SO neste aparelho (nunca no servidor: no servidor a resposta e anonima). */
+function loadDraft(surveyId: string): Answers {
+  try { return JSON.parse(localStorage.getItem(DRAFT_PREFIX + surveyId) || '{}') as Answers; } catch { return {}; }
+}
+function saveDraft(surveyId: string, answers: Answers) {
+  try {
+    if (Object.keys(answers).length) localStorage.setItem(DRAFT_PREFIX + surveyId, JSON.stringify(answers));
+    else localStorage.removeItem(DRAFT_PREFIX + surveyId);
+  } catch { /* sem armazenamento: segue sem rascunho */ }
+}
+function hasDraft(surveyId: string) {
+  try { return Boolean(localStorage.getItem(DRAFT_PREFIX + surveyId)); } catch { return false; }
+}
 
 function useNavigation() {
   const { user } = useAuth();
@@ -54,9 +69,9 @@ export function SurveysPage() {
                       <span className="sv-catalog__icon" aria-hidden><ClipboardList size={17} /></span>
                       <span className="sv-catalog__copy">
                         <strong>{survey.title}</strong>
-                        <span>{plural(survey.questions.filter((q) => canonicalType(q.question_type) !== 'section').length, 'pergunta', 'perguntas')}{survey.description ? ` · ${survey.description}` : ''}</span>
+                        <span>{plural(survey.questions.filter((q) => canonicalType(q.question_type) !== 'section').length, 'pergunta', 'perguntas')}{survey.closes_at ? ` · até ${new Date(`${survey.closes_at}T00:00:00`).toLocaleDateString('pt-BR')}` : ''}{hasDraft(survey.id) ? ' · rascunho salvo' : ''}</span>
                       </span>
-                      <span className="primary-button sv-catalog__cta">Responder</span>
+                      <span className="primary-button sv-catalog__cta">{hasDraft(survey.id) ? 'Continuar' : 'Responder'}</span>
                       <ChevronRight size={16} className="sv-catalog__chevron" aria-hidden />
                     </Link>
                   </li>
@@ -91,10 +106,13 @@ export function SurveyRespondPage() {
   const toast = useToast();
   const navigation = useNavigation();
   const { surveys, failed, load } = useAvailable();
-  const [answers, setAnswers] = useState<Answers>({});
+  const [answers, setAnswers] = useState<Answers>(() => loadDraft(surveyId));
+  const restored = useState(() => Object.keys(loadDraft(surveyId)).length > 0)[0];
+  useEffect(() => { if (!sentRef.current) saveDraft(surveyId, answers); }, [surveyId, answers]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const sentRef = useRef(false);
   const survey = surveys?.find((item) => item.id === surveyId) ?? null;
 
   function change(key: string, value: Answers[string] | undefined) {
@@ -131,6 +149,8 @@ export function SurveyRespondPage() {
     setSending(true);
     try {
       await submitSurveyResponse(token, survey.id, answers);
+      sentRef.current = true;
+      saveDraft(survey.id, {});
       setSent(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (reason) {
@@ -172,7 +192,9 @@ export function SurveyRespondPage() {
     <AppShell eyebrow="Pesquisa" title={survey.title} description={survey.description ?? undefined} navigation={navigation}>
       {back}
       <article className="sv-paper">
-        <p className="sv-paper__privacy">Responda com sinceridade: ninguém da empresa vê a sua resposta individual. As perguntas com <span className="sv-required">*</span> são obrigatórias.</p>
+        <p className="sv-paper__privacy">Responda com sinceridade: ninguém da empresa vê a sua resposta individual. As perguntas com <span className="sv-required">*</span> são obrigatórias.
+          {survey.closes_at ? <> Prazo: até <b>{new Date(`${survey.closes_at}T00:00:00`).toLocaleDateString('pt-BR')}</b>.</> : null}</p>
+        {restored ? <p className="sv-draft-note">Continuando de onde você parou: suas respostas ficaram salvas neste aparelho (e só nele).</p> : <p className="sv-draft-note sv-draft-note--quiet">Pode parar e voltar depois: o que você marcar fica salvo neste aparelho até enviar.</p>}
         <SurveyForm questions={survey.questions} answers={answers} onChange={change} errors={errors} disabled={sending} />
         <div className="sv-paper__footer">
           <button type="button" className="primary-button" disabled={sending} onClick={() => void submit()}><Send size={15} />{sending ? 'Enviando…' : 'Enviar respostas'}</button>

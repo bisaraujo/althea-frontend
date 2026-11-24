@@ -1,4 +1,4 @@
-import { CalendarDays, Gift, House, Network, Route as RouteIcon, ShieldCheck } from 'lucide-react';
+import { BarChart3, CalendarDays, Gift, House, Network, Route as RouteIcon, ShieldCheck } from 'lucide-react';
 
 import type { NavigationItem } from './app-shell';
 
@@ -8,5 +8,6 @@ export const companyNavigation: NavigationItem[] = [
   { to: '/organization', label: 'Gestão organizacional', icon: Network },
   { to: '/benefits', label: 'Benefícios', icon: Gift },
   { to: '/agenda', label: 'Plano de ação', icon: CalendarDays },
+  { to: '/company/surveys', label: 'Pesquisas', icon: BarChart3 },
   { to: '/company/access', label: 'Acessos e permissões', icon: ShieldCheck },
 ];

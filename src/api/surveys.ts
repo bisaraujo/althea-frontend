@@ -18,7 +18,9 @@ export type Survey = {
   id: string; company_id: string | null; company_name: string | null; title: string; description: string | null;
   status: SurveyStatus; version: number; audience: SurveyAudience; created_at: string; updated_at: string;
   response_count: number; answered?: boolean | null; questions: SurveyQuestion[];
+  closes_at: string | null; participation_target: number; invitations_sent_at: string | null; reminder_sent_at: string | null;
 };
+export type ReminderStatus = { pending: number; email_configured: boolean; invitations_sent_at: string | null; reminder_sent_at: string | null; closes_at: string | null };
 export type QuestionPayload = {
   title: string; description?: string | null; question_type: QuestionType; required?: boolean; options?: string[]; settings?: QuestionSettings;
 };
@@ -27,7 +29,7 @@ export type QuestionResult = {
   option_counts: Record<string, number>; options: string[]; settings: QuestionSettings; average: number | null;
   distribution: Record<string, number>; nps: { score: number; promoters: number; passives: number; detractors: number } | null; text_answers: string[];
 };
-export type SurveyResults = { survey_id: string; total_responses: number; questions: QuestionResult[] };
+export type SurveyResults = { survey_id: string; total_responses: number; questions: QuestionResult[]; suppressed?: boolean; min_responses?: number };
 export type Answers = Record<string, string | number | string[]>;
 
 /** Rotulos e descricao curta de cada tipo, na ordem em que aparecem no seletor. */
@@ -81,10 +83,10 @@ export function listSurveys(token: string) {
 export function getSurvey(token: string, surveyId: string) {
   return request<Survey>(`/operational-surveys/${surveyId}`, { token });
 }
-export function createSurvey(token: string, payload: { title: string; description?: string | null; company_id?: string | null; audience?: SurveyAudience }) {
+export function createSurvey(token: string, payload: { title: string; description?: string | null; company_id?: string | null; audience?: SurveyAudience; closes_at?: string | null; participation_target?: number }) {
   return request<Survey>('/operational-surveys', { token, method: 'POST', body: JSON.stringify(payload), headers: json });
 }
-export function updateSurvey(token: string, surveyId: string, payload: Partial<{ title: string; description: string | null; company_id: string | null; audience: SurveyAudience }>) {
+export function updateSurvey(token: string, surveyId: string, payload: Partial<{ title: string; description: string | null; company_id: string | null; audience: SurveyAudience; closes_at: string | null; participation_target: number }>) {
   return request<Survey>(`/operational-surveys/${surveyId}`, { token, method: 'PATCH', body: JSON.stringify(payload), headers: json });
 }
 export function transitionSurvey(token: string, surveyId: string, action: 'submit' | 'approve' | 'request-changes' | 'publish' | 'archive') {
@@ -96,6 +98,16 @@ export function newSurveyVersion(token: string, surveyId: string) {
 /** Novo rascunho com as mesmas perguntas (usar um modelo com uma empresa ou duplicar). */
 export function copySurvey(token: string, surveyId: string, payload: { company_id?: string | null; title?: string | null }) {
   return request<Survey>(`/operational-surveys/${surveyId}/copy`, { token, method: 'POST', body: JSON.stringify(payload), headers: json });
+}
+/** Envia a mesma pesquisa para varias empresas: cria uma pesquisa por empresa (publicada ou rascunho). */
+export function sendSurveyToCompanies(token: string, surveyId: string, payload: { company_ids: string[]; title?: string | null; publish: boolean }) {
+  return request<{ created: Survey[] }>(`/operational-surveys/${surveyId}/send`, { token, method: 'POST', body: JSON.stringify(payload), headers: json });
+}
+export function getReminderStatus(token: string, surveyId: string) {
+  return request<ReminderStatus>(`/operational-surveys/${surveyId}/reminder`, { token });
+}
+export function sendReminder(token: string, surveyId: string) {
+  return request<{ sent: number; pending: number }>(`/operational-surveys/${surveyId}/reminder`, { token, method: 'POST' });
 }
 export function addQuestion(token: string, surveyId: string, payload: QuestionPayload) {
   return request<SurveyQuestion>(`/operational-surveys/${surveyId}/questions`, { token, method: 'POST', body: JSON.stringify(payload), headers: json });
@@ -117,4 +129,53 @@ export function listAvailableSurveys(token: string) {
 }
 export function submitSurveyResponse(token: string, surveyId: string, answers: Answers) {
   return request<{ id: string }>(`/operational-surveys/${surveyId}/responses`, { token, method: 'POST', body: JSON.stringify({ answers }), headers: json });
+}
+
+// ---- Dashboard ----------------------------------------------------------------
+
+export type InsightTone = 'good' | 'warning' | 'neutral';
+export type SurveyInsight = { tone: InsightTone; title: string; text: string };
+export type NpsSummary = { score: number; promoters: number; passives: number; detractors: number; total: number };
+export type ScaleMetric = {
+  question_id: string; title: string; favorability: number; average: number; min: number; max: number; responses: number;
+  min_label?: string | null; max_label?: string | null;
+};
+export type SegmentGroup = { role: 'manager' | 'employee'; label: string; responses: number; favorability: number | null; nps: number | null; scales: { question_id: string; favorability: number }[] };
+export type CompanyComparison = {
+  survey_id: string; company_id: string; company_name: string | null; is_current: boolean; responses: number;
+  participation: number | null; suppressed: boolean; favorability: number | null; nps: number | null;
+};
+export type SurveyDashboard = {
+  survey_id: string; responses: number; eligible: number; participation: number | null; min_responses: number; suppressed: boolean;
+  timeline: { date: string; responses: number; cumulative: number }[];
+  favorability: number | null; nps: NpsSummary | null; scales: ScaleMetric[];
+  highlights: { question_id: string; title: string; kind: string; option: string; percent: number; responses: number }[];
+  segments: { hidden: boolean; groups: SegmentGroup[] } | null; insights: SurveyInsight[]; comparison: CompanyComparison[];
+  role: 'manager' | 'employee' | null; role_filter_available: boolean;
+  participation_by_role: { role: 'manager' | 'employee'; label: string; eligible: number; participants: number; participation: number | null }[];
+  likert: { question_id: string; title: string; responses: number; min: number; max: number; min_label?: string | null; max_label?: string | null; unfavorable: number; neutral: number; favorable: number; points: Record<string, number> }[];
+  drivers: { available: boolean; min_responses: number; items: { question_id: string; title: string; favorability: number; impact: number; quadrant: 'priority' | 'strength' | 'monitor' | 'maintain'; responses: number }[] };
+  option_impact: { question_id: string; question: string; option: string; with_option: number; without_option: number; difference: number; picked: number }[];
+  themes: { total: number; terms: { term: string; key: string; count: number }[] };
+  comments: { text: string; count: number }[];
+  recommendations: { question_id: string; title: string; favorability: number; reason: string; action?: { id: string; status: string } | null }[];
+  participation_target: number; closes_at: string | null;
+  trend: { survey_id: string; version: number; label: string; date: string | null; responses: number; suppressed: boolean; favorability: number | null; nps: number | null; is_current: boolean }[];
+  heatmap: { columns: { survey_id: string; company_name: string | null; is_current: boolean; responses: number }[]; rows: { key: string; title: string; values: Record<string, number | null> }[] } | null;
+};
+export type OverviewSurvey = {
+  survey_id: string; title: string; version: number; status: SurveyStatus; company_id: string; company_name: string | null;
+  responses: number; eligible: number; participation: number | null; suppressed: boolean; favorability: number | null; nps: number | null;
+  last_response: string | null; updated_at: string;
+};
+export type SurveysOverview = {
+  company_id: string | null; surveys: OverviewSurvey[];
+  totals: { applied: number; open: number; responses: number; participation: number | null; favorability: number | null; nps: number | null };
+};
+
+export function getSurveyDashboard(token: string, surveyId: string, role?: 'manager' | 'employee' | null) {
+  return request<SurveyDashboard>(`/operational-surveys/${surveyId}/dashboard${role ? `?role=${role}` : ''}`, { token });
+}
+export function getSurveysOverview(token: string, companyId?: string | null) {
+  return request<SurveysOverview>(`/operational-surveys/overview${companyId ? `?company_id=${companyId}` : ''}`, { token });
 }

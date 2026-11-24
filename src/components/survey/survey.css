@@ -278,3 +278,25 @@ div.sv-qrow__main { cursor: default; }
   .sv-bars li { grid-template-columns: minmax(0, 1fr) 72px; row-gap: 0.2rem; }
   .sv-bars__label { grid-column: 1 / -1; white-space: normal; }
 }
+
+/* Enviar para empresas */
+.sv-send__head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.sv-send__all { min-height: 30px !important; padding: 0 0.5rem !important; font-size: 0.8rem !important; }
+.sv-send__list { display: grid; gap: 0.35rem; max-height: 280px; padding: 0.15rem; overflow-y: auto; }
+.sv-send__item {
+  display: flex !important; align-items: center; gap: 0.6rem !important; padding: 0.55rem 0.7rem;
+  border: 1px solid var(--tr-line); border-radius: 10px; background: #fff; cursor: pointer;
+}
+.sv-send__item span { color: var(--tr-ink) !important; font-size: 0.88rem !important; font-weight: 600 !important; }
+.sv-send__item.is-selected { border-color: rgba(255, 122, 0, 0.5); background: #fff7ef; }
+.sv-send .ui-search { max-width: none; }
+
+/* Aplicacao (prazo, convites, lembrete, meta) */
+.sv-application { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; margin: 0; color: var(--tr-ink-soft); font-size: 0.84rem; }
+.sv-application span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.sv-application svg { color: var(--brand-deep); }
+.sv-settings + .sv-settings { margin-top: 0; }
+.sv-draft-note { margin: 0; padding: 0.55rem 0.8rem; border-radius: var(--tr-radius); background: #eef6ff; color: #1f5fae; font-size: 0.84rem; }
+.sv-draft-note--quiet { background: transparent; padding: 0; color: var(--tr-ink-faint); }
+
+.sv-settings > .sd-panel__head { margin-bottom: 0.9rem; }

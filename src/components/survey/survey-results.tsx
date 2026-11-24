@@ -74,7 +74,10 @@ function ResultBody({ result }: { result: QuestionResult }) {
   }
   return (
     <ul className="sv-text-answers">
-      {result.text_answers.map((answer, index) => <li key={index}><MessageSquareText size={14} aria-hidden />{kind === 'date' ? new Date(`${answer}T00:00:00`).toLocaleDateString('pt-BR') : answer}</li>)}
+      {[...new Set(result.text_answers)].map((answer) => {
+        const count = result.text_answers.filter((a) => a === answer).length;
+        return <li key={answer}><MessageSquareText size={14} aria-hidden /><span>{kind === 'date' ? new Date(`${answer}T00:00:00`).toLocaleDateString('pt-BR') : answer}</span>{count > 1 ? <em className="sd-count">{count}×</em> : null}</li>;
+      })}
     </ul>
   );
 }

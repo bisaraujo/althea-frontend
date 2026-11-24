@@ -54,8 +54,10 @@ export type Company = {
   name: string;
   email: string;
   user_id: string;
-  /** Preenchido só na listagem do admin. */
+  /** Preenchido só na listagem do admin. Jornadas só vale depois de liberado pela Turi. */
   has_jornadas?: boolean | null;
+  jornadas_contracted?: boolean | null;
+  jornadas_released_at?: string | null;
 };
 
 export type ResponseRecord = {
@@ -94,6 +96,8 @@ export type CompanyPortfolio = Company & {
   employee_count: number;
   granted_module_count: number;
   total_module_count: number;
+  /** Data em que a Turi liberou Jornadas; null = contratado (ou não), ainda não liberado. */
+  jornadas_released_at?: string | null;
 };
 
 export type AdminAccessPayload = {

@@ -1,10 +1,10 @@
-import { ArrowLeft, ChevronRight, Clock3, FolderKanban, Mail, Network, PackageCheck, Save, Sparkles, Users } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, Clock3, FolderKanban, Mail, Network, PackageCheck, Rocket, Save, Sparkles, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import { listCapabilityRequests } from '../api/access';
-import { getProducts, updateCompanyProducts } from '../api/services';
+import { getProducts, releaseJornadas, updateCompanyProducts } from '../api/services';
 import { getCompanyPortfolioEntry } from '../api/platform-admin';
 import type { CompanyPortfolio, Product } from '../api/types';
 import { useAuth } from '../auth/auth-context';
@@ -16,6 +16,7 @@ import { InfoTooltip } from '../components/info-tooltip';
 import { SectionPanel } from '../components/section-panel';
 import { StatCard } from '../components/stat-card';
 import { useToast } from '../components/toast';
+import { useConfirm } from '../components/ui/confirmation-dialog';
 import { CompanyUsersPanel } from '../components/company-users-panel';
 import './companies-admin.css';
 import { plural } from '../lib/plural';
@@ -28,6 +29,8 @@ export function PlatformCompanyDetailPage() {
   const { companyId = '' } = useParams<{ companyId: string }>();
   const { token } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
+  const [releasing, setReleasing] = useState(false);
   const [company, setCompany] = useState<CompanyPortfolio | null>(null);
   const [catalog, setCatalog] = useState<Product[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -66,7 +69,9 @@ export function PlatformCompanyDetailPage() {
     if (selected.length !== contractedIds.size) return true;
     return selected.some((id) => !contractedIds.has(id));
   }, [selected, contractedIds]);
-  const hasJornadas = contractedIds.has('product-jornadas');
+  const jornadasContracted = contractedIds.has('product-jornadas');
+  const jornadasReleasedAt = company?.jornadas_released_at ?? null;
+  const hasJornadas = jornadasContracted && Boolean(jornadasReleasedAt);
   const hasFagulha = contractedIds.has('product-fagulha');
 
   function toggle(productId: string) {
@@ -84,6 +89,26 @@ export function PlatformCompanyDetailPage() {
       toast.error(errorText(reason, 'Não foi possível atualizar os produtos da empresa.'));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function release() {
+    if (!token || !company || releasing) return;
+    const ok = await confirm({
+      title: 'Liberar Jornadas para esta empresa?',
+      description: 'A empresa, os gestores e os colaboradores passam a ver Jornadas. As jornadas padrão e o cronograma são criados agora e aparecem na agenda do plano de ação.',
+      confirmLabel: 'Liberar Jornadas',
+    });
+    if (!ok) return;
+    setReleasing(true);
+    try {
+      await releaseJornadas(token, company.id);
+      await load();
+      toast.success('Jornadas liberado. Jornadas e cronograma criados.');
+    } catch (reason) {
+      toast.error(errorText(reason, 'Não foi possível liberar Jornadas.'));
+    } finally {
+      setReleasing(false);
     }
   }
 
@@ -178,6 +203,24 @@ export function PlatformCompanyDetailPage() {
                     );
                   })}
                 </div>
+                {jornadasContracted ? (
+                  <div className={`ca-release${jornadasReleasedAt ? ' ca-release--on' : ''}`}>
+                    {jornadasReleasedAt ? <CheckCircle2 size={18} /> : <Rocket size={18} />}
+                    <span className="ca-release__copy">
+                      <strong>{jornadasReleasedAt ? 'Jornadas liberado' : 'Jornadas contratado, ainda não liberado'}</strong>
+                      <span>
+                        {jornadasReleasedAt
+                          ? `Liberado em ${new Date(jornadasReleasedAt).toLocaleDateString('pt-BR')}. Jornadas e cronograma ativos.`
+                          : 'Nada foi criado ainda: a empresa não vê Jornadas e não há cronograma. Libere quando for começar.'}
+                      </span>
+                    </span>
+                    {jornadasReleasedAt ? null : (
+                      <button type="button" className="primary-button" onClick={() => void release()} disabled={releasing || dirty}>
+                        <Rocket size={16} /><span>{releasing ? 'Liberando...' : 'Liberar Jornadas'}</span>
+                      </button>
+                    )}
+                  </div>
+                ) : null}
                 <div className="ca-savebar">
                   <p>{dirty ? 'Há alterações não salvas.' : 'Nenhuma alteração pendente.'}</p>
                   <button type="button" className="primary-button" onClick={() => void save()} disabled={saving || !dirty}>

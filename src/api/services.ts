@@ -344,6 +344,14 @@ export async function getCompanyProducts(token: string, companyId: string) {
   return request<CompanyProducts>(`/companies/${companyId}/products`, { token });
 }
 
+/** Libera Jornadas para a empresa: dá acesso e cria as jornadas e o cronograma. */
+export async function releaseJornadas(token: string, companyId: string) {
+  return request<{ has_jornadas: boolean; jornadas_released_at: string | null }>(`/companies/${companyId}/jornadas/release`, {
+    token,
+    method: 'POST',
+  });
+}
+
 export async function updateCompanyProducts(token: string, companyId: string, productIds: string[]) {
   return request<CompanyProducts>(`/companies/${companyId}/products`, {
     token,

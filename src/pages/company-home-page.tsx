@@ -62,7 +62,7 @@ export function CompanyHomePage() {
     setError(null);
     try {
       const [company, products] = await Promise.all([getMyCompany(token), getMyCompanyProducts(token)]);
-      const has = (id: string) => products.product_ids.includes(id) || (id === JORNADAS_PRODUCT_ID && products.has_jornadas);
+      const has = (id: string) => (id === JORNADAS_PRODUCT_ID ? products.has_jornadas : products.product_ids.includes(id));
       const [agenda, benefits, structure, employments, cases, requests, forms, responses] = await Promise.all([
         optional(getAgenda(token, company.id, shiftDays(-90), shiftDays(30)).then((result) => result.entries)),
         optional(listBenefits(token, company.id)),

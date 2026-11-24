@@ -95,18 +95,18 @@ export function PlatformCompanyDetailPage() {
   async function release() {
     if (!token || !company || releasing) return;
     const ok = await confirm({
-      title: 'Liberar Jornadas para esta empresa?',
-      description: 'A empresa, os gestores e os colaboradores passam a ver Jornadas. As jornadas padrão e o cronograma são criados agora e aparecem na agenda do plano de ação.',
-      confirmLabel: 'Liberar Jornadas',
+      title: 'Liberar a jornada NR-01 para esta empresa?',
+      description: 'As jornadas de gestor e colaborador e o cronograma são criados agora, entram na agenda do plano de ação e a empresa passa a ver Jornadas. As pesquisas do construtor continuam como estão.',
+      confirmLabel: 'Liberar jornada NR-01',
     });
     if (!ok) return;
     setReleasing(true);
     try {
       await releaseJornadas(token, company.id);
       await load();
-      toast.success('Jornadas liberado. Jornadas e cronograma criados.');
+      toast.success('Jornada NR-01 liberada. Jornadas e cronograma criados.');
     } catch (reason) {
-      toast.error(errorText(reason, 'Não foi possível liberar Jornadas.'));
+      toast.error(errorText(reason, 'Não foi possível liberar a jornada NR-01.'));
     } finally {
       setReleasing(false);
     }
@@ -207,16 +207,16 @@ export function PlatformCompanyDetailPage() {
                   <div className={`ca-release${jornadasReleasedAt ? ' ca-release--on' : ''}`}>
                     {jornadasReleasedAt ? <CheckCircle2 size={18} /> : <Rocket size={18} />}
                     <span className="ca-release__copy">
-                      <strong>{jornadasReleasedAt ? 'Jornadas liberado' : 'Jornadas contratado, ainda não liberado'}</strong>
+                      <strong>{jornadasReleasedAt ? 'Jornada NR-01 liberada' : 'Jornada NR-01 ainda não liberada'}</strong>
                       <span>
                         {jornadasReleasedAt
-                          ? `Liberado em ${new Date(jornadasReleasedAt).toLocaleDateString('pt-BR')}. Jornadas e cronograma ativos.`
-                          : 'Nada foi criado ainda: a empresa não vê Jornadas e não há cronograma. Libere quando for começar.'}
+                          ? `Liberada em ${new Date(jornadasReleasedAt).toLocaleDateString('pt-BR')}. Jornadas de gestor e colaborador e cronograma ativos.`
+                          : 'As pesquisas do construtor já podem ser enviadas. As jornadas de gestor e colaborador e o cronograma só são criados quando você liberar.'}
                       </span>
                     </span>
                     {jornadasReleasedAt ? null : (
                       <button type="button" className="primary-button" onClick={() => void release()} disabled={releasing || dirty}>
-                        <Rocket size={16} /><span>{releasing ? 'Liberando...' : 'Liberar Jornadas'}</span>
+                        <Rocket size={16} /><span>{releasing ? 'Liberando...' : 'Liberar jornada NR-01'}</span>
                       </button>
                     )}
                   </div>

@@ -59,8 +59,11 @@ export function useMyProducts(token: string | null) {
     let active = true;
     let pending = productCache.get(token);
     if (!pending) {
-      // has_jornadas vem do backend: so e verdadeiro com o produto Jornadas contratado.
-      pending = getMyCompanyProducts(token).then((data) => new Set([...data.product_ids, ...(data.has_jornadas ? [JORNADAS_PRODUCT_ID] : [])]));
+      // Jornadas (menu, telas) so com a jornada NR-01 liberada (has_jornadas); contratado sozinho
+      // libera apenas as pesquisas do construtor.
+      pending = getMyCompanyProducts(token).then(
+        (data) => new Set([...data.product_ids.filter((id) => id !== JORNADAS_PRODUCT_ID), ...(data.has_jornadas ? [JORNADAS_PRODUCT_ID] : [])]),
+      );
       pending.catch(() => productCache.delete(token));
       productCache.set(token, pending);
     }

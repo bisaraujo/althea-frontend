@@ -1,10 +1,10 @@
-import { ArrowLeft, CheckCircle2, ChevronRight, Clock3, FolderKanban, Mail, Network, PackageCheck, Rocket, Save, Sparkles, Users } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, CheckCircle2, ChevronRight, Clock3, FolderKanban, Mail, Network, PackageCheck, Pencil, Rocket, Save, Sparkles, Users } from 'lucide-react';
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import { listCapabilityRequests } from '../api/access';
-import { getProducts, releaseJornadas, updateCompanyProducts } from '../api/services';
+import { getProducts, releaseJornadas, updateCompany, updateCompanyProducts } from '../api/services';
 import { getCompanyPortfolioEntry } from '../api/platform-admin';
 import type { CompanyPortfolio, Product } from '../api/types';
 import { useAuth } from '../auth/auth-context';
@@ -17,6 +17,7 @@ import { SectionPanel } from '../components/section-panel';
 import { StatCard } from '../components/stat-card';
 import { useToast } from '../components/toast';
 import { useConfirm } from '../components/ui/confirmation-dialog';
+import { Modal } from '../components/ui';
 import { CompanyUsersPanel } from '../components/company-users-panel';
 import './companies-admin.css';
 import { plural } from '../lib/plural';
@@ -31,6 +32,8 @@ export function PlatformCompanyDetailPage() {
   const toast = useToast();
   const confirm = useConfirm();
   const [releasing, setReleasing] = useState(false);
+  const [editingData, setEditingData] = useState<{ name: string; email: string; resend: boolean } | null>(null);
+  const [savingData, setSavingData] = useState(false);
   const [company, setCompany] = useState<CompanyPortfolio | null>(null);
   const [catalog, setCatalog] = useState<Product[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -89,6 +92,29 @@ export function PlatformCompanyDetailPage() {
       toast.error(errorText(reason, 'Não foi possível atualizar os produtos da empresa.'));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveData(event: FormEvent) {
+    event.preventDefault();
+    if (!token || !company || !editingData || savingData) return;
+    const name = editingData.name.trim();
+    const email = editingData.email.trim().toLowerCase();
+    const emailChanged = email !== company.email.toLowerCase();
+    setSavingData(true);
+    try {
+      await updateCompany(token, company.id, {
+        ...(name !== company.name ? { name } : {}),
+        ...(emailChanged ? { email } : {}),
+        ...(editingData.resend ? { resend_access: true } : {}),
+      });
+      await load();
+      setEditingData(null);
+      toast.success(editingData.resend ? `Dados salvos. Uma nova senha temporária foi enviada para ${email}.` : emailChanged ? `Dados salvos. O login da empresa agora é ${email}.` : 'Dados salvos.');
+    } catch (reason) {
+      toast.error(errorText(reason, 'Não foi possível salvar os dados da empresa.'));
+    } finally {
+      setSavingData(false);
     }
   }
 
@@ -158,11 +184,44 @@ export function PlatformCompanyDetailPage() {
             </div>
           </div>
           <div className="ca-header__actions">
+            <button type="button" className="secondary-button" onClick={() => setEditingData({ name: company.name, email: company.email, resend: false })}>
+              <Pencil size={15} /><span>Editar dados</span>
+            </button>
             <Link className="primary-button" to={`/platform-admin/organization?company=${company.id}`}>
               <Network size={16} /><span>Gestão organizacional</span>
             </Link>
           </div>
         </header>
+
+        <Modal
+          open={editingData !== null}
+          onClose={savingData ? () => undefined : () => setEditingData(null)}
+          title="Dados da empresa"
+          description="O e-mail é o login da conta principal da empresa."
+          size="sm"
+          footer={<>
+            <button type="button" className="secondary-button" onClick={() => setEditingData(null)} disabled={savingData}>Cancelar</button>
+            <button type="submit" form="company-data-form" className="primary-button" disabled={savingData || !editingData?.name.trim() || !editingData?.email.trim()}>{savingData ? 'Salvando…' : 'Salvar'}</button>
+          </>}
+        >
+          {editingData ? (
+            <form id="company-data-form" className="admin-form" onSubmit={(event) => void saveData(event)}>
+              <label><span>Nome</span><input value={editingData.name} onChange={(event) => setEditingData({ ...editingData, name: event.target.value })} required maxLength={255} /></label>
+              <label><span>E-mail (login da empresa)</span>
+                <input type="email" value={editingData.email} required maxLength={255}
+                  onChange={(event) => {
+                    const email = event.target.value;
+                    const changed = email.trim().toLowerCase() !== company.email.toLowerCase();
+                    setEditingData({ ...editingData, email, resend: changed ? (editingData.email.trim().toLowerCase() === company.email.toLowerCase() ? true : editingData.resend) : false });
+                  }} />
+              </label>
+              <label className="apd-check ca-check">
+                <input type="checkbox" checked={editingData.resend} onChange={(event) => setEditingData({ ...editingData, resend: event.target.checked })} />
+                <span>Enviar uma nova senha temporária para este e-mail <em className="ben-optional">(use quando o e-mail do cadastro estava errado: o acesso chega no e-mail certo)</em></span>
+              </label>
+            </form>
+          ) : null}
+        </Modal>
 
         <div className="stats-grid stats-grid--three">
           <StatCard label="Colaboradores vinculados" value={people} meta={`${plural(company.employee_count, 'colaborador', 'colaboradores')} · ${plural(company.manager_count, 'gestor', 'gestores')}`} icon={<Users size={18} />} />

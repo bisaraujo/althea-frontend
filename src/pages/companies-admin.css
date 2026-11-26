@@ -93,6 +93,15 @@ a.ca-row:hover, a.ca-row:focus-visible { background: var(--surface-soft); outlin
 .ca-savebar { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: space-between; margin-top: 0.9rem; }
 .ca-savebar p { margin: 0; font-size: 0.82rem; color: var(--text-soft); }
 
+.ca-check { display: flex; flex-direction: row; align-items: flex-start; gap: 0.5rem; font-size: 0.86rem; }
+.ca-check input { width: auto; margin-top: 0.2rem; }
+.cu-actions { display: inline-flex; gap: 0.2rem; justify-content: flex-end; }
+.cu-off { opacity: 0.6; }
+.cu-pill { margin-left: 0.4rem; }
+.cu-role { display: grid; white-space: nowrap; }
+.cu-role .admin-form__hint { overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+.cu-actions { white-space: nowrap; }
+
 .ca-release { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.75rem; align-items: center; margin-top: 0.9rem; padding: 0.8rem 0.95rem; border: 1px dashed var(--brand); border-radius: 12px; background: var(--surface-soft); }
 .ca-release > svg { color: var(--brand-deep); }
 .ca-release--on { border-style: solid; border-color: var(--border); }

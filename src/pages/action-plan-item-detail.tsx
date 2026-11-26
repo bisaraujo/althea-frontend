@@ -1,10 +1,10 @@
-import { CalendarDays, CheckCircle2, CircleAlert, Download, FileText, Image as ImageIcon, Paperclip, PlayCircle, Save, Trash2, TrendingUp, Video } from 'lucide-react';
+import { CalendarDays, CheckCircle2, CircleAlert, Download, FileText, History, Image as ImageIcon, Paperclip, PlayCircle, Save, Trash2, TrendingUp, Video } from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 
 import {
-  ACTION_KIND_LABEL, ACTION_STATUS_LABEL, ACTION_TYPE_LABEL, type ActionStatus, addEvidence, addKpiReading, deleteEvidence, deleteKpiReading,
-  downloadEvidence, type Evidence, EVIDENCE_KIND_LABEL, evidenceBlob, getPlanItem, type KpiReading, kpiIntervalLabel, type PlanItem, PRIORITY_LABEL,
-  RECURRENCE_LABEL, SHEET_FIELD_LABEL, updateProgress,
+  ACTION_KIND_LABEL, ACTION_STATUS_LABEL, ACTION_TYPE_LABEL, type ActionStatus, ACTOR_ROLE_LABEL, addEvidence, addKpiReading, deleteEvidence, deleteKpiReading,
+  downloadEvidence, type Evidence, EVIDENCE_KIND_LABEL, evidenceBlob, getPlanItem, getPlanItemHistory, type HistoryEntry, type KpiReading, kpiIntervalLabel,
+  type PlanItem, PRIORITY_LABEL, RECURRENCE_LABEL, setPlanItemDate, SHEET_FIELD_LABEL, updateProgress,
 } from '../api/action-plan';
 import { ApiError } from '../api/client';
 import { StatusPill } from '../components/status-pill';
@@ -25,6 +25,13 @@ function todayIso() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
+function dateTime(value: string) {
+  return new Date(value).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function clip(value: string | null) {
+  return value && value.length > 160 ? `${value.slice(0, 160)}…` : value;
+}
+const HISTORY_PREVIEW = 6;
 function emptyKpi() {
   return { value: '', reference_date: todayIso(), note: '' };
 }
@@ -97,10 +104,14 @@ export function ActionPlanItemDetail({ token, itemId, onClose, canUpdate, isAdmi
   const [uploadPercent, setUploadPercent] = useState<number | null>(null);
   const [kpi, setKpi] = useState(emptyKpi);
   const [busy, setBusy] = useState(false);
+  const [dates, setDates] = useState({ start_date: '', due_at: '' });
+  const [history, setHistory] = useState<HistoryEntry[] | null>(null);
+  const [allHistory, setAllHistory] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const apply = useCallback((next: PlanItem) => {
     setItem(next);
+    setDates({ start_date: next.start_date ?? '', due_at: next.due_at ?? '' });
     setProgress({ status: next.status === 'cancelled' ? 'pending' : next.status, final_value: next.final_value ?? '', result: next.result ?? '', comments: next.comments ?? '' });
   }, []);
   const load = useCallback(() => {
@@ -109,7 +120,29 @@ export function ActionPlanItemDetail({ token, itemId, onClose, canUpdate, isAdmi
     getPlanItem(token, itemId).then(apply).catch(() => setFailed(true));
   }, [token, itemId, apply]);
   useEffect(load, [load]);
-  useEffect(() => { setMemorial(''); setFile(null); setUploadPercent(null); setKpi(emptyKpi()); }, [itemId]);
+  useEffect(() => { setMemorial(''); setFile(null); setUploadPercent(null); setKpi(emptyKpi()); setHistory(null); setAllHistory(false); }, [itemId]);
+  // O historico acompanha cada mudanca na acao (o item volta atualizado depois de cada uma).
+  useEffect(() => {
+    if (!item) return undefined;
+    let alive = true;
+    getPlanItemHistory(token, item.id).then((rows) => alive && setHistory(rows)).catch(() => alive && setHistory([]));
+    return () => { alive = false; };
+  }, [token, item]);
+
+  async function saveDate(event: FormEvent) {
+    event.preventDefault();
+    if (!item || busy || !dates.start_date) return;
+    setBusy(true);
+    try {
+      apply(await setPlanItemDate(token, item.id, { start_date: dates.start_date, due_at: dates.due_at || null }));
+      toast.success('Data salva. Ela já aparece na agenda.');
+      onChanged?.();
+    } catch (reason) {
+      toast.error(errorText(reason, 'Não foi possível salvar a data.'));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function saveProgress(event: FormEvent) {
     event.preventDefault();
@@ -216,6 +249,22 @@ export function ActionPlanItemDetail({ token, itemId, onClose, canUpdate, isAdmi
             {item.occurrence_count ? <span className="apd-meta"><CalendarDays size={13} aria-hidden />{item.occurrences_done} de {item.occurrence_count} data(s) feita(s)</span> : null}
           </div>
           {item.description ? <p className="apd-desc">{item.description}</p> : null}
+
+          {item.company_sets_date && item.recurrence_type !== 'custom_dates' ? (
+            <section className="apd-section">
+              <h3><CalendarDays size={15} aria-hidden />Data da ação</h3>
+              {editable ? (
+                <form className="admin-form apd-upload" onSubmit={(event) => void saveDate(event)}>
+                  <p className="ben-hint">{item.start_date ? 'A Turi deixou vocês ajustarem a data desta ação.' : 'A Turi deixou esta data para vocês definirem. Depois de salvar, ela aparece na agenda.'}</p>
+                  <div className="field-grid">
+                    <label><span>{item.recurrence_type === 'once' ? 'Data' : 'Começa em'}</span><input type="date" value={dates.start_date} onChange={(event) => setDates({ ...dates, start_date: event.target.value })} required disabled={busy} /></label>
+                    <label><span>Prazo de conclusão <em className="ben-optional">(opcional)</em></span><input type="date" value={dates.due_at} onChange={(event) => setDates({ ...dates, due_at: event.target.value })} disabled={busy} /></label>
+                  </div>
+                  <button className="primary-button" disabled={busy || !dates.start_date || (dates.start_date === (item.start_date ?? '') && dates.due_at === (item.due_at ?? ''))}><CalendarDays size={15} />Salvar data</button>
+                </form>
+              ) : <p className="ben-hint">{item.start_date ? `${item.recurrence_type === 'once' ? 'Data' : 'Começa em'} ${shortDate(item.start_date)}, definida pela empresa.` : 'Data a definir pela empresa.'}</p>}
+            </section>
+          ) : null}
 
           <section className="apd-section">
             <h3>Planejamento</h3>
@@ -339,6 +388,42 @@ export function ActionPlanItemDetail({ token, itemId, onClose, canUpdate, isAdmi
                 <button className="primary-button" disabled={busy || (!memorial.trim() && !file)}>{uploadPercent !== null ? `Enviando ${uploadPercent}%` : 'Enviar evidência'}</button>
               </form>
             ) : null}
+          </section>
+
+          <section className="apd-section">
+            <h3><History size={15} aria-hidden />Histórico {history ? <span className="apd-count">{history.length}</span> : null}</h3>
+            {history === null ? <p className="ben-hint">Carregando o histórico…</p> : history.length ? (
+              <>
+                <ol className="apd-history">
+                  {(allHistory ? history : history.slice(0, HISTORY_PREVIEW)).map((entry) => (
+                    <li key={entry.id} className="apd-history__item">
+                      <div className="apd-history__head">
+                        <strong>{entry.actor_name ?? 'Alguém'}</strong>
+                        {entry.actor_role ? <span className="apd-history__role">{ACTOR_ROLE_LABEL[entry.actor_role] ?? entry.actor_role}</span> : null}
+                        <span className="ben-hint apd-history__when">{dateTime(entry.created_at)}</span>
+                      </div>
+                      <span className="apd-history__what">{entry.action_label}{entry.summary ? `: ${entry.summary}` : ''}</span>
+                      {entry.changes.length ? (
+                        <ul className="apd-history__changes">
+                          {entry.changes.map((change) => (
+                            <li key={change.field}>
+                              <span className="apd-history__label">{change.label}:</span>{' '}
+                              {change.old ? <span className="apd-history__old" title={change.old}>{clip(change.old)}</span> : <em className="apd-history__empty">vazio</em>}
+                              {' → '}
+                              {change.new ? <span title={change.new}>{clip(change.new)}</span> : <em className="apd-history__empty">vazio</em>}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </li>
+                  ))}
+                </ol>
+                {history.length > HISTORY_PREVIEW ? (
+                  <button type="button" className="secondary-button apd-history__more" onClick={() => setAllHistory(!allHistory)}>{allHistory ? 'Mostrar menos' : `Ver tudo (${history.length})`}</button>
+                ) : null}
+              </>
+            ) : <p className="ben-hint">Nada registrado ainda.</p>}
+            <p className="ben-hint">Cada alteração fica registrada com o nome de quem fez. Por isso cada pessoa entra com o próprio login.</p>
           </section>
         </div>
       ) : null}

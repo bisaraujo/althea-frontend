@@ -40,13 +40,25 @@ export type PlanItem = {
   next_occurrence: string | null; created_at: string; updated_at: string;
   progress_updated_at: string | null; progress_updated_by_name: string | null; evidences: Evidence[];
   kpi_interval_months: number; kpi_readings: KpiReading[]; kpi_tracked: boolean; kpi_next_due: string | null; kpi_status: KpiStatus | null;
+  /** A Turi deixou a data para a empresa definir (e ajustar). */
+  company_sets_date: boolean;
 } & SheetFields & ProgressFields;
 /** Plano de acao da empresa (um por empresa, existe com ou sem produto). */
 export type Plan = { id: string; company_id: string; status: string; items: PlanItem[] };
 export type PlanItemPayload = {
   title: string; description?: string | null; owner_name?: string | null; item_type: ActionItemType; recurrence_type: RecurrenceType;
   start_date?: string | null; custom_dates?: string[]; benefit_id?: string | null; due_at?: string | null; kpi_interval_months?: number;
+  /** Sem informar: acao de data unica criada sem data fica para a empresa definir. */
+  company_sets_date?: boolean;
 } & Partial<SheetFields>;
+
+/** Uma linha do historico da acao: quem fez, o que fez e o que mudou (de -> para). */
+export type HistoryChange = { field: string; label: string; old: string | null; new: string | null };
+export type HistoryEntry = {
+  id: string; action: string; action_label: string; summary: string | null; actor_id: string | null; actor_name: string | null;
+  actor_role: string | null; changes: HistoryChange[]; created_at: string;
+};
+export const ACTOR_ROLE_LABEL: Record<string, string> = { admin: 'Turi', company: 'Conta da empresa', manager: 'Gestor', employee: 'Colaborador' };
 /** "plano" = acao do plano de acao; "jornada" = entrega do cronograma das Jornadas (so leitura). */
 export type AgendaSource = 'plano' | 'jornada';
 export type AgendaItemType = ActionItemType | 'jornada';
@@ -122,6 +134,13 @@ export function updateOccurrence(token: string, occurrenceId: string, payload: {
 }
 export function getPlanItem(token: string, itemId: string) {
   return request<PlanItem>(`/action-plan/items/${itemId}`, { token });
+}
+/** A empresa define (ou ajusta) a data de uma acao que a Turi deixou para ela. */
+export function setPlanItemDate(token: string, itemId: string, payload: { start_date?: string | null; due_at?: string | null }) {
+  return request<PlanItem>(`/action-plan/items/${itemId}/date`, { token, method: 'PATCH', body: JSON.stringify(payload), headers: json });
+}
+export function getPlanItemHistory(token: string, itemId: string) {
+  return request<HistoryEntry[]>(`/action-plan/items/${itemId}/history`, { token });
 }
 export function updateProgress(token: string, itemId: string, payload: Partial<ProgressFields> & { status?: ActionStatus }) {
   return request<PlanItem>(`/action-plan/items/${itemId}/progress`, { token, method: 'PATCH', body: JSON.stringify(payload), headers: json });

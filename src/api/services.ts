@@ -344,6 +344,16 @@ export async function getCompanyProducts(token: string, companyId: string) {
   return request<CompanyProducts>(`/companies/${companyId}/products`, { token });
 }
 
+/** Muda nome e e-mail da empresa. resend_access (so a Turi) manda uma nova senha temporaria para o e-mail. */
+export async function updateCompany(token: string, companyId: string, payload: { name?: string; email?: string; resend_access?: boolean }) {
+  return request<{ id: string; name: string; email: string }>(`/companies/${companyId}`, {
+    token,
+    method: 'PUT',
+    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 /** Libera Jornadas para a empresa: dá acesso e cria as jornadas e o cronograma. */
 export async function releaseJornadas(token: string, companyId: string) {
   return request<{ has_jornadas: boolean; jornadas_released_at: string | null }>(`/companies/${companyId}/jornadas/release`, {

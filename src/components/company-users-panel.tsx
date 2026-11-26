@@ -1,8 +1,8 @@
-import { KeyRound, UserPlus } from 'lucide-react';
+import { KeyRound, Trash2, UserCheck, UserPlus, UserX } from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { ApiError } from '../api/client';
-import { createPlatformUser, getPlatformUsers, PLATFORM_ROLE_LABEL, type PlatformUser, type PlatformUserRole } from '../api/organization';
+import { createPlatformUser, deletePlatformUser, getPlatformUsers, PLATFORM_ROLE_LABEL, type PlatformUser, type PlatformUserRole, setPlatformUserActive } from '../api/organization';
 import { getProjects } from '../api/services';
 import type { Project } from '../api/types';
 import { useAuth } from '../auth/auth-context';
@@ -11,7 +11,7 @@ import { InfoTooltip } from './info-tooltip';
 import { SectionPanel } from './section-panel';
 import { StatusPill } from './status-pill';
 import { useToast } from './toast';
-import { DataTable, ErrorState, Modal, NoPermissionState } from './ui';
+import { DataTable, ErrorState, Modal, NoPermissionState, useConfirm } from './ui';
 import { plural } from '../lib/plural';
 
 function errorText(reason: unknown, fallback: string) {
@@ -25,6 +25,8 @@ function errorText(reason: unknown, fallback: string) {
 export function CompanyUsersPanel({ companyId, allowProjectChoice = false }: { companyId: string; allowProjectChoice?: boolean }) {
   const { token } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
+  const [acting, setActing] = useState<string | null>(null);
   const [users, setUsers] = useState<PlatformUser[] | null>(null);
   const [failure, setFailure] = useState<{ message: string; forbidden: boolean } | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -69,6 +71,67 @@ export function CompanyUsersPanel({ companyId, allowProjectChoice = false }: { c
     }
   }
 
+  async function setActive(item: PlatformUser, active: boolean) {
+    if (!token || acting) return;
+    if (!active) {
+      const ok = await confirm({
+        title: `Desativar o acesso de ${item.name}?`,
+        description: 'A pessoa não consegue mais entrar na plataforma nem recebe e-mails de pesquisa. Tudo o que ela já fez continua no histórico. Dá para reativar depois.',
+        confirmLabel: 'Desativar acesso', tone: 'danger',
+      });
+      if (!ok) return;
+    }
+    setActing(item.id);
+    try {
+      await setPlatformUserActive(token, companyId, item.id, active);
+      toast.success(active ? `${item.name} voltou a ter acesso.` : `Acesso de ${item.name} desativado.`);
+      load();
+    } catch (reason) {
+      toast.error(errorText(reason, 'Não foi possível mudar o acesso.'));
+    } finally {
+      setActing(null);
+    }
+  }
+
+  async function remove(item: PlatformUser) {
+    if (!token || acting) return;
+    const ok = await confirm({
+      title: `Excluir o login de ${item.name}?`,
+      description: 'Só dá para excluir quem nunca usou a plataforma. Se a pessoa já respondeu algo ou mexeu no plano de ação, o acesso é desativado em vez de excluído.',
+      confirmLabel: 'Excluir login', tone: 'danger',
+    });
+    if (!ok) return;
+    setActing(item.id);
+    try {
+      await deletePlatformUser(token, companyId, item.id);
+      toast.success(`Login de ${item.name} excluído.`);
+      load();
+    } catch (reason) {
+      if (reason instanceof ApiError && reason.status === 409) {
+        setActing(null);
+        const deactivate = await confirm({
+          title: 'Esta pessoa já usou a plataforma',
+          description: 'Para manter o histórico (respostas, jornadas e plano de ação), o login não pode ser excluído. Quer desativar o acesso?',
+          confirmLabel: 'Desativar acesso', tone: 'danger',
+        });
+        if (deactivate) {
+          setActing(item.id);
+          try {
+            await setPlatformUserActive(token, companyId, item.id, false);
+            toast.success(`Acesso de ${item.name} desativado.`);
+            load();
+          } catch (inner) {
+            toast.error(errorText(inner, 'Não foi possível desativar o acesso.'));
+          }
+        }
+      } else {
+        toast.error(errorText(reason, 'Não foi possível excluir o login.'));
+      }
+    } finally {
+      setActing(null);
+    }
+  }
+
   if (failure) return failure.forbidden ? <NoPermissionState message="Você não tem permissão para ver os logins desta empresa." /> : <ErrorState message={failure.message} onRetry={load} />;
 
   return (
@@ -88,10 +151,25 @@ export function CompanyUsersPanel({ companyId, allowProjectChoice = false }: { c
         dense
         empty={<EmptyState icon={KeyRound} title="Nenhum login ainda" description="Crie o login de um gestor ou colaborador. A senha temporária vai por e-mail." />}
         columns={[
-          { key: 'name', header: 'Nome', render: (item) => <span><strong>{item.name}</strong><br /><span className="admin-form__hint cell-email" title={item.email}>{item.email}</span></span> },
-          { key: 'role', header: 'Papel', width: '120px', render: (item) => PLATFORM_ROLE_LABEL[item.role] ?? item.role },
+          { key: 'name', header: 'Nome', render: (item) => (
+            <span className={item.deactivated_at ? 'cu-off' : undefined}>
+              <strong>{item.name}</strong>
+              {item.deactivated_at ? <span className="cu-pill" title={`Desativado em ${new Date(item.deactivated_at).toLocaleDateString('pt-BR')}`}><StatusPill tone="muted">Desativado</StatusPill></span> : null}
+              <br /><span className="admin-form__hint cell-email" title={item.email}>{item.email}</span>
+            </span>
+          ) },
+          { key: 'role', header: 'Papel', width: '130px', render: (item) => (
+            <span className="cu-role">{PLATFORM_ROLE_LABEL[item.role] ?? item.role}{allowProjectChoice && item.project_name ? <span className="admin-form__hint" title={item.project_name}>{item.project_name}</span> : null}</span>
+          ) },
           { key: 'person', header: 'Colaborador ligado', render: (item) => item.linked_person_name ? item.linked_person_name : <StatusPill tone="warning">Sem colaborador</StatusPill> },
-          ...(allowProjectChoice ? [{ key: 'project', header: 'Projeto', render: (item: PlatformUser) => item.project_name ?? '—' }] : []),
+          { key: 'actions', header: '', width: '80px', align: 'right', render: (item) => (
+            <span className="cu-actions">
+              {item.deactivated_at
+                ? <button type="button" className="org-icon-btn" title="Reativar acesso" aria-label={`Reativar o acesso de ${item.name}`} disabled={acting !== null} onClick={() => void setActive(item, true)}><UserCheck size={15} /></button>
+                : <button type="button" className="org-icon-btn" title="Desativar acesso" aria-label={`Desativar o acesso de ${item.name}`} disabled={acting !== null} onClick={() => void setActive(item, false)}><UserX size={15} /></button>}
+              <button type="button" className="org-icon-btn" title="Excluir login" aria-label={`Excluir o login de ${item.name}`} disabled={acting !== null} onClick={() => void remove(item)}><Trash2 size={15} /></button>
+            </span>
+          ) },
         ]}
       />
       <Modal

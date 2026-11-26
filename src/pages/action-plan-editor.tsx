@@ -67,6 +67,12 @@ function ItemForm({ draft, onChange, benefits }: { draft: PlanItemPayload; onCha
           </label>
         )}
       </div>
+      {draft.recurrence_type !== 'custom_dates' ? (
+        <label className="apd-check">
+          <input type="checkbox" checked={draft.company_sets_date ?? (draft.recurrence_type === 'once' && !draft.start_date)} onChange={(event) => set('company_sets_date', event.target.checked)} />
+          <span>A empresa define a data <em className="ben-optional">({draft.start_date ? 'ela pode ajustar a data acima' : 'deixe a data em branco para ela escolher'})</em></span>
+        </label>
+      ) : null}
       {draft.recurrence_type === 'custom_dates' ? (
         <div className="agd-dates">
           {(draft.custom_dates ?? []).length ? (draft.custom_dates ?? []).map((value) => (
@@ -129,7 +135,8 @@ function PlanRow({ item, onOpen, side }: { item: PlanItem; onOpen: () => void; s
         <span className="agd-plan-item__tags">
           {item.priority ? <StatusPill tone={priorityTone(item.priority)}>{PRIORITY_LABEL[item.priority]}</StatusPill> : null}
           {item.due_at ? <span className="ben-hint">Prazo {shortDate(item.due_at)}</span> : null}
-          <span className="ben-hint">{item.occurrence_count ? `${item.occurrences_done} de ${item.occurrence_count} data(s) feita(s)${item.next_occurrence ? ` · próxima: ${shortDate(item.next_occurrence)}` : ''}` : 'Sem datas na agenda'}</span>
+          {item.occurrence_count ? <span className="ben-hint">{`${item.occurrences_done} de ${item.occurrence_count} data(s) feita(s)${item.next_occurrence ? ` · próxima: ${shortDate(item.next_occurrence)}` : ''}`}</span>
+            : item.company_sets_date ? <StatusPill tone="warning">Data a definir pela empresa</StatusPill> : <span className="ben-hint">Sem datas na agenda</span>}
           {item.evidences.length ? <span className="ben-hint"><Paperclip size={12} aria-hidden /> {item.evidences.length}</span> : null}
           {item.kpi_status && item.kpi_status !== 'ok' ? <StatusPill tone="warning">{KPI_STATUS_LABEL[item.kpi_status]}</StatusPill> : null}
         </span>
@@ -183,7 +190,7 @@ export function ActionPlanEditor({ token, companyId, readOnly = false, canUpdate
   }
   function startEdit(item: PlanItem) {
     const sheet = Object.fromEntries((Object.keys(emptySheet) as (keyof SheetFields)[]).map((key) => [key, item[key]])) as SheetFields;
-    setEditing({ item, draft: { title: item.title, description: item.description, owner_name: item.owner_name, item_type: item.item_type, recurrence_type: item.recurrence_type, start_date: item.start_date, custom_dates: item.custom_dates, benefit_id: item.benefit_id, due_at: item.due_at, kpi_interval_months: item.kpi_interval_months, ...sheet } });
+    setEditing({ item, draft: { title: item.title, description: item.description, owner_name: item.owner_name, item_type: item.item_type, recurrence_type: item.recurrence_type, start_date: item.start_date, custom_dates: item.custom_dates, benefit_id: item.benefit_id, due_at: item.due_at, kpi_interval_months: item.kpi_interval_months, company_sets_date: item.company_sets_date, ...sheet } });
   }
   function exportSheet() {
     exportPlanSheet(token, companyId).catch((reason) => toast.error(errorText(reason, 'Não foi possível exportar.')));
@@ -201,7 +208,7 @@ export function ActionPlanEditor({ token, companyId, readOnly = false, canUpdate
       <SectionPanel title="Ações do plano" eyebrow={`${active.length} ativa(s)`} action={exportButton}>
         {plan.items.length ? (
           <>
-            <p className="ben-hint agd-plan-hint">Toque numa ação para ver o planejamento{canUpdate ? ', atualizar o andamento e enviar evidências (memorial, fotos, vídeos)' : ' e as evidências'}.</p>
+            <p className="ben-hint agd-plan-hint">Toque numa ação para ver o planejamento{canUpdate ? ', definir as datas que ficaram com vocês, atualizar o andamento e enviar evidências (memorial, fotos, vídeos)' : ' e as evidências'}. Cada alteração fica no histórico da ação com o nome de quem fez.</p>
             <div className="agd-plan-list agd-plan-list--scroll">
               {plan.items.map((item) => (
                 <PlanRow key={item.id} item={item} onOpen={() => setOpenId(item.id)} side={<StatusPill tone={statusTone(item.status)}>{ACTION_STATUS_LABEL[item.status]}</StatusPill>} />
